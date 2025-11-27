@@ -706,7 +706,7 @@ Protected Class VNSPDFDocument
 		    Return
 		  End If
 		  
-		  If points.Ubound < 3 Then
+		  If points.LastIndex < 3 Then
 		    Call SetError("Beziergon requires at least 4 points (1 start + 3 per curve segment)")
 		    Return
 		  End If
@@ -720,7 +720,7 @@ Protected Class VNSPDFDocument
 		  
 		  // Process curve segments (each segment uses 3 points)
 		  Dim idx As Integer = 1
-		  While idx + 2 <= points.Ubound
+		  While idx + 2 <= points.LastIndex
 		    Dim cx0 As Double = points(idx).Left
 		    Dim cy0 As Double = points(idx).Right
 		    Dim cx1 As Double = points(idx + 1).Left
@@ -752,10 +752,10 @@ Protected Class VNSPDFDocument
 		      result = result + kHexChars.Middle((b Mod 16), 1)
 		    Next
 		  #Else
-		    For i As Integer = 1 To Len(data)
-		      Dim b As Integer = Mid(data, i, 1).AscByte
-		      result = result + kHexChars.Mid((b \ 16) + 1, 1)
-		      result = result + kHexChars.Mid((b Mod 16) + 1, 1)
+		    For i As Integer = 0 To data.Length - 1
+		      Dim b As Integer = data.Middle(i, 1).AscByte
+		      result = result + kHexChars.Middle(b \ 16, 1)
+		      result = result + kHexChars.Middle(b Mod 16, 1)
 		    Next
 		  #EndIf
 		  
@@ -943,7 +943,7 @@ Protected Class VNSPDFDocument
 		    Dim x As Double = mCurrentX
 		    Dim y As Double = mCurrentY
 		    
-		    If borderStr.InStr("L") > 0 Then
+		    If borderStr.IndexOf("L") >= 0 Then
 		      // Left border
 		      cmd = cmd + FormatPDF(x * mScaleFactor) + " "
 		      cmd = cmd + FormatPDF((mPageHeight - y) * mScaleFactor) + " m "
@@ -951,7 +951,7 @@ Protected Class VNSPDFDocument
 		      cmd = cmd + FormatPDF((mPageHeight - (y + h)) * mScaleFactor) + " l S " + EndOfLine.UNIX
 		    End If
 		    
-		    If borderStr.InStr("T") > 0 Then
+		    If borderStr.IndexOf("T") >= 0 Then
 		      // Top border
 		      cmd = cmd + FormatPDF(x * mScaleFactor) + " "
 		      cmd = cmd + FormatPDF((mPageHeight - y) * mScaleFactor) + " m "
@@ -959,7 +959,7 @@ Protected Class VNSPDFDocument
 		      cmd = cmd + FormatPDF((mPageHeight - y) * mScaleFactor) + " l S " + EndOfLine.UNIX
 		    End If
 		    
-		    If borderStr.InStr("R") > 0 Then
+		    If borderStr.IndexOf("R") >= 0 Then
 		      // Right border
 		      cmd = cmd + FormatPDF((x + w) * mScaleFactor) + " "
 		      cmd = cmd + FormatPDF((mPageHeight - y) * mScaleFactor) + " m "
@@ -967,7 +967,7 @@ Protected Class VNSPDFDocument
 		      cmd = cmd + FormatPDF((mPageHeight - (y + h)) * mScaleFactor) + " l S " + EndOfLine.UNIX
 		    End If
 		    
-		    If borderStr.InStr("B") > 0 Then
+		    If borderStr.IndexOf("B") >= 0 Then
 		      // Bottom border
 		      cmd = cmd + FormatPDF(x * mScaleFactor) + " "
 		      cmd = cmd + FormatPDF((mPageHeight - (y + h)) * mScaleFactor) + " m "
@@ -993,7 +993,7 @@ Protected Class VNSPDFDocument
 		      #If TargetiOS Then
 		        Dim textLen As Integer = txt.Length  // iOS: use String.Length property
 		      #Else
-		        Dim textLen As Integer = Len(txt)  // Desktop/Console/Web: use Len() function
+		        Dim textLen As Integer = txt.Length  // Desktop/Console/Web: use String.Length property
 		      #EndIf
 		      Dim truncatedText As String = txt
 		      
@@ -1040,9 +1040,9 @@ Protected Class VNSPDFDocument
 		              usedRunes.Value(Str(codePoint)) = codePoint
 		            Next
 		          #Else
-		            Dim textLen As Integer = Len(displayText)
+		            Dim textLen As Integer = displayText.Length
 		            For i As Integer = 1 To textLen
-		              Dim char As String = Mid(displayText, i, 1)  // Desktop/Console/Web: 1-based Mid()
+		              Dim char As String = displayText.Middle(i, 1)  // Desktop/Console/Web: 0-based Middle()
 		              Dim codePoint As Integer = char.Asc
 		              usedRunes.Value(Str(codePoint)) = codePoint
 		            Next
@@ -1243,7 +1243,7 @@ Protected Class VNSPDFDocument
 		  // Call ClipEnd() to restore unclipped operations.
 		  
 		  If Err() Then Return
-		  If points.Ubound < 2 Then
+		  If points.LastIndex < 2 Then
 		    Call SetError("ClipPolygon requires at least 3 points")
 		    Return
 		  End If
@@ -1260,7 +1260,7 @@ Protected Class VNSPDFDocument
 		  Call Put(FormatPDF(pt.Left * k) + " " + FormatPDF((h - pt.Right) * k) + " m")
 		  
 		  // Draw lines to subsequent points
-		  For i As Integer = 1 To points.Ubound
+		  For i As Integer = 1 To points.LastIndex
 		    pt = points(i)
 		    Call Put(FormatPDF(pt.Left * k) + " " + FormatPDF((h - pt.Right) * k) + " l")
 		  Next
@@ -1808,7 +1808,7 @@ Protected Class VNSPDFDocument
 		      System.DebugLog("Emoji: iOS imageKey = " + imageKey)
 		    #Else
 		      // Desktop/Web: Use Microseconds for uniqueness
-		      Dim imageKey As String = "emoji_" + Str(Microseconds) + "_" + Str(randomSuffix)
+		      Dim imageKey As String = "emoji_" + Str(System.Microseconds) + "_" + Str(randomSuffix)
 		      System.DebugLog("Emoji: Desktop/Web imageKey = " + imageKey)
 		    #EndIf
 
@@ -1818,6 +1818,10 @@ Protected Class VNSPDFDocument
 
 		  #Else
 		    // Console: Emoji not supported
+		    #Pragma Unused emojiChar
+		    #Pragma Unused x
+		    #Pragma Unused y
+		    #Pragma Unused sizeInUserUnits
 		    Call SetError("Emoji rendering not supported on Console platform (no graphics API)")
 		  #EndIf
 		End Sub
@@ -2099,7 +2103,7 @@ Protected Class VNSPDFDocument
 		  // Handles decimal formatting
 		  
 		  // Count decimal places in format string
-		  Dim dotPos As Integer = formatStr.InStr(".")
+		  Dim dotPos As Integer = formatStr.IndexOf(".")
 		  Dim decimals As Integer = 2 // Default
 		  
 		  If dotPos > 0 Then
@@ -2117,11 +2121,11 @@ Protected Class VNSPDFDocument
 		  s = s.ReplaceAll(",", ".")
 		  
 		  // Add decimal places if needed
-		  If s.InStr(".") = 0 Then
+		  If s.IndexOf(".") < 0 Then
 		    s = s + "."
 		  End If
 		  
-		  Dim currentDecimals As Integer = VNSPDFModule.StringLenB(s) - s.InStr(".")
+		  Dim currentDecimals As Integer = VNSPDFModule.StringLenB(s) - s.IndexOf(".")
 		  While currentDecimals < decimals
 		    s = s + "0"
 		    currentDecimals = currentDecimals + 1
@@ -2534,7 +2538,7 @@ Protected Class VNSPDFDocument
 		    #If TargetiOS Then
 		      Dim sLen As Integer = s.Length  // iOS: use String.Length property
 		    #Else
-		      Dim sLen As Integer = Len(s)  // Desktop/Console/Web: use Len() function
+		      Dim sLen As Integer = s.Length  // Desktop/Console/Web: use String.Length property
 		    #EndIf
 		    For i As Integer = 0 To sLen - 1  // API2 uses 0-based indexing
 		      Dim char As String = s.MiddleBytes(i, 1)
@@ -2601,7 +2605,7 @@ Protected Class VNSPDFDocument
 
 	#tag Method, Flags = &h21
 		Private Sub Gradient(tp As Integer, r1 As Integer, g1 As Integer, b1 As Integer, r2 As Integer, g2 As Integer, b2 As Integer, x1 As Double, y1 As Double, x2 As Double, y2 As Double, r As Double)
-		  Dim pos As Integer = mGradientList.Ubound + 1
+		  Dim pos As Integer = mGradientList.LastIndex + 1
 		  
 		  // Create color strings
 		  Dim clr1Str As String = FormatPDF(r1 / 255.0) + " " + FormatPDF(g1 / 255.0) + " " + FormatPDF(b1 / 255.0)
@@ -2619,7 +2623,7 @@ Protected Class VNSPDFDocument
 		  grad.r = r
 		  grad.objNum = 0
 		  
-		  mGradientList.Append(grad)
+		  mGradientList.Add(grad)
 		  
 		  // Output shading reference
 		  Call Put("/Sh" + Str(pos) + " sh")
@@ -3034,7 +3038,7 @@ Protected Class VNSPDFDocument
 		  // Parse border parameter
 		  Dim borderStr As String
 		  Dim b, b2 As String
-		  If border.Type = Variant.TypeInteger Or border.Type = Variant.TypeDouble Then
+		  If border.Type = Variant.TypeInt32 Or border.Type = Variant.TypeDouble Then
 		    If border.IntegerValue = 1 Then
 		      borderStr = "LTRB"
 		      b = "LRT"
@@ -3047,9 +3051,9 @@ Protected Class VNSPDFDocument
 		  Else
 		    borderStr = border.StringValue.Uppercase
 		    b = ""
-		    If borderStr.InStr("L") > 0 Then b = b + "L"
-		    If borderStr.InStr("R") > 0 Then b = b + "R"
-		    If borderStr.InStr("T") > 0 Then b = b + "T"
+		    If borderStr.IndexOf("L") >= 0 Then b = b + "L"
+		    If borderStr.IndexOf("R") >= 0 Then b = b + "R"
+		    If borderStr.IndexOf("T") >= 0 Then b = b + "T"
 		    b2 = b.ReplaceAll("T", "")
 		  End If
 		  
@@ -3061,7 +3065,7 @@ Protected Class VNSPDFDocument
 		      currentBorder = b // First line: top border
 		    ElseIf i = lines.LastIndex Then
 		      currentBorder = b2
-		      If borderStr.InStr("B") > 0 Then
+		      If borderStr.IndexOf("B") >= 0 Then
 		        currentBorder = currentBorder + "B" // Last line: bottom border
 		      End If
 		    Else
@@ -3238,7 +3242,7 @@ Protected Class VNSPDFDocument
 		    Return
 		  End If
 		  
-		  If points.Ubound < 2 Then
+		  If points.LastIndex < 2 Then
 		    Call SetError("Polygon requires at least 3 points")
 		    Return
 		  End If
@@ -3256,7 +3260,7 @@ Protected Class VNSPDFDocument
 		  cmd = FormatPDF(pt.Left * k, prec) + " " + FormatPDF((h - pt.Right) * k, prec) + " m" + EndOfLine.UNIX
 		  
 		  // Draw lines to subsequent points
-		  For i As Integer = 1 To points.Ubound
+		  For i As Integer = 1 To points.LastIndex
 		    pt = points(i)
 		    cmd = cmd + FormatPDF(pt.Left * k, prec) + " " + FormatPDF((h - pt.Right) * k, prec) + " l" + EndOfLine.UNIX
 		  Next
@@ -5610,9 +5614,9 @@ Protected Class VNSPDFDocument
 		            chars.Add(word.Middle(i, 1))
 		          Next
 		        #Else
-		          Dim wordLen As Integer = Len(word)  // Use Len() for character count
-		          For i As Integer = 1 To wordLen  // Desktop/Console/Web: 1-based Mid()
-		            chars.Add(Mid(word, i, 1))  // Mid() is UTF-8 safe
+		          Dim wordLen As Integer = word.Length  // Use String.Length for character count
+		          For i As Integer = 1 To wordLen  // Desktop/Console/Web: 0-based Middle()
+		            chars.Add(word.Middle(i, 1))  // Middle() is UTF-8 safe
 		          Next
 		        #EndIf
 		        
@@ -5685,9 +5689,9 @@ Protected Class VNSPDFDocument
 		            usedRunes.Value(Str(codePoint)) = codePoint
 		          Next
 		        #Else
-		          Dim txtLen As Integer = Len(txt)
+		          Dim txtLen As Integer = txt.Length
 		          For i As Integer = 1 To txtLen
-		            Dim char As String = Mid(txt, i, 1)  // Desktop/Console/Web: 1-based Mid()
+		            Dim char As String = txt.Middle(i, 1)  // Desktop/Console/Web: 0-based Middle()
 		            Dim codePoint As Integer = char.Asc
 		            usedRunes.Value(Str(codePoint)) = codePoint
 		          Next
@@ -5962,9 +5966,9 @@ Protected Class VNSPDFDocument
 		              usedRunes.Value(Str(codePoint)) = codePoint
 		            Next
 		          #Else
-		            Dim wordLen As Integer = Len(wordWithSpace)
+		            Dim wordLen As Integer = wordWithSpace.Length
 		            For i As Integer = 1 To wordLen
-		              Dim char As String = Mid(wordWithSpace, i, 1)  // Desktop/Console/Web: 1-based Mid()
+		              Dim char As String = wordWithSpace.Middle(i, 1)  // Desktop/Console/Web: 0-based Middle()
 		              Dim codePoint As Integer = char.Asc
 		              usedRunes.Value(Str(codePoint)) = codePoint
 		            Next
@@ -6179,7 +6183,7 @@ Protected Class VNSPDFDocument
 		  #If TargetiOS Then
 		    If mPages.KeyCount = 0 Then
 		  #Else
-		    If mPages.Count = 0 Then
+		    If mPages.KeyCount = 0 Then
 		  #EndIf
 		    Call AddPage()
 		    If Err() Then Return
@@ -6253,7 +6257,7 @@ Protected Class VNSPDFDocument
 		  #If TargetiOS Then
 		    state.Value("pageCount") = mPages.KeyCount
 		  #Else
-		    state.Value("pageCount") = mPages.Count
+		    state.Value("pageCount") = mPages.KeyCount
 		  #EndIf
 
 		  // Current state

@@ -10,7 +10,7 @@ Protected Class VNSPDFFont
 		  mSubsetted = False
 		  
 		  // Copy character widths (must be exactly 256 values)
-		  If widths.Ubound = 255 Then
+		  If widths.LastIndex = 255 Then
 		    For i As Integer = 0 To 255
 		      mCharWidths(i) = widths(i)
 		    Next
@@ -37,7 +37,7 @@ Protected Class VNSPDFFont
 	#tag Method, Flags = &h0, Description = 52657475726E732074686520776964746820206120737472696E6720617420746865207370656369C3AD6564206F6E742073697A652E
 		Function GetStringWidth(text As String, fontSize As Double) As Double
 		  Dim totalWidth As Integer = 0
-		  Dim textLen As Integer = LenB(text)
+		  Dim textLen As Integer = text.Bytes
 		  
 		  For i As Integer = 1 To textLen
 		    Dim char As String = text.Middle(i, 1)

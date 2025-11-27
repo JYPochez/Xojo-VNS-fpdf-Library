@@ -35,12 +35,12 @@ Protected Class VNSPDFEncryption
 		  System.DebugLog "  ComputeEncryptionKey - hashInput.LenB: " + Str(VNSPDFModule.StringLenB(hashInput))
 		  
 		  If mRevision >= VNSPDFModule.gkEncryptionAES256 Then
-		    tempHash = Crypto.SHA256(hashInput)
+		    tempHash = Crypto.SHA2_256(hashInput)
 		    System.DebugLog "  ComputeEncryptionKey - IMMEDIATELY after SHA256, tempHash.LenB: " + Str(VNSPDFModule.StringLenB(tempHash))
 		    hash = tempHash.DefineEncoding(Encodings.ASCII)
 		    System.DebugLog "  ComputeEncryptionKey - After DefineEncoding, hash.LenB: " + Str(VNSPDFModule.StringLenB(hash))
 		    If mRevision = VNSPDFModule.gkEncryptionAES256_PDF2 Then
-		      tempHash = Crypto.SHA512(hashInput)
+		      tempHash = Crypto.SHA2_512(hashInput)
 		      hash = tempHash.DefineEncoding(Encodings.ASCII)
 		    End If
 		  Else
@@ -101,7 +101,7 @@ Protected Class VNSPDFEncryption
 		    If mRevision = 5 Then
 		      // Revision 5: SHA-256(password + validation salt + U[0:48])
 		      Dim hashInput As String = ownerPasswordUTF8 + mOwnerValidationSalt + mUserEntry.LeftBytes(48)
-		      Dim hashMB As MemoryBlock = Crypto.SHA256(hashInput)
+		      Dim hashMB As MemoryBlock = Crypto.SHA2_256(hashInput)
 		      hash = hashMB.StringValue(0, hashMB.Size).DefineEncoding(Encodings.ASCII)
 		      System.DebugLog "  Using SHA-256 for validation hash"
 		    Else
@@ -202,7 +202,7 @@ Protected Class VNSPDFEncryption
 		    If mRevision = 5 Then
 		      // Revision 5: SHA-256(password + validation salt)
 		      Dim hashInput As String = userPasswordUTF8 + mUserValidationSalt
-		      Dim hashMB As MemoryBlock = Crypto.SHA256(hashInput)
+		      Dim hashMB As MemoryBlock = Crypto.SHA2_256(hashInput)
 		      hash = hashMB.StringValue(0, hashMB.Size).DefineEncoding(Encodings.ASCII)
 		      System.DebugLog "  Using SHA-256 for validation hash"
 		    Else
@@ -268,6 +268,7 @@ Protected Class VNSPDFEncryption
 
 	#tag Method, Flags = &h21
 		Private Function ComputeOwnerEncryptionEntry(fileEncryptionKey As String) As String
+		#Pragma Unused fileEncryptionKey
 		  // Compute the OE (owner encryption) entry for Revision 5-6
 		  // OE = AES-256-CBC(file encryption key, key derived from owner password)
 
@@ -286,7 +287,7 @@ Protected Class VNSPDFEncryption
 		  If mRevision = 5 Then
 		    // Revision 5: SHA-256
 		    Dim hashInput As String = ownerPasswordUTF8 + mOwnerKeySalt + mUserEntry.LeftBytes(48)
-		    Dim hashMB As MemoryBlock = Crypto.SHA256(hashInput)
+		    Dim hashMB As MemoryBlock = Crypto.SHA2_256(hashInput)
 		    intermediateHash = hashMB.StringValue(0, hashMB.Size).DefineEncoding(Encodings.ASCII)
 		  Else
 		    // Revision 6: Use Algorithm 2.B (iterative AES-based hashing)
@@ -319,6 +320,7 @@ Protected Class VNSPDFEncryption
 
 	#tag Method, Flags = &h21
 		Private Function ComputeUserEncryptionEntry(fileEncryptionKey As String) As String
+		#Pragma Unused fileEncryptionKey
 		  // Compute the UE (user encryption) entry for Revision 5-6
 		  // UE = AES-256-CBC(file encryption key, key derived from user password)
 
@@ -336,7 +338,7 @@ Protected Class VNSPDFEncryption
 		  If mRevision = 5 Then
 		    // Revision 5: SHA-256
 		    Dim hashInput As String = userPasswordUTF8 + mUserKeySalt
-		    Dim hashMB As MemoryBlock = Crypto.SHA256(hashInput)
+		    Dim hashMB As MemoryBlock = Crypto.SHA2_256(hashInput)
 		    intermediateHash = hashMB.StringValue(0, hashMB.Size).DefineEncoding(Encodings.ASCII)
 		  Else
 		    // Revision 6: Use Algorithm 2.B (iterative AES-based hashing)
@@ -479,6 +481,8 @@ Protected Class VNSPDFEncryption
 		    Dim result As String = iv + encrypted
 		    Return result.DefineEncoding(Encodings.ASCII)
 		  #Else
+		    #Pragma Unused data
+		    #Pragma Unused key
 		    // This should never happen because SetProtection() gates revision 4+
 		    // But if it does, fail safely
 		    Raise New RuntimeException("AES encryption requires premium Encryption module")
@@ -505,6 +509,8 @@ Protected Class VNSPDFEncryption
 		    System.DebugLog "EncryptAESPassword - Output: " + Str(VNSPDFModule.StringLenB(encrypted)) + " bytes"
 		    Return encrypted
 		  #Else
+		    #Pragma Unused data
+		    #Pragma Unused key
 		    // This should never happen because SetProtection() gates revision 4+
 		    // But if it does, fail safely
 		    Raise New RuntimeException("AES encryption requires premium Encryption module")
@@ -599,6 +605,8 @@ Protected Class VNSPDFEncryption
 		      // Premium module enabled - use premium RC4-128 implementation
 		      Return VNSPDFEncryptionPremium.EncryptRC4(data, key)
 		    #Else
+		      #Pragma Unused data
+		      #Pragma Unused key
 		      // This should never happen because SetProtection() gates revision 3+
 		      // But if it does, fail safely
 		      Raise New RuntimeException("RC4-128 encryption requires premium Encryption module")

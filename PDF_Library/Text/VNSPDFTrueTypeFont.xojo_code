@@ -440,7 +440,7 @@ Protected Class VNSPDFTrueTypeFont
 		    Return mb
 		  #Else
 		    // Desktop/Console/Web: Use LenB for byte length
-		    Dim dataLen As Integer = mFontData.LenB
+		    Dim dataLen As Integer = mFontData.Bytes
 		    If dataLen = 0 Then
 		      Return Nil
 		    End If

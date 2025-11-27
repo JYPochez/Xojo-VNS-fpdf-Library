@@ -411,8 +411,8 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  mError = ""
 		  
 		  // Create MemoryBlock for reading original font
-		  mFontMB = New MemoryBlock(LenB(originalFontData))
-		  mFontMB.StringValue(0, LenB(originalFontData)) = originalFontData
+		  mFontMB = New MemoryBlock(originalFontData.Bytes)
+		  mFontMB.StringValue(0, originalFontData.Bytes) = originalFontData
 		  mFontMB.LittleEndian = False  // TrueType is big-endian
 		  
 		End Sub

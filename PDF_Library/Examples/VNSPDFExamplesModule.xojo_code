@@ -723,7 +723,7 @@ Protected Module VNSPDFExamplesModule
 		      Return result
 		    End If
 		    
-		    statusText = statusText + "Success! PDF generated (" + Str(LenB(pdfData)) + " bytes)" + EndOfLine
+		    statusText = statusText + "Success! PDF generated (" + Str(pdfData.Bytes) + " bytes)" + EndOfLine
 		    result.Value("success") = True
 		    result.Value("status") = statusText
 		    result.Value("pdf") = pdfData
@@ -871,7 +871,7 @@ Protected Module VNSPDFExamplesModule
 		      Return result
 		    End If
 		    
-		    statusText = statusText + "Generated " + Str(LenB(pdfData)) + " bytes" + EndOfLine
+		    statusText = statusText + "Generated " + Str(pdfData.Bytes) + " bytes" + EndOfLine
 		    statusText = statusText + "SUCCESS: Custom page formats example generated" + EndOfLine
 		    
 		    result.Value("success") = True
@@ -1223,7 +1223,7 @@ Protected Module VNSPDFExamplesModule
 		      Return result
 		    End If
 		    
-		    statusText = statusText + "File size: " + Str(LenB(pdfData)) + " bytes" + EndOfLine
+		    statusText = statusText + "File size: " + Str(pdfData.Bytes) + " bytes" + EndOfLine
 		    
 		    If iccFound Then
 		      statusText = statusText + EndOfLine
@@ -1623,7 +1623,7 @@ Protected Module VNSPDFExamplesModule
 		      Return result
 		    End If
 		    
-		    statusText = statusText + "File size: " + Str(LenB(pdfData)) + " bytes" + EndOfLine
+		    statusText = statusText + "File size: " + Str(pdfData.Bytes) + " bytes" + EndOfLine
 		    statusText = statusText + EndOfLine
 		    statusText = statusText + "SUCCESS! PDF Security example created." + EndOfLine
 		    statusText = statusText + "This PDF is encrypted with RC4-40 (available in free version)." + EndOfLine
@@ -1933,8 +1933,8 @@ Protected Module VNSPDFExamplesModule
 		      jsonExcerpt = jsonState
 		    End If
 		  #Else
-		    If Len(jsonState) > 500 Then
-		      jsonExcerpt = Left(jsonState, 500) + "..."
+		    If jsonState.Length > 500 Then
+		      jsonExcerpt = jsonState.Left(500) + "..."
 		    Else
 		      jsonExcerpt = jsonState
 		    End If
@@ -2311,11 +2311,11 @@ Protected Module VNSPDFExamplesModule
 		    // Polygon clip with gradient
 		    pdf.Text(20, 240, "Polygon clip with gradient:")
 		    Dim points() As Pair
-		    points.Append(New Pair(50, 250))
-		    points.Append(New Pair(90, 250))
-		    points.Append(New Pair(110, 275))
-		    points.Append(New Pair(70, 290))
-		    points.Append(New Pair(30, 275))
+		    points.Add(New Pair(50, 250))
+		    points.Add(New Pair(90, 250))
+		    points.Add(New Pair(110, 275))
+		    points.Add(New Pair(70, 290))
+		    points.Add(New Pair(30, 275))
 		    pdf.ClipPolygon(points, False)
 		    pdf.RadialGradient(30, 250, 80, 40, 255, 200, 0, 200, 0, 255, 0.5, 0.2, 0.5, 0.8, 0.4)
 		    pdf.ClipEnd()
@@ -3724,35 +3724,47 @@ Protected Module VNSPDFExamplesModule
 		    
 		    #If TargetDesktop Or TargetConsole Then
 		      // Location 1: Same folder as executable
-		      testFile = App.ExecutableFile.Parent.Child("test.pdf.jpg")
+		      testFile = App.ExecutableFile.Parent.Child("Test.pdf.jpg")
 		      If testFile.Exists Then jpegFile = testFile
 		      
 		      // Location 2: Go up 2 folders (macOS .app bundle)
 		      If jpegFile = Nil Then
-		        testFile = App.ExecutableFile.Parent.Parent.Child("test.pdf.jpg")
+		        testFile = App.ExecutableFile.Parent.Parent.Child("Test.pdf.jpg")
 		        If testFile.Exists Then jpegFile = testFile
 		      End If
 		      
 		      // Location 3: Go up 3 folders
 		      If jpegFile = Nil Then
-		        testFile = App.ExecutableFile.Parent.Parent.Parent.Child("test.pdf.jpg")
+		        testFile = App.ExecutableFile.Parent.Parent.Parent.Child("Test.pdf.jpg")
 		        If testFile.Exists Then jpegFile = testFile
 		      End If
 		      
 		      // Location 4: Go up 4 folders (project folder on macOS debug builds)
 		      If jpegFile = Nil Then
-		        testFile = App.ExecutableFile.Parent.Parent.Parent.Parent.Child("test.pdf.jpg")
+		        testFile = App.ExecutableFile.Parent.Parent.Parent.Parent.Child("Test.pdf.jpg")
+		        If testFile.Exists Then jpegFile = testFile
+		      End If
+		      
+		      // Location 4b: Go up 5 folders
+		      If jpegFile = Nil Then
+		        testFile = App.ExecutableFile.Parent.Parent.Parent.Parent.Parent.Child("Test.pdf.jpg")
+		        If testFile.Exists Then jpegFile = testFile
+		      End If
+		      
+		      // Location 4c: Go up 6 folders
+		      If jpegFile = Nil Then
+		        testFile = App.ExecutableFile.Parent.Parent.Parent.Parent.Parent.Parent.Child("Test.pdf.jpg")
 		        If testFile.Exists Then jpegFile = testFile
 		      End If
 		      
 		      // Location 5: Desktop
 		      If jpegFile = Nil Then
-		        testFile = SpecialFolder.Desktop.Child("test.pdf.jpg")
+		        testFile = SpecialFolder.Desktop.Child("Test.pdf.jpg")
 		        If testFile.Exists Then jpegFile = testFile
 		      End If
 		    #ElseIf TargetiOS Then
 		      // iOS: Check Documents folder for file-based images
-		      testFile = SpecialFolder.Documents.Child("test.pdf.jpg")
+		      testFile = SpecialFolder.Documents.Child("Test.pdf.jpg")
 		      If testFile <> Nil And testFile.Exists Then jpegFile = testFile
 		    #EndIf
 		    
@@ -3761,35 +3773,35 @@ Protected Module VNSPDFExamplesModule
 		    
 		    #If TargetDesktop Or TargetConsole Then
 		      // Location 1: Same folder as executable
-		      testFile = App.ExecutableFile.Parent.Child("test.pdf.png")
+		      testFile = App.ExecutableFile.Parent.Child("Test.pdf.png")
 		      If testFile.Exists Then pngFile = testFile
 		      
 		      // Location 2: Go up 2 folders (macOS .app bundle)
 		      If pngFile = Nil Then
-		        testFile = App.ExecutableFile.Parent.Parent.Child("test.pdf.png")
+		        testFile = App.ExecutableFile.Parent.Parent.Child("Test.pdf.png")
 		        If testFile.Exists Then pngFile = testFile
 		      End If
 		      
 		      // Location 3: Go up 3 folders
 		      If pngFile = Nil Then
-		        testFile = App.ExecutableFile.Parent.Parent.Parent.Child("test.pdf.png")
+		        testFile = App.ExecutableFile.Parent.Parent.Parent.Child("Test.pdf.png")
 		        If testFile.Exists Then pngFile = testFile
 		      End If
 		      
 		      // Location 4: Go up 4 folders (project folder on macOS debug builds)
 		      If pngFile = Nil Then
-		        testFile = App.ExecutableFile.Parent.Parent.Parent.Parent.Child("test.pdf.png")
+		        testFile = App.ExecutableFile.Parent.Parent.Parent.Parent.Child("Test.pdf.png")
 		        If testFile.Exists Then pngFile = testFile
 		      End If
 		      
 		      // Location 5: Desktop
 		      If pngFile = Nil Then
-		        testFile = SpecialFolder.Desktop.Child("test.pdf.png")
+		        testFile = SpecialFolder.Desktop.Child("Test.pdf.png")
 		        If testFile.Exists Then pngFile = testFile
 		      End If
 		    #ElseIf TargetiOS Then
 		      // iOS: Check Documents folder for file-based images
-		      testFile = SpecialFolder.Documents.Child("test.pdf.png")
+		      testFile = SpecialFolder.Documents.Child("Test.pdf.png")
 		      If testFile <> Nil And testFile.Exists Then pngFile = testFile
 		    #EndIf
 
@@ -3880,7 +3892,7 @@ Protected Module VNSPDFExamplesModule
 		      imagePath = pngFile.NativePath
 		      imageFile = pngFile
 		    Else
-		      statusText = statusText + "No test images found (test.pdf.jpg or test.pdf.png)" + EndOfLine
+		      statusText = statusText + "No test images found (Test.pdf.jpg or Test.pdf.png)" + EndOfLine
 		      #If TargetDesktop Or TargetConsole Then
 		        // Fallback to system image (macOS only)
 		        imagePath = "/System/Library/Desktop Pictures/Solid Colors/Solid Gray Pro Light.jpg"
@@ -4013,47 +4025,58 @@ Protected Module VNSPDFExamplesModule
 
 		        // Draw some shapes (all coordinates scaled)
 		        g.DrawingColor = Color.Red
-		        g.PenWidth = 3 * kScale
+		        g.PenSize = 3 * kScale
 		        g.DrawOval(50 * kScale, 50 * kScale, 100 * kScale, 100 * kScale)
 
 		        g.DrawingColor = Color.Green
 		        g.FillRectangle(200 * kScale, 30 * kScale, 80 * kScale, 60 * kScale)
 
 		        g.DrawingColor = Color.Blue
-		        g.PenWidth = 2 * kScale
+		        g.PenSize = 2 * kScale
 		        For i As Integer = 0 To 5
 		          g.DrawLine(250 * kScale, (120 + i * 15) * kScale, 380 * kScale, (120 + i * 15) * kScale)
 		        Next
 
 		        g.DrawingColor = Color.RGB(255, 128, 0)  // Orange
-		        g.PenWidth = 1 * kScale
-		        Dim points() As Integer
-		        points.AddRow 50 * kScale
-		        points.AddRow 250 * kScale
-		        points.AddRow 120 * kScale
-		        points.AddRow 200 * kScale
-		        points.AddRow 190 * kScale
-		        points.AddRow 200 * kScale
-		        g.FillPolygon(points)
+		        g.PenSize = 1 * kScale
+		        #If TargetDesktop Then
+		          // Desktop: Use modern GraphicsPath API (no deprecation warning)
+		          Dim path As New GraphicsPath
+		          path.MoveToPoint(50 * kScale, 250 * kScale)
+		          path.AddLineToPoint(120 * kScale, 200 * kScale)
+		          path.AddLineToPoint(190 * kScale, 200 * kScale)
+		          path.AddLineToPoint(50 * kScale, 250 * kScale)  // Close back to start
+		          g.FillPath(path)
+		        #Else
+		          // Web/Console: FillPath not supported, use FillPolygon (deprecated but only option)
+		          Dim points() As Integer
+		          points.Add(50 * kScale)
+		          points.Add(250 * kScale)
+		          points.Add(120 * kScale)
+		          points.Add(200 * kScale)
+		          points.Add(190 * kScale)
+		          points.Add(200 * kScale)
+		          g.FillPolygon(points)
+		        #EndIf
 
 		        // Draw text (font size scaled)
 		        g.DrawingColor = Color.Black
 		        g.Bold = True
 		        g.FontSize = 24 * kScale
-		        g.DrawString("Generated Graphics", 80 * kScale, 180 * kScale)
+		        g.DrawText("Generated Graphics", 80 * kScale, 180 * kScale)
 
 		        g.Bold = False
 		        g.FontSize = 14 * kScale
-		        g.DrawString("Created with Xojo Picture/Graphics", 70 * kScale, 210 * kScale)
+		        g.DrawText("Created with Xojo Picture/Graphics", 70 * kScale, 210 * kScale)
 
 		        // Draw rounded rectangle
 		        g.DrawingColor = Color.RGB(128, 0, 128)  // Purple
-		        g.PenWidth = 2 * kScale
+		        g.PenSize = 2 * kScale
 		        g.DrawRoundRectangle(30 * kScale, 230 * kScale, 340 * kScale, 50 * kScale, 10 * kScale, 10 * kScale)
 
 		        g.FontSize = 16 * kScale
 		        g.DrawingColor = Color.RGB(64, 64, 64)
-		        g.DrawString("Embedded as PNG via ImageFromPicture()", 60 * kScale, 260 * kScale)
+		        g.DrawText("Embedded as PNG via ImageFromPicture()", 60 * kScale, 260 * kScale)
 		      #EndIf
 
 		      #If TargetDesktop Or TargetWeb Then
@@ -4236,7 +4259,7 @@ Protected Module VNSPDFExamplesModule
 		    result.Value("pdf") = pdfData
 		    result.Value("filename") = "example9_images.pdf"
 		    
-		    statusText = statusText + "PDF generated successfully (" + Str(LenB(pdfData)) + " bytes)" + EndOfLine
+		    statusText = statusText + "PDF generated successfully (" + Str(pdfData.Bytes) + " bytes)" + EndOfLine
 		    
 		  Catch e As RuntimeException
 		    statusText = statusText + "Exception: " + e.Message + EndOfLine
@@ -4363,7 +4386,7 @@ Protected Module VNSPDFExamplesModule
 		    #If TargetiOS Then
 		      Dim isPremiumError As Boolean = (errorMsg.IndexOf("premium Encryption module") >= 0)
 		    #Else
-		      Dim isPremiumError As Boolean = (InStr(errorMsg, "premium Encryption module") > 0)
+		      Dim isPremiumError As Boolean = (errorMsg.IndexOf("premium Encryption module") > 0)
 		    #EndIf
 
 		    If isPremiumError Then
@@ -6032,14 +6055,10 @@ Protected Module VNSPDFExamplesModule
 	#tag Method, Flags = &h21
 		Private Function HexToString(hex As String) As String
 		  // Convert hex string to binary string
-		  // Example: "2b7e" -> ChrB(&h2b) + ChrB(&h7e)
+		  // Example: "2b7e" -> String.ChrByte(&h2b) + String.ChrByte(&h7e)
 
 		  Dim result As String = ""
-		  #If TargetiOS Then
-		    Dim hexLen As Integer = hex.Length
-		  #Else
-		    Dim hexLen As Integer = hex.Len
-		  #EndIf
+		  Dim hexLen As Integer = hex.Length
 
 		  For i As Integer = 1 To hexLen Step 2
 		    #If TargetiOS Then
@@ -6047,9 +6066,9 @@ Protected Module VNSPDFExamplesModule
 		      Dim byteValue As Integer = Val("&h" + hexByte)
 		      result = result + String.ChrByte(byteValue)
 		    #Else
-		      Dim hexByte As String = hex.Mid(i, 2)
+		      Dim hexByte As String = hex.Middle(i, 2)
 		      Dim byteValue As Integer = Val("&h" + hexByte)
-		      result = result + ChrB(byteValue)
+		      result = result + String.ChrByte(byteValue)
 		    #EndIf
 		  Next
 
@@ -6060,7 +6079,7 @@ Protected Module VNSPDFExamplesModule
 	#tag Method, Flags = &h21
 		Private Function StringToHex(s As String) As String
 		  // Convert binary string to hex string (for debugging)
-		  // Example: ChrB(&h2b) + ChrB(&h7e) -> "2b7e"
+		  // Example: String.ChrByte(&h2b) + String.ChrByte(&h7e) -> "2b7e"
 
 		  Dim result As String = ""
 		  #If TargetiOS Then
@@ -6072,11 +6091,11 @@ Protected Module VNSPDFExamplesModule
 		      result = result + hexByte
 		    Next
 		  #Else
-		    Dim sLen As Integer = s.LenB
-		    For i As Integer = 1 To sLen
-		      Dim byteValue As Integer = AscB(s.MidB(i, 1))
+		    Dim sLen As Integer = s.Bytes
+		    For i As Integer = 0 To sLen - 1
+		      Dim byteValue As Integer = s.MiddleBytes(i, 1).AscByte
 		      Dim hexByte As String = Hex(byteValue)
-		      If hexByte.Len = 1 Then hexByte = "0" + hexByte
+		      If hexByte.Length = 1 Then hexByte = "0" + hexByte
 		      result = result + hexByte
 		    Next
 		  #EndIf

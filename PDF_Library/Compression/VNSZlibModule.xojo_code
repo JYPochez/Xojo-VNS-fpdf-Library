@@ -21,10 +21,10 @@ Protected Module VNSZlibModule
 		  #If Not TargetiOS Then
 		    soft declare function zlibcompress lib kZlibPath alias "compress" (dest as Ptr, ByRef destLen as Uint32, source as CString, sourceLen as UInt32) as Integer
 
-		    dim output as new MemoryBlock(12 + 1.002*LenB(input))
+		    dim output as new MemoryBlock(12 + 1.002*input.Bytes)
 		    dim outputSize as UInt32 = output.Size
 
-		    mLastErrorCode = zlibcompress(output, outputSize, input, LenB(input))
+		    mLastErrorCode = zlibcompress(output, outputSize, input, input.Bytes)
 		    if mLastErrorCode = 0 then
 		      return output.StringValue(0, outputSize)
 		    else
@@ -53,7 +53,7 @@ Protected Module VNSZlibModule
 		    #If TargetiOS Then
 		      Dim inputSize As Integer = input.Bytes
 		    #Else
-		      Dim inputSize As Integer = input.LenB
+		      Dim inputSize As Integer = input.Bytes
 		    #EndIf
 
 		    Dim inputMB As New MemoryBlock(inputSize)
@@ -79,7 +79,7 @@ Protected Module VNSZlibModule
 
 		    Dim localBufferSize As Integer = bufferSize
 		    if localBufferSize = 0 then
-		      localBufferSize = 4*LenB(input)
+		      localBufferSize = 4*input.Bytes
 		    end if
 
 		    do
@@ -87,7 +87,7 @@ Protected Module VNSZlibModule
 
 		      dim m as new MemoryBlock(localBufferSize)
 		      dim destLength as UInt32 = m.Size
-		      mLastErrorCode = zlibuncompress(m, destLength, input, LenB(input))
+		      mLastErrorCode = zlibuncompress(m, destLength, input, input.Bytes)
 		      if mLastErrorCode = 0 then
 		        return m.StringValue(0, destLength)
 		      elseIf mLastErrorCode = kZ_BUF_ERROR then

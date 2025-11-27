@@ -185,7 +185,7 @@ Protected Module VNSPDFModule
 		  #If TargetiOS Then
 		    Return System.Microseconds
 		  #Else
-		    Return Microseconds
+		    Return System.Microseconds
 		  #EndIf
 		End Function
 	#tag EndMethod
@@ -341,8 +341,8 @@ Protected Module VNSPDFModule
 		  
 		  Try
 		    // Find the "Cw" array in JSON
-		    Dim cwPos As Integer = jsonData.InStr("""Cw"":[")
-		    If cwPos <= 0 Then
+		    Dim cwPos As Integer = jsonData.IndexOf("""Cw"":[")
+		    If cwPos < 0 Then
 		      // Default to 500 for all characters if parsing fails
 		      For i As Integer = 0 To 255
 		        widths(i) = 500
@@ -352,7 +352,7 @@ Protected Module VNSPDFModule
 		    
 		    // Extract the array content
 		    Dim startPos As Integer = cwPos + 6 // Position after "Cw":[
-		    Dim endPos As Integer = jsonData.InStr(startPos, "]")
+		    Dim endPos As Integer = jsonData.IndexOf(startPos, "]")
 		    
 		    // Calculate length and extract substring using string method
 		    Dim arrayLength As Integer = endPos - startPos
@@ -360,7 +360,7 @@ Protected Module VNSPDFModule
 		    
 		    // Parse comma-separated values
 		    Dim parts() As String = arrayStr.Split(",")
-		    For i As Integer = 0 To Min(255, parts.Ubound)
+		    For i As Integer = 0 To Min(255, parts.LastIndex)
 		      widths(i) = Val(parts(i).Trim)
 		    Next
 		    
@@ -395,6 +395,7 @@ Protected Module VNSPDFModule
 
 	#tag Method, Flags = &h0, Description = 52656E64657220656D6F6A69206173206120636F6C6F7220696D6167652075736E6720706C6174666F726D277320656D6F6A6920666F6E742E0A
 		Function RenderEmojiToImage(emojiChar As String, sizeInPoints As Integer, webSession As Variant = Nil) As Picture
+		#Pragma Unused webSession
 		  // Render an emoji character to a color image using platform's emoji font
 		  // Returns a Picture that can be saved and embedded in PDF
 		  // Supported on Desktop, iOS, and Web platforms
@@ -412,32 +413,32 @@ Protected Module VNSPDFModule
 		    Dim basePicSize As Integer = sizeInPoints * scaleFactor
 		    Dim padding As Integer = basePicSize * 0.3  // 30% padding on all sides
 		    Dim picSize As Integer = basePicSize + (padding * 2)
-		    
+
 		    Dim pic As New Picture(picSize, picSize, 32)
 		    Dim g As Graphics = pic.Graphics
 		    
 		    // Clear background to white (not transparent - some emoji have transparency)
-		    g.ForeColor = &cFFFFFF
-		    g.FillRect(0, 0, picSize, picSize)
+		    g.DrawingColor = &cFFFFFF
+		    g.FillRectangle(0, 0, picSize, picSize)
 		    
 		    // Set emoji font
 		    #If TargetMacOS Then
-		      g.TextFont = "Apple Color Emoji"
+		      g.FontName = "Apple Color Emoji"
 		    #ElseIf TargetWindows Then
-		      g.TextFont = "Segoe UI Emoji"
+		      g.FontName = "Segoe UI Emoji"
 		    #ElseIf TargetLinux Then
-		      g.TextFont = "Noto Color Emoji"
+		      g.FontName = "Noto Color Emoji"
 		    #EndIf
 		    
-		    g.TextSize = sizeInPoints * scaleFactor
-		    g.ForeColor = &c000000  // Black for fallback
+		    g.FontSize = sizeInPoints * scaleFactor
+		    g.DrawingColor = &c000000  // Black for fallback
 		    
 		    // Center the emoji in the padded picture
 		    Dim textWidth As Double = g.TextWidth(emojiChar)
 		    Dim x As Integer = (picSize - textWidth) / 2
-		    Dim y As Integer = padding + g.TextAscent + (basePicSize - g.TextHeight) / 2
+		    Dim y As Integer = padding + g.FontAscent + (basePicSize - g.TextHeight) / 2
 		    
-		    g.DrawString(emojiChar, x, y)
+		    g.DrawText(emojiChar, x, y)
 		    
 		    Return pic
 		    
@@ -540,7 +541,7 @@ Protected Module VNSPDFModule
 		    Dim basePicSize As Integer = sizeInPoints * scaleFactor
 		    Dim padding As Integer = basePicSize * 0.3  // 30% padding on all sides
 		    Dim picSize As Integer = basePicSize + (padding * 2)
-		    
+
 		    // IMPORTANT: 32-bit depth required for emoji color
 		    Dim pic As New Picture(picSize, picSize, 32)
 		    Dim g As Graphics = pic.Graphics
@@ -553,8 +554,8 @@ Protected Module VNSPDFModule
 		    System.DebugLog("  ✓ Picture.Graphics is available")
 		    
 		    // Clear background to white (not transparent - some emoji have transparency)
-		    g.ForeColor = &cFFFFFF
-		    g.FillRect(0, 0, picSize, picSize)
+		    g.DrawingColor = &cFFFFFF
+		    g.FillRectangle(0, 0, picSize, picSize)
 		    
 		    // Try to find emoji font file directly
 		    System.DebugLog("  Attempting to locate emoji font file...")
@@ -570,7 +571,7 @@ Protected Module VNSPDFModule
 		      paths.Add("/System/Library/Fonts/AppleColorEmoji.ttc")
 		      
 		      For Each path As String In paths
-		        fontFile = GetFolderItem(path, 1)  // 1 = Native path mode
+		        fontFile = New FolderItem(path, FolderItem.PathModes.Native)
 		        If fontFile <> Nil And fontFile.Exists Then
 		          fontPath = path
 		          System.DebugLog("  ✓ Found emoji font: " + fontPath)
@@ -586,25 +587,25 @@ Protected Module VNSPDFModule
 		    End If
 		    
 		    // Now try different approaches to use this font with Graphics API
-		    g.TextSize = sizeInPoints * scaleFactor
-		    g.ForeColor = &c000000
+		    g.FontSize = sizeInPoints * scaleFactor
+		    g.DrawingColor = &c000000
 		    
 		    System.DebugLog("  Test 1: Try using full font file path")
-		    g.TextFont = fontPath
+		    g.FontName = fontPath
 		    Dim test1Width As Double = g.TextWidth(emojiChar)
-		    System.DebugLog("    TextFont = '" + g.TextFont + "'")
+		    System.DebugLog("    TextFont = '" + g.FontName + "'")
 		    System.DebugLog("    TextWidth = " + Str(test1Width))
 		    
 		    System.DebugLog("  Test 2: Try using just font filename")
-		    g.TextFont = "Apple Color Emoji.ttc"
+		    g.FontName = "Apple Color Emoji.ttc"
 		    Dim test2Width As Double = g.TextWidth(emojiChar)
-		    System.DebugLog("    TextFont = '" + g.TextFont + "'")
+		    System.DebugLog("    TextFont = '" + g.FontName + "'")
 		    System.DebugLog("    TextWidth = " + Str(test2Width))
 		    
 		    System.DebugLog("  Test 3: Try using font name without extension")
-		    g.TextFont = "Apple Color Emoji"
+		    g.FontName = "Apple Color Emoji"
 		    Dim test3Width As Double = g.TextWidth(emojiChar)
-		    System.DebugLog("    TextFont = '" + g.TextFont + "'")
+		    System.DebugLog("    TextFont = '" + g.FontName + "'")
 		    System.DebugLog("    TextWidth = " + Str(test3Width))
 		    
 		    // Use the best result
@@ -619,16 +620,18 @@ Protected Module VNSPDFModule
 		    
 		    // Calculate centered position
 		    Dim x As Integer = (picSize - textWidth) / 2
-		    Dim y As Integer = padding + g.TextAscent + (basePicSize - g.TextHeight) / 2
+		    Dim y As Integer = padding + g.FontAscent + (basePicSize - g.TextHeight) / 2
 		    
 		    System.DebugLog("  Drawing at x=" + Str(x) + ", y=" + Str(y))
-		    g.DrawString(emojiChar, x, y)
+		    g.DrawText(emojiChar, x, y)
 		    
 		    System.DebugLog("  ✓ Picture.Graphics emoji rendering complete")
 		    Return pic
 		    
 		  #Else
 		    // Console has no graphics rendering capability
+		    #Pragma Unused emojiChar
+		    #Pragma Unused sizeInPoints
 		    Return Nil
 		  #EndIf
 		End Function
@@ -732,9 +735,9 @@ Protected Module VNSPDFModule
 		    Wend
 		  #Else
 		    // Desktop/Web/Console: 1-based string indexing
-		    While i < Len(format)
-		      If Mid(format, i + 1, 1) = "%" And i + 1 < Len(format) Then
-		        Dim nextChar As String = Mid(format, i + 2, 1)
+		    While i < format.Length
+		      If format.Middle(i, 1) = "%" And i + 1 < format.Length Then
+		        Dim nextChar As String = format.Middle(i + 1, 1)
 		        
 		        If nextChar = "%" Then
 		          // Escaped percent
@@ -766,8 +769,8 @@ Protected Module VNSPDFModule
 		            // Parse precision: %.2f, %.4f, etc.
 		            Dim j As Integer = i + 2
 		            Dim precStr As String = ""
-		            While j < Len(format)
-		              Dim ch As String = Mid(format, j + 1, 1)
+		            While j < format.Length
+		              Dim ch As String = format.Middle(j, 1)
 		              If ch >= "0" And ch <= "9" Then
 		                precStr = precStr + ch
 		                j = j + 1
@@ -799,12 +802,12 @@ Protected Module VNSPDFModule
 		          
 		        Else
 		          // Unknown specifier - just copy
-		          result = result + Mid(format, i + 1, 1)
+		          result = result + format.Middle(i, 1)
 		          i = i + 1
 		        End If
 		      Else
 		        // Regular character
-		        result = result + Mid(format, i + 1, 1)
+		        result = result + format.Middle(i, 1)
 		        i = i + 1
 		      End If
 		    Wend
@@ -827,7 +830,7 @@ Protected Module VNSPDFModule
 		      Return 0
 		    End If
 		  #Else
-		    Return AscB(s)
+		    Return s.AscByte()
 		  #EndIf
 		End Function
 	#tag EndMethod
@@ -843,7 +846,7 @@ Protected Module VNSPDFModule
 		    mb.Byte(0) = byteValue
 		    Return mb.StringValue(0, 1)
 		  #Else
-		    Return ChrB(byteValue)
+		    Return String.ChrByte(byteValue)
 		  #EndIf
 		End Function
 	#tag EndMethod
@@ -857,7 +860,7 @@ Protected Module VNSPDFModule
 		  #If TargetiOS Then
 		    Return s.LeftBytes(numBytes)
 		  #Else
-		    Return LeftB(s, numBytes)
+		    Return s.LeftBytes(numBytes)
 		  #EndIf
 		End Function
 	#tag EndMethod
@@ -871,7 +874,7 @@ Protected Module VNSPDFModule
 		  #If TargetiOS Then
 		    Return s.Length
 		  #Else
-		    Return Len(s)
+		    Return s.Length
 		  #EndIf
 		End Function
 	#tag EndMethod
@@ -885,7 +888,7 @@ Protected Module VNSPDFModule
 		  #If TargetiOS Then
 		    Return s.Bytes
 		  #Else
-		    Return LenB(s)
+		    Return s.Bytes
 		  #EndIf
 		End Function
 	#tag EndMethod
@@ -899,7 +902,7 @@ Protected Module VNSPDFModule
 		  #If TargetiOS Then
 		    Return s.MiddleBytes(start - 1, length)  // Convert to 0-based
 		  #Else
-		    Return MidB(s, start, length)
+		    Return s.MiddleBytes(start, length)
 		  #EndIf
 		End Function
 	#tag EndMethod
@@ -913,7 +916,7 @@ Protected Module VNSPDFModule
 		  #If TargetiOS Then
 		    Return s.RightBytes(numBytes)
 		  #Else
-		    Return RightB(s, numBytes)
+		    Return s.RightBytes(numBytes)
 		  #EndIf
 		End Function
 	#tag EndMethod
@@ -925,7 +928,7 @@ Protected Module VNSPDFModule
 		  // bytesRead: output parameter indicating how many bytes were consumed
 		  // Returns: Unicode code point (supports up to 4-byte sequences including emoji)
 		  
-		  If offset < 0 Or offset >= utf8Str.LenB Then
+		  If offset < 0 Or offset >= utf8Str.Bytes Then
 		    bytesRead = 0
 		    Return 0
 		  End If
@@ -934,7 +937,7 @@ Protected Module VNSPDFModule
 		  
 		  If (firstByte And &hF8) = &hF0 Then
 		    // 4-byte UTF-8 sequence (0xF0-0xF7) - emoji and supplementary characters
-		    If offset + 3 >= utf8Str.LenB Then
+		    If offset + 3 >= utf8Str.Bytes Then
 		      bytesRead = 0
 		      Return 0
 		    End If
@@ -948,7 +951,7 @@ Protected Module VNSPDFModule
 		    
 		  ElseIf (firstByte And &hF0) = &hE0 Then
 		    // 3-byte UTF-8 sequence (0xE0-0xEF)
-		    If offset + 2 >= utf8Str.LenB Then
+		    If offset + 2 >= utf8Str.Bytes Then
 		      bytesRead = 0
 		      Return 0
 		    End If
@@ -961,7 +964,7 @@ Protected Module VNSPDFModule
 		    
 		  ElseIf (firstByte And &hE0) = &hC0 Then
 		    // 2-byte UTF-8 sequence (0xC0-0xDF)
-		    If offset + 1 >= utf8Str.LenB Then
+		    If offset + 1 >= utf8Str.Bytes Then
 		      bytesRead = 0
 		      Return 0
 		    End If
