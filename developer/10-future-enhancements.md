@@ -49,7 +49,7 @@ pdf.Polygon(points, "DF")
 
 ### VNSPDFEncryptionPremium - AES Encryption
 **Status**: 🔨 **Stubs Ready** (Estimated: 12-14 hours)
-**Module Flag**: `kHasEncryptionModule`
+**Module Flag**: `hasPremiumEncryptionModule`
 
 ```xojo
 // AES-128 encryption (when implemented)
@@ -76,12 +76,12 @@ See [Chapter 16: Premium Modules](16-premium-modules.md#aes-encryption-stubs) fo
 
 ### VNSPDFZlibPremium - iOS Compression
 **Status**: 🔨 **Planned** (Estimated: 33-42 hours)
-**Module Flag**: `kHasZlibModule`
+**Module Flag**: `hasPremiumZlibModule`
 
 ```xojo
 // Enable compression on iOS (when implemented)
 #If TargetiOS Then
-    If VNSPDFModule.kHasZlibModule Then
+    If VNSPDFModule.hasPremiumZlibModule Then
         pdf.SetCompression(True)  // Uses pure Xojo zlib
     Else
         // iOS compression blocked in FREE version
@@ -108,11 +108,11 @@ See [Chapter 16: Premium Modules](16-premium-modules.md#vnspdfzlibpremium) for d
 
 ### VNSPDFTablePremium - High-Level Table API
 **Status**: 🔨 **Planned** (Estimated: 30-37 hours)
-**Module Flag**: `kHasTableModule`
+**Module Flag**: `hasPremiumTableModule`
 
 ```xojo
 // High-level declarative table API (when implemented)
-If VNSPDFModule.kHasTableModule Then
+If VNSPDFModule.hasPremiumTableModule Then
     Dim table As VNSPDFTable = VNSPDFTablePremium.CreateTable(pdf)
     table.AddColumn("Name", 0, "L")      // Auto-width
     table.AddColumn("Email", 0, "L")
@@ -178,6 +178,51 @@ pdf.SetEncryption(enc)
 - Or implement custom AES without Xojo Crypto module
 
 ## Lower Priority Features
+
+### JSON-PDF Conversion
+**Status**: 📋 **Planned** (Estimated: 40-50 hours)
+
+```xojo
+// Convert PDF to JSON representation
+Dim jsonData As String = pdf.ToJSON(prettyPrint := True)
+
+// Reconstruct PDF from JSON
+Dim pdf2 As New VNSPDFDocument()
+Call pdf2.FromJSON(jsonData)
+Call pdf2.Output()  // Generates identical PDF
+```
+
+**Implementation Plan**:
+- Phase 1: Page Content Serialization (15-20 hours)
+  - Serialize all page content streams (text, graphics, images)
+  - Encode binary data (images, fonts) as Base64
+  - Preserve exact positioning and styling
+  - Handle special characters and encodings
+- Phase 2: Resource Serialization (10-12 hours)
+  - Fonts (TrueType, core fonts)
+  - Images (JPEG, PNG with color spaces)
+  - Links and bookmarks
+  - Form fields and annotations
+- Phase 3: Deserialization (10-12 hours)
+  - Parse JSON and reconstruct PDF objects
+  - Decode Base64 data
+  - Rebuild page streams
+  - Restore all resources
+- Phase 4: Validation & Testing (5-6 hours)
+  - Round-trip testing (PDF → JSON → PDF)
+  - Binary comparison of original vs reconstructed
+  - Edge cases and error handling
+
+**Use Cases**:
+- PDF archiving and versioning
+- PDF transformation pipelines
+- Web-based PDF editing
+- PDF debugging and inspection
+- Cross-platform PDF exchange
+
+**Current Status**:
+- ✅ Basic document configuration serialization (ToJSON/FromJSON for metadata only)
+- ❌ Full page content serialization not implemented
 
 ### Advanced Text Features
 - Text rotation at arbitrary angles

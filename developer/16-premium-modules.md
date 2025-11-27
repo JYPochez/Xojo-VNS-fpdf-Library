@@ -83,10 +83,10 @@ Module availability is controlled by Boolean constants in `VNSPDFModule.xojo_cod
 
 ```xojo
 // Module availability flags (lines 806-815)
-Public Const kHasEncryptionModule As Boolean = False  // RC4-128 + AES encryption
-Public Const kHasPDFAModule As Boolean = False        // PDF/A output intents
-Public Const kHasZlibModule As Boolean = False        // iOS compression
-Public Const kHasTableModule As Boolean = False       // Table generation
+Public Const hasPremiumEncryptionModule As Boolean = False  // RC4-128 + AES encryption
+Public Const hasPremiumPDFAModule As Boolean = False        // PDF/A output intents
+Public Const hasPremiumZlibModule As Boolean = False        // iOS compression
+Public Const hasPremiumTableModule As Boolean = False       // Table generation
 ```
 
 ### Setting Module Flags
@@ -101,16 +101,16 @@ To enable a premium module:
 **Example** (enabling Encryption module):
 ```xojo
 // Change from:
-Public Const kHasEncryptionModule As Boolean = False
+Public Const hasPremiumEncryptionModule As Boolean = False
 
 // To:
-Public Const kHasEncryptionModule As Boolean = True
+Public Const hasPremiumEncryptionModule As Boolean = True
 ```
 
 ### Checking Module Availability at Runtime
 
 ```xojo
-If VNSPDFModule.kHasEncryptionModule Then
+If VNSPDFModule.hasPremiumEncryptionModule Then
     // Use premium encryption features
     pdf.SetProtection("user123", "owner456", True, True, True, True, _
                       VNSPDFModule.gkEncryptionRC4_128)
@@ -126,7 +126,7 @@ End If
 ## VNSPDFEncryptionPremium
 
 **Location**: `PDF_Library/Premium/VNSPDFEncryptionPremium.xojo_code`
-**Module Flag**: `VNSPDFModule.kHasEncryptionModule`
+**Module Flag**: `VNSPDFModule.hasPremiumEncryptionModule`
 **Status**: ✅ **Complete** - All encryption algorithms fully working
 
 ### Features
@@ -149,7 +149,7 @@ The premium Encryption module extends the FREE version (RC4-40 only) with:
 **Example:**
 ```xojo
 // Check if premium Encryption module is available
-If Not VNSPDFModule.kHasEncryptionModule Then
+If Not VNSPDFModule.hasPremiumEncryptionModule Then
     MsgBox "RC4-128 encryption requires premium Encryption module"
     Return
 End If
@@ -299,7 +299,7 @@ When premium features are accessed without the module:
 ```xojo
 // In VNSPDFDocument.SetProtection()
 If revision >= 3 And revision <= 6 Then
-    #If Not VNSPDFModule.kHasEncryptionModule Then
+    #If Not VNSPDFModule.hasPremiumEncryptionModule Then
         Call SetError("Encryption revisions 3-6 (RC4-128 and AES) require " + _
                       "premium Encryption module. Only RC4-40 (revision 2) " + _
                       "is available in free version.")
@@ -313,7 +313,7 @@ End If
 ## VNSPDFPDFAPremium
 
 **Location**: `PDF_Library/Premium/VNSPDFPDFAPremium.xojo_code`
-**Module Flag**: `VNSPDFModule.kHasPDFAModule`
+**Module Flag**: `VNSPDFModule.hasPremiumPDFAModule`
 **Status**: ✅ **Complete** - Fully working
 
 ### Features
@@ -337,7 +337,7 @@ Output intents specify the intended color reproduction characteristics for archi
 **Example:**
 ```xojo
 // Check if premium PDF/A module is available
-If Not VNSPDFModule.kHasPDFAModule Then
+If Not VNSPDFModule.hasPremiumPDFAModule Then
     MsgBox "PDF/A features require premium PDF/A module"
     Return
 End If
@@ -480,7 +480,7 @@ End Module
 ## VNSZlibPremium (Compression Module)
 
 **Location**: `PDF_Library/Compression/VNSZlibPremiumDeflate.xojo_code` and `VNSZlibPremiumInflate.xojo_code`
-**Module Flag**: `VNSPDFModule.kHasZlibModule`
+**Module Flag**: `VNSPDFModule.hasPremiumZlibModule`
 **Status**: ✅ **Complete** - Full compression and decompression working on ALL platforms
 
 ### Features
@@ -535,11 +535,11 @@ End Module
 
 ### iOS Support
 
-When `kHasZlibModule = True`, iOS uses pure Xojo compression:
+When `hasPremiumZlibModule = True`, iOS uses pure Xojo compression:
 
 ```xojo
 // In VNSZlibModule.Compress()
-If VNSPDFModule.kHasZlibModule Then
+If VNSPDFModule.hasPremiumZlibModule Then
     // Use pure Xojo implementation (works on ALL platforms including iOS)
     Dim deflater As New VNSZlibPremiumDeflate
     Dim result As MemoryBlock = deflater.CompressString(input)
@@ -548,7 +548,7 @@ End If
 
 // In VNSPDFDocument - FlateDecode filter is now added on iOS
 #If TargetiOS Then
-    If VNSPDFModule.kHasZlibModule Then
+    If VNSPDFModule.hasPremiumZlibModule Then
         filterStr = "/Filter /FlateDecode"  // ✅ Now included on iOS!
     End If
 #Else
@@ -571,7 +571,7 @@ End If
 ## VNSPDFTablePremium
 
 **Location**: `PDF_Library/Premium/VNSPDFTablePremium.xojo_code`
-**Module Flag**: `VNSPDFModule.kHasTableModule`
+**Module Flag**: `VNSPDFModule.hasPremiumTableModule`
 **Status**: ✅ **Complete** - Full table generation working
 
 ### Features
@@ -608,7 +608,7 @@ End Module
 
 ```xojo
 // Check if premium Table module is available
-If Not VNSPDFModule.kHasTableModule Then
+If Not VNSPDFModule.hasPremiumTableModule Then
     MsgBox "Table features require premium Table module"
     Return
 End If
@@ -682,10 +682,10 @@ Contact VNS Software to purchase premium module licenses:
 
 ```xojo
 // Before:
-Public Const kHasEncryptionModule As Boolean = False
+Public Const hasPremiumEncryptionModule As Boolean = False
 
 // After:
-Public Const kHasEncryptionModule As Boolean = True
+Public Const hasPremiumEncryptionModule As Boolean = True
 ```
 
 4. **Save the file**
@@ -700,25 +700,25 @@ Public Const kHasEncryptionModule As Boolean = True
 
 ```xojo
 // Check module availability at runtime
-If VNSPDFModule.kHasEncryptionModule Then
+If VNSPDFModule.hasPremiumEncryptionModule Then
     MsgBox "Encryption module installed: RC4-128 + AES available"
 Else
     MsgBox "Encryption module NOT installed: Only RC4-40 available"
 End If
 
-If VNSPDFModule.kHasPDFAModule Then
+If VNSPDFModule.hasPremiumPDFAModule Then
     MsgBox "PDF/A module installed: Output Intent support available"
 Else
     MsgBox "PDF/A module NOT installed"
 End If
 
-If VNSPDFModule.kHasZlibModule Then
+If VNSPDFModule.hasPremiumZlibModule Then
     MsgBox "Zlib module installed: iOS compression available"
 Else
     MsgBox "Zlib module NOT installed"
 End If
 
-If VNSPDFModule.kHasTableModule Then
+If VNSPDFModule.hasPremiumTableModule Then
     MsgBox "Table module installed: High-level table API available"
 Else
     MsgBox "Table module NOT installed"
@@ -768,7 +768,7 @@ End If
 
 ```xojo
 // GOOD: Check before using premium features
-If VNSPDFModule.kHasEncryptionModule Then
+If VNSPDFModule.hasPremiumEncryptionModule Then
     pdf.SetProtection("user", "owner", True, True, True, True, _
                       VNSPDFModule.gkEncryptionRC4_128)
 Else
@@ -788,7 +788,7 @@ pdf.SetProtection("user", "owner", True, True, True, True, _
 
 ```xojo
 // Provide meaningful user feedback
-If Not VNSPDFModule.kHasPDFAModule Then
+If Not VNSPDFModule.hasPremiumPDFAModule Then
     Dim msg As String = "PDF/A archival features require the premium PDF/A module. " + _
                         "Contact VNS Software for licensing information."
     MsgBox msg

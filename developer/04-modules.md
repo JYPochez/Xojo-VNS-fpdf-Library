@@ -293,10 +293,10 @@ Premium module availability is controlled by Boolean constants in `VNSPDFModule.
 
 ```xojo
 // Module availability flags (lines 806-815)
-Public Const kHasEncryptionModule As Boolean = False  // RC4-128 + AES
-Public Const kHasPDFAModule As Boolean = False        // PDF/A output intents
-Public Const kHasZlibModule As Boolean = False        // iOS compression
-Public Const kHasTableModule As Boolean = False       // Table generation
+Public Const hasPremiumEncryptionModule As Boolean = False  // RC4-128 + AES
+Public Const hasPremiumPDFAModule As Boolean = False        // PDF/A output intents
+Public Const hasPremiumZlibModule As Boolean = False        // iOS compression
+Public Const hasPremiumTableModule As Boolean = False       // Table generation
 ```
 
 To enable a premium module:
@@ -307,7 +307,7 @@ To enable a premium module:
 
 ### VNSPDFEncryptionPremium
 
-**Module Flag**: `kHasEncryptionModule`
+**Module Flag**: `hasPremiumEncryptionModule`
 
 Provides enhanced encryption beyond the FREE version's RC4-40:
 
@@ -318,7 +318,7 @@ Provides enhanced encryption beyond the FREE version's RC4-40:
 
 **Usage Example**:
 ```xojo
-If VNSPDFModule.kHasEncryptionModule Then
+If VNSPDFModule.hasPremiumEncryptionModule Then
     // Use RC4-128 (premium)
     pdf.SetProtection("user", "owner", True, True, True, True, _
                       VNSPDFModule.gkEncryptionRC4_128)
@@ -331,7 +331,7 @@ End If
 
 ### VNSPDFPDFAPremium
 
-**Module Flag**: `kHasPDFAModule`
+**Module Flag**: `hasPremiumPDFAModule`
 
 Provides PDF/A archival compliance features:
 
@@ -342,7 +342,7 @@ Provides PDF/A archival compliance features:
 
 **Usage Example**:
 ```xojo
-If VNSPDFModule.kHasPDFAModule Then
+If VNSPDFModule.hasPremiumPDFAModule Then
     // Load ICC profile
     Dim iccProfile As MemoryBlock = LoadICCProfile()
 
@@ -356,7 +356,7 @@ End If
 
 ### VNSPDFZlibPremium (Planned)
 
-**Module Flag**: `kHasZlibModule`
+**Module Flag**: `hasPremiumZlibModule`
 
 Will provide pure Xojo zlib compression for iOS support:
 
@@ -369,7 +369,7 @@ Will provide pure Xojo zlib compression for iOS support:
 
 ### VNSPDFTablePremium (Planned)
 
-**Module Flag**: `kHasTableModule`
+**Module Flag**: `hasPremiumTableModule`
 
 Will provide high-level declarative table API:
 

@@ -4,7 +4,7 @@
 - **Phase 5 Complete - Advanced Graphics & Transparency**
 - **Premium Modules Architecture** ✅ **NEW**
   - Introduced modular premium feature system with Boolean flags
-  - Module flags in VNSPDFModule: kHasEncryptionModule, kHasPDFAModule, kHasZlibModule, kHasTableModule
+  - Module flags in VNSPDFModule: hasPremiumEncryptionModule, hasPremiumPDFAModule, hasPremiumZlibModule, hasPremiumTableModule
   - Premium modules folder: PDF_Library/Premium/
   - Conditional compilation gating for premium features
   - Clear error messages when premium features accessed without modules
@@ -14,24 +14,24 @@
   - RC4-128 (128-bit encryption, Revision 3) - **FULLY WORKING**
   - 50-iteration MD5 key derivation for enhanced security
   - AES-128/256 method stubs ready (Revisions 4-6) - needs pure Xojo implementation
-  - Module flag: kHasEncryptionModule (default: False)
+  - Module flag: hasPremiumEncryptionModule (default: False)
   - Estimated AES implementation: 12-14 hours
 - **VNSPDFPDFAPremium** ✅ **NEW - COMPLETE**
   - Output Intent support for PDF/A archival compliance
   - ICC color profile embedding
   - Automatic sRGB profile detection on macOS
-  - Module flag: kHasPDFAModule (default: False)
+  - Module flag: hasPremiumPDFAModule (default: False)
   - AddOutputIntent() method with gkOutputIntentPDFA1 constant
   - Example 13 demonstrates PDF/A output intent with color profiles
 - **VNSPDFZlibPremium** 🔨 **NEW - PLACEHOLDER**
   - Structure ready for pure Xojo zlib implementation
   - iOS compression support (sandboxing blocks native zlib)
-  - Module flag: kHasZlibModule (default: False)
+  - Module flag: hasPremiumZlibModule (default: False)
   - Estimated implementation: 33-42 hours (DEFLATE algorithm)
 - **VNSPDFTablePremium** 🔨 **NEW - PLACEHOLDER**
   - Structure ready for high-level table API
   - Auto column sizing, header styling, alternating rows
-  - Module flag: kHasTableModule (default: False)
+  - Module flag: hasPremiumTableModule (default: False)
   - Estimated implementation: 30-37 hours
 - **Documentation**
   - NEW: Chapter 16 - Premium Modules (comprehensive)
