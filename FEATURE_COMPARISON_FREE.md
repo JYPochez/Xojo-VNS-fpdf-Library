@@ -1,7 +1,7 @@
 # go-fpdf vs VNS PDF FREE Version - Feature Comparison
 
-**Last Updated:** 2025-11-26
-**VNS PDF Version:** 0.3.0 FREE (No Premium Modules)
+**Last Updated:** 2025-11-28
+**VNS PDF Version:** 1.0.0 FREE (No Premium Modules)
 **go-fpdf Reference:** v2.0+
 
 ---
@@ -136,6 +136,7 @@ Mix and match based on your requirements!
 | Font subsetting | SubsetFont() | SetFontSubsetting(), GetFontSubsetting() | ✅ | Sparse glyph ID subsetting (98% size reduction) |
 | RTL text | RTL() | RTL() | ✅ | Enable right-to-left text direction (flag only) |
 | LTR text | LTR() | LTR() | ✅ | Enable left-to-right text direction (default) |
+| Arabic text shaping | | ShapeArabicText() | ✅ | Automatic contextual forms (isolated, initial, medial, final) with RTL reversal |
 
 ## 5. Text Output
 
@@ -356,7 +357,70 @@ The FREE version requires manual table creation using Cell() calls, similar to g
 | Auto alternating rows | ❌ | | 🔒 | **PREMIUM TABLE MODULE** |
 | Auto page breaks | ❌ | | 🔒 | **PREMIUM TABLE MODULE** |
 
-## 17. Error Handling
+## 17. PDF Import (NEW in v1.0.0)
+
+✅ **PDF Import is FULLY IMPLEMENTED - All phases complete (Example 20 working)**
+
+⚠️ **IMPORTANT: Most PDFs require premium Zlib module for import** - PDFs using FlateDecode with PNG predictors (very common) need advanced decompression that only the premium zlib module provides.
+
+| Feature | go-fpdf | VNS PDF FREE | Status | Notes |
+|---------|---------|--------------|--------|-------|
+| **File Parsing** | | | | |
+| Open PDF file | ❌ | ✅ | ✅ | VNSPDFReader.OpenFile() |
+| Parse cross-reference table | ❌ | ✅ | ✅ | VNSPDFXrefReader |
+| Parse PDF objects | ❌ | ✅ | ✅ | 12 PDF type classes (VNSPDFType subclasses) |
+| Navigate page tree | ❌ | ✅ | ✅ | Hierarchical page tree support |
+| **Page Extraction** | | | | |
+| Get page count | ❌ | ✅ | ✅ | VNSPDFReader.GetPageCount() |
+| Extract page | ❌ | ✅ | ✅ | VNSPDFReader.GetPage(pageNum) returns VNSPDFImportedPage |
+| MediaBox inheritance | ❌ | ✅ | ✅ | Correct page dimensions from parent nodes |
+| Extract resources | ❌ | ✅ | ✅ | Fonts, images, XObjects with dependency tracking |
+| Extract contents | ❌ | ✅ | ✅ | Page content streams |
+| **Stream Decompression** | | | | |
+| FlateDecode (basic) | ❌ | ✅ | ✅ | Simple deflate/inflate via system libs (Desktop/Web/Console only) |
+| FlateDecode with PNG Predictors | ❌ | | 🔒 | **PREMIUM ZLIB MODULE REQUIRED** - Predictor 2, 10-15 support |
+| LZWDecode | ❌ | ✅ | ✅ | VNSPDFLZWDecoder for legacy PDFs |
+| ASCII85Decode | ❌ | ✅ | ✅ | Base-85 decoding |
+| ASCIIHexDecode | ❌ | ✅ | ✅ | Hexadecimal decoding |
+| **Document Integration** | | | | |
+| Import page as XObject | ❌ | ✅ | ✅ | VNSPDFDocument.ImportPage() |
+| Use imported template | ❌ | ✅ | ✅ | VNSPDFDocument.UseTemplate() with scaling/positioning |
+| Object ID remapping | ❌ | ✅ | ✅ | Automatic unique object numbering |
+| Resource copying | ❌ | ✅ | ✅ | Fonts, images, XObjects copied with dependencies |
+| Nested XObject support | ❌ | ✅ | ✅ | Pages referencing other XObjects work correctly |
+
+**Current Status (ALL PHASES COMPLETE):**
+- ✅ Can open and parse PDF files with full xref table support
+- ✅ Can extract page count and page information with MediaBox inheritance
+- ✅ Stream decompression working (FlateDecode basic, LZWDecode, ASCII85Decode, ASCIIHexDecode)
+- ✅ Full integration with VNSPDFDocument via ImportPage() and UseTemplate()
+- ✅ Example 20 demonstrates 4-page PDF import with 2x2 miniature grid
+- ⚠️ **Most PDFs need premium Zlib** - PDFs with FlateDecode+Predictors require premium module
+
+**Platform-Specific File Selection (Example 20):**
+- **Desktop**: Multi-location search for `pdf_examples/example12_custom_formats.pdf`
+  - Searches: CurrentWorkingDirectory, App.ExecutableFile.Parent, parent folders
+  - Falls back to OpenDialog if not found
+- **Console**: Same multi-location search as Desktop
+  - Uses default path if file exists, shows error if missing
+- **iOS**: Documents folder enumeration via `FindPDFInDocuments()`
+  - Looks for "import.pdf" (preferred filename)
+  - Falls back to first .pdf file found in Documents folder
+  - Shows instructions for File Sharing if no PDF found
+  - Users place PDF files via macOS Finder (File Sharing enabled in project)
+- **Web**: PDF upload dialog via WebDialogPDFUpload
+  - User must upload PDF file from browser
+  - Temporary file path passed to GenerateExample20()
+- **Result Dictionary**: All platforms return `result.Value("pdf") = pdfBytes` for display
+
+**Why Premium Zlib is Often Required:**
+- Most modern PDFs use **FlateDecode with PNG Predictors** (Predictor 15) for images and large content streams
+- FREE version only supports basic FlateDecode (simple deflate without predictors)
+- Premium zlib module adds **PNG Predictor reversal** (Predictors 2, 10-15) needed for advanced compression
+- Without premium zlib: Can parse PDF structure but **cannot decompress predictor-encoded streams**
+- Example: `/Filter /FlateDecode /DecodeParms << /Predictor 15 /Colors 3 /Columns 1859 >>` requires premium
+
+## 18. Error Handling
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
@@ -367,7 +431,7 @@ The FREE version requires manual table creation using Cell() calls, similar to g
 | Set error formatted | SetErrorf() | | ❌ | Not implemented |
 | Clear error | ClearError() | ClearError() | ✅ | Resets error state |
 
-## 18. Utilities
+## 19. Utilities
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
@@ -403,15 +467,16 @@ The FREE version requires manual table creation using Cell() calls, similar to g
 | Output & Display | 5 | 1 | 1 | 0 | 3 | 40.0% |
 | Security | 40 | 16 | 0 | 24 | 0 | 40.0% |
 | Table Generation | 6 | 0 | 0 | 6 | 0 | 0.0% |
+| PDF Import | 19 | 18 | 0 | 1 | 0 | 94.7% |
 | Error Handling | 6 | 5 | 0 | 0 | 1 | 83.3% |
 | Utilities | 7 | 7 | 0 | 0 | 0 | 100.0% |
-| **TOTAL** | **208** | **156** | **3** | **31** | **18** | **75.0%** |
+| **TOTAL** | **227** | **174** | **3** | **32** | **19** | **76.7%** |
 
 ### Completion Summary (Excluding Premium Features)
-- **Fully Implemented:** 88.1% (156/177 non-premium features)
-- **Partially Implemented:** 1.7% (3/177)
-- **Not Implemented:** 10.2% (18/177)
-- **Premium Only:** 31 features require premium modules
+- **Fully Implemented:** 89.2% (174/195 non-premium features)
+- **Partially Implemented:** 1.5% (3/195)
+- **Not Implemented:** 9.2% (18/195)
+- **Premium Only:** 32 features require premium modules
 
 ---
 
@@ -429,5 +494,5 @@ See `FEATURE_COMPARISON_PREMIUM.md` for complete premium feature list.
 
 ---
 
-*Last Updated: 2025-11-26*
-*VNS PDF FREE Version 0.3.0*
+*Last Updated: 2025-11-28*
+*VNS PDF FREE Version 1.0.0*
