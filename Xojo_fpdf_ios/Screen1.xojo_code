@@ -61,7 +61,7 @@ Begin MobileScreen Screen1
       _ClosingFired   =   False
       _OpeningCompleted=   False
    End
-   Begin iOSTextArea txtOutput
+   Begin MobileTextArea txtOutput
       AccessibilityHint=   ""
       AccessibilityLabel=   ""
       AutoLayout      =   txtOutput, 1, <Parent>, 1, False, +1.00, 4, 1, 0, , True
@@ -131,6 +131,49 @@ End
 		Private mDataSource As VNSExamplesDataSource
 	#tag EndProperty
 
+	#tag Property, Flags = &h21
+		Private mSelectedPDFPath As String
+	#tag EndProperty
+
+
+	#tag Method, Flags = &h21
+		Private Function FindPDFInDocuments() As String
+		  // Look for PDF files in Documents folder and return path to first one found
+		  // iOS Note: Users must place PDF files in Documents folder via Finder (enable File Sharing)
+
+		  Dim docsFolder As FolderItem = SpecialFolder.Documents
+
+		  // Look for specific filename first: "import.pdf"
+		  Dim importFile As FolderItem = docsFolder.Child("import.pdf")
+		  If importFile <> Nil And importFile.Exists Then
+		    Return importFile.NativePath
+		  End If
+
+		  // Search for any PDF file in Documents folder
+		  Dim pdfFiles() As String
+		  For Each item As FolderItem In docsFolder.Children
+		    If item <> Nil And Not item.IsFolder Then
+		      Dim fileName As String = item.Name
+		      // Check if file ends with .pdf (case insensitive)
+		      If fileName.Length > 4 Then
+		        Dim ext As String = fileName.Right(4).Lowercase
+		        If ext = ".pdf" Then
+		          pdfFiles.Add(item.NativePath)
+		        End If
+		      End If
+		    End If
+		  Next
+
+		  // Return first PDF found, or empty string if none
+		  If pdfFiles.Count > 0 Then
+		    Return pdfFiles(0)
+		  Else
+		    Return ""
+		  End If
+
+		End Function
+	#tag EndMethod
+
 
 #tag EndWindowCode
 
@@ -144,49 +187,76 @@ End
 		  Dim result As Dictionary
 		  
 		  Select Case exampleNumber
-		  Case 1
+		  Case kExample1
 		    result = VNSPDFExamplesModule.GenerateExample1()
-		  Case 2
+		  Case kExample2
 		    result = VNSPDFExamplesModule.GenerateExample2()
-		  Case 3
+		  Case kExample3
 		    result = VNSPDFExamplesModule.GenerateExample3()
-		  Case 4
+		  Case kExample4
 		    result = VNSPDFExamplesModule.GenerateExample4()
-		  Case 5
+		  Case kExample5
 		    result = VNSPDFExamplesModule.GenerateExample5()
-		  Case 6
+		  Case kExample6
 		    result = VNSPDFExamplesModule.GenerateExample6()
-		  Case 7
+		  Case kExample7
 		    result = VNSPDFExamplesModule.GenerateExample7()
-		  Case 8
+		  Case kExample8
 		    result = VNSPDFExamplesModule.GenerateExample8()
-		  Case 9
+		  Case kExample9
 		    result = VNSPDFExamplesModule.GenerateExample9()
-		  Case 10
+		  Case kExample10
 		    result = VNSPDFExamplesModule.GenerateExample10()
-		  Case 11
+		  Case kExample11
 		    result = VNSPDFExamplesModule.GenerateExample11()
-		  Case 12
+		  Case kExample12
 		    result = VNSPDFExamplesModule.GenerateExample12()
-		  Case 13
+		  Case kExample13
 		    result = VNSPDFExamplesModule.GenerateExample13()
-		  Case 14
+		  Case kExample14
 		    // Use RC4-40 (revision 2) which is available in FREE version
-	    result = VNSPDFExamplesModule.GenerateExample14(VNSPDFModule.gkEncryptionRC4_40, "user123", "owner456", True, True, True, True, True, True, True, True)
-		  Case 15
+		    result = VNSPDFExamplesModule.GenerateExample14(VNSPDFModule.gkEncryptionRC4_40, "user123", "owner456", True, True, True, True, True, True, True, True)
+		  Case kExample15
 		    result = VNSPDFExamplesModule.GenerateExample15()
-		  Case 16
+		  Case kExample16
 		    result = VNSPDFExamplesModule.GenerateExample16()
-		  Case 17
+		  Case kExample17
 		    result = VNSPDFExamplesModule.GenerateExample17()
-		  Case 18
+		  Case kExample18
 		    result = VNSPDFExamplesModule.GenerateExample18()
-		  Case 19
+		  Case kExample19
 		    result = VNSPDFExamplesModule.GenerateExample19()
-		  Case 20
+		  Case kExample20
+		    // Example 20: PDF Import - look for PDF in Documents folder
+		    Dim sourcePath As String = FindPDFInDocuments()
+		    If sourcePath = "" Then
+		      // No PDF found - show instructions
+		      Dim msg As String = "No PDF files found in Documents folder." + EndOfLine + EndOfLine
+		      msg = msg + "To use Example 20 (PDF Import):" + EndOfLine
+		      msg = msg + "1. Enable File Sharing in Build Settings" + EndOfLine
+		      msg = msg + "2. Deploy app to device" + EndOfLine
+		      msg = msg + "3. Connect device via USB" + EndOfLine
+		      msg = msg + "4. Open Finder and select device" + EndOfLine
+		      msg = msg + "5. Click Files button, find this app" + EndOfLine
+		      msg = msg + "6. Add a PDF file (name it 'import.pdf' or any .pdf)"
+		      txtOutput.Text = msg.ToText
+		      Return
+		    End If
+
+		    // Show which source PDF is being used
+		    Dim sourceFile As FolderItem = New FolderItem(sourcePath, FolderItem.PathModes.Native)
+		    Dim sourceInfo As String = "Using source PDF: " + sourceFile.Name + EndOfLine + EndOfLine
+
+		    result = VNSPDFExamplesModule.GenerateExample20(sourcePath)
+
+		    // Prepend source info to status message
+		    If result <> Nil And result.HasKey("status") Then
+		      result.Value("status") = sourceInfo + result.Value("status")
+		    End If
+		  Case kTestZlib
 		    // Test Zlib - special test, not a PDF example
 		    result = VNSPDFExamplesModule.TestZlib()
-		  Case 21
+		  Case kTestAES
 		    // Test AES - special test, not a PDF example
 		    result = VNSPDFExamplesModule.TestAES()
 		  End Select
@@ -195,7 +265,7 @@ End
 		  Dim msg As String
 
 		  // Handle test results (different format than PDF examples)
-		  If exampleNumber >= 20 Then
+		  If exampleNumber >= 21 Then
 		    // TestZlib and TestAES return "passed" (Boolean) and "output" (String)
 		    If result = Nil Then
 		      msg = "ERROR: Test returned Nil" + EndOfLine
@@ -209,11 +279,11 @@ End
 		        msg = msg + EndOfLine + "SOME TESTS FAILED!" + EndOfLine
 		      End If
 		    End If
-		    // iOS API2: iOSTextArea.Text requires Text type (converted from String)
-		    txtOutput.Text = msg.ToText
+		    // MobileTextArea.Text accepts String directly
+		    txtOutput.Text = msg
 		    Return
 		  End If
-
+		  
 		  // Check if result is nil
 		  If result = Nil Then
 		    msg = "ERROR: Example " + Str(exampleNumber) + " returned Nil" + EndOfLine
@@ -221,7 +291,7 @@ End
 		    msg = "ERROR: Result has no 'status' key" + EndOfLine
 		  Else
 		    msg = result.Value("status")
-
+		    
 		    // Check if there's an error in the result
 		    If result.HasKey("error") Then
 		      msg = msg + "ERROR: " + result.Value("error") + EndOfLine
@@ -262,7 +332,7 @@ End
 		        Dim pdfScreen As New PDFViewerScreen
 		        pdfScreen.PDFFile = pdfFile
 		        pdfScreen.Title = "Example " + Str(exampleNumber)
-		        Self.PushTo(pdfScreen)
+		        pdfScreen.Show(Self)
 		      End If
 		      
 		    Catch e As IOException
@@ -271,12 +341,80 @@ End
 		  End If
 		  
 		  msg = msg + EndOfLine
-		  
-		  // iOS API2: iOSTextArea.Text requires Text type (converted from String)
-		  txtOutput.Text = msg.ToText
+
+		  // MobileTextArea.Text accepts String directly
+		  txtOutput.Text = msg
 		End Sub
 	#tag EndEvent
 #tag EndEvents
+#tag Constants
+	#tag Constant, Name = kExample1, Type = Double, Dynamic = False, Default = \"1", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample2, Type = Double, Dynamic = False, Default = \"2", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample3, Type = Double, Dynamic = False, Default = \"3", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample4, Type = Double, Dynamic = False, Default = \"4", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample5, Type = Double, Dynamic = False, Default = \"5", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample6, Type = Double, Dynamic = False, Default = \"6", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample7, Type = Double, Dynamic = False, Default = \"7", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample8, Type = Double, Dynamic = False, Default = \"8", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample9, Type = Double, Dynamic = False, Default = \"9", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample10, Type = Double, Dynamic = False, Default = \"10", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample11, Type = Double, Dynamic = False, Default = \"11", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample12, Type = Double, Dynamic = False, Default = \"12", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample13, Type = Double, Dynamic = False, Default = \"13", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample14, Type = Double, Dynamic = False, Default = \"14", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample15, Type = Double, Dynamic = False, Default = \"15", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample16, Type = Double, Dynamic = False, Default = \"16", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample17, Type = Double, Dynamic = False, Default = \"17", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample18, Type = Double, Dynamic = False, Default = \"18", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample19, Type = Double, Dynamic = False, Default = \"19", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kExample20, Type = Double, Dynamic = False, Default = \"20", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kTestZlib, Type = Double, Dynamic = False, Default = \"21", Scope = Private
+	#tag EndConstant
+
+	#tag Constant, Name = kTestAES, Type = Double, Dynamic = False, Default = \"22", Scope = Private
+	#tag EndConstant
+
+#tag EndConstants
 #tag ViewBehavior
 	#tag ViewProperty
 		Name="Index"

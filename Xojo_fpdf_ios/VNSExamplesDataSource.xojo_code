@@ -23,6 +23,7 @@ Implements iOSMobileTableDataSource
 		  mExampleTitles.Add("Example 17: Utility Methods")
 		  mExampleTitles.Add("Example 18: Plugin Architecture")
 		  mExampleTitles.Add("Example 19: Table Generation")
+		  mExampleTitles.Add("Example 20: PDF Import")
 		  mExampleTitles.Add("Test Zlib: Premium Compression")
 		  mExampleTitles.Add("Test AES: Premium Encryption")
 		End Sub
@@ -33,7 +34,7 @@ Implements iOSMobileTableDataSource
 		  // Return number of rows for the section
 		  #Pragma Unused table
 		  #Pragma Unused section
-
+		  
 		  Return mExampleTitles.Count
 		End Function
 	#tag EndMethod
@@ -42,7 +43,7 @@ Implements iOSMobileTableDataSource
 		Function RowData(table As iOSMobileTable, section As Integer, row As Integer) As MobileTableCellData
 		  // Provide data for each cell
 		  #Pragma Unused section
-
+		  
 		  If row >= 0 And row < mExampleTitles.Count Then
 		    Dim cell As MobileTableCellData = table.CreateCell(mExampleTitles(row))
 		    cell.AccessoryType = MobileTableCellData.AccessoryTypes.Disclosure
@@ -57,7 +58,7 @@ Implements iOSMobileTableDataSource
 		Function SectionCount(table As iOSMobileTable) As Integer
 		  // Return total number of sections (just 1 for our examples)
 		  #Pragma Unused table
-
+		  
 		  Return 1
 		End Function
 	#tag EndMethod
@@ -67,7 +68,7 @@ Implements iOSMobileTableDataSource
 		  // Return section title
 		  #Pragma Unused table
 		  #Pragma Unused section
-
+		  
 		  Return ""
 		End Function
 	#tag EndMethod
@@ -78,4 +79,47 @@ Implements iOSMobileTableDataSource
 	#tag EndProperty
 
 
+	#tag ViewBehavior
+		#tag ViewProperty
+			Name="Name"
+			Visible=true
+			Group="ID"
+			InitialValue=""
+			Type="String"
+			EditorType=""
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="Index"
+			Visible=true
+			Group="ID"
+			InitialValue="-2147483648"
+			Type="Integer"
+			EditorType=""
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="Super"
+			Visible=true
+			Group="ID"
+			InitialValue=""
+			Type="String"
+			EditorType=""
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="Left"
+			Visible=true
+			Group="Position"
+			InitialValue="0"
+			Type="Integer"
+			EditorType=""
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="Top"
+			Visible=true
+			Group="Position"
+			InitialValue="0"
+			Type="Integer"
+			EditorType=""
+		#tag EndViewProperty
+	#tag EndViewBehavior
+End Class
 #tag EndClass

@@ -16,6 +16,7 @@
 - [Example 11: Bezier Curves](#example-11-bezier-curves)
 - [Example 12: Arrow Lines](#example-12-arrow-lines)
 - [Example 17: Utility Methods and JSON Serialization](#example-17-utility-methods-and-json-serialization)
+- [Example 20: PDF Import](#example-20-pdf-import)
 
 ---
 
@@ -616,7 +617,7 @@ pdf.Cell(0, 8, "1. GetVersionString()", 0, 1)
 pdf.SetFont("helvetica", "", 11)
 pdf.Cell(0, 7, "Version: " + pdf.GetVersionString(), 0, 1)
 pdf.Ln(3)
-// Output: "Version: VNS PDF 0.3.0"
+// Output: "Version: VNS PDF 1.0.0"
 
 // Section 2: GetConversionRatio()
 pdf.SetFont("helvetica", "B", 14)
@@ -731,7 +732,7 @@ pdf.SaveToFile(f)
 ```
 
 **Notes**:
-- **GetVersionString()**: Returns "VNS PDF " + version number (e.g., "VNS PDF 0.3.0")
+- **GetVersionString()**: Returns "VNS PDF " + version number (e.g., "VNS PDF 1.0.0")
 - **GetConversionRatio()**: Returns scale factor from user units to points
   - For mm: 2.8346 (1 mm = 2.8346 points = 1/25.4 * 72)
   - For cm: 28.346
@@ -762,3 +763,185 @@ pdf.SaveToFile(f)
   - Restores metadata, page dimensions, colors, positions
   - Font objects and images must be re-added separately
   - Error handling: SetError() called on parse failure
+
+---
+
+## Example 20: PDF Import
+
+**Purpose**: Import pages from existing PDF files as XObject templates
+
+```xojo
+// Create new document
+Dim pdf As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, _
+                              VNSPDFModule.ePageUnit.Millimeters, _
+                              VNSPDFModule.ePageFormat.A4)
+
+// Open source PDF
+Dim sourcePDF As FolderItem = New FolderItem("/path/to/source.pdf", FolderItem.PathModes.Native)
+If Not pdf.SetSourceFile(sourcePDF) Then
+  MessageBox("Error: " + pdf.GetError())
+  Return
+End If
+
+// Get page count
+Dim pageCount As Integer = pdf.GetPageCount()
+
+// Import all pages
+Dim templates() As Integer
+For i As Integer = 1 To pageCount
+  Dim tplID As Integer = pdf.ImportPage(i)
+  If tplID = 0 Then
+    MessageBox("Failed to import page " + Str(i))
+    Return
+  End If
+  templates.Add(tplID)
+Next
+
+// Create overview pages with 2x2 thumbnail grid
+Dim thumbnailsPerPage As Integer = 4
+For pageIdx As Integer = 0 To Ceiling(pageCount / thumbnailsPerPage) - 1
+  pdf.AddPage()
+
+  // Draw 2x2 grid
+  Dim startIdx As Integer = pageIdx * thumbnailsPerPage
+  For gridIdx As Integer = 0 To Min(3, pageCount - startIdx - 1)
+    Dim tplIdx As Integer = startIdx + gridIdx
+    Dim row As Integer = Floor(gridIdx / 2)
+    Dim col As Integer = gridIdx Mod 2
+
+    // Position and size for 2x2 grid
+    Dim x As Double = col * 105 + 5
+    Dim y As Double = row * 148.5 + 5
+
+    // Place template (100mm width, auto height)
+    pdf.UseTemplate(templates(tplIdx), x, y, 100, 0)
+
+    // Draw border
+    pdf.SetDrawColor(200, 200, 200)
+    pdf.Rect(x, y, 100, 141, VNSPDFModule.eDrawStyle.Draw)
+
+    // Add label
+    pdf.SetFont("Helvetica", "", 8)
+    pdf.Text(x + 2, y + 2, "Page " + Str(tplIdx + 1))
+  Next
+Next
+
+// Save result
+Dim output As FolderItem = SpecialFolder.Desktop.Child("example20_pdf_import.pdf")
+pdf.SaveToFile(output)
+```
+
+**Key Methods**:
+
+### SetSourceFile
+```xojo
+Function SetSourceFile(pdfFile As FolderItem) As Boolean
+```
+Opens a PDF file for importing. Must be called before ImportPage().
+
+**Parameters**:
+- `pdfFile`: FolderItem pointing to source PDF
+
+**Returns**: True if successful, False on error (check with GetError())
+
+---
+
+### ImportPage
+```xojo
+Function ImportPage(pageNum As Integer) As Integer
+```
+Imports a page from the source PDF as an XObject Form template.
+
+**Parameters**:
+- `pageNum`: Page number to import (1-based index)
+
+**Returns**: Template ID for use with UseTemplate(), or 0 on error
+
+**Process**:
+1. Validates page number
+2. Extracts page content stream(s) and decompresses
+3. Extracts page resources (fonts, images, XObjects)
+4. Creates XObject Form dictionary with /BBox and /Resources
+5. Assigns unique object ID
+6. Returns template ID
+
+---
+
+### UseTemplate
+```xojo
+Sub UseTemplate(templateID As Integer, x As Double = 0, y As Double = 0, _
+                w As Double = 0, h As Double = 0)
+```
+Places an imported template on the current page.
+
+**Parameters**:
+- `templateID`: Template ID returned by ImportPage()
+- `x`, `y`: Position in user units (default: 0, 0)
+- `w`, `h`: Size in user units (0 = auto-scale)
+
+**Scaling Behavior**:
+- `w = 0, h = 0`: Original page size
+- `w > 0, h = 0`: Scale to width, maintain aspect ratio
+- `w = 0, h > 0`: Scale to height, maintain aspect ratio
+- `w > 0, h > 0`: Scale to exact dimensions
+
+**PDF Commands Generated**:
+```
+q                           // Save graphics state
+scaleX 0 0 scaleY x y cm   // Transform matrix
+/XObjN Do                   // Draw XObject
+Q                           // Restore graphics state
+```
+
+---
+
+**Platform-Specific File Selection**:
+
+**Desktop:**
+```xojo
+// Multi-location search
+Dim sourcePath As String = FindPDFInProjectFolder()
+If sourcePath = "" Then
+  Dim dlg As OpenDialog
+  dlg.Filter = "application/pdf"
+  Dim f As FolderItem = dlg.ShowModal()
+  If f <> Nil Then sourcePath = f.NativePath
+End If
+```
+
+**iOS:**
+```xojo
+// Documents folder enumeration
+Dim sourcePath As String = FindPDFInDocuments()
+If sourcePath = "" Then
+  MessageBox("Place PDF file in Documents folder via File Sharing")
+End If
+```
+
+**Web:**
+```xojo
+// File upload dialog
+Dim dialog As New WebDialogPDFUpload
+If dialog.ShowModal() = dialog.OKButton Then
+  Dim sourcePath As String = dialog.UploadedFile.Path
+End If
+```
+
+**Console:**
+```xojo
+// Default path
+Dim sourcePath As String = FindPDFInProjectFolder()
+If sourcePath = "" Then
+  Print("Error: Source PDF not found")
+End If
+```
+
+**Notes**:
+- **SetSourceFile()**: Opens PDF for importing, validates structure, builds page tree
+- **ImportPage()**: Creates XObject Form from page content, copies all resources
+- **UseTemplate()**: Places imported page with transformation matrix
+- **Resource Tracking**: Automatically copies fonts, images, nested XObjects
+- **Object ID Remapping**: Ensures no conflicts with target document objects
+- **Stream Decompression**: Supports FlateDecode, LZWDecode, ASCII85Decode, ASCIIHexDecode
+- **Premium Zlib**: Required for most modern PDFs (FlateDecode + PNG Predictors)
+- **Complete Documentation**: See [Chapter 17: PDF Import](../developer/17-pdf-import.md)

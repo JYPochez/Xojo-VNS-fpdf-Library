@@ -875,5 +875,5 @@ MyApp/
 ---
 
 **Last Updated**: 2025-11-26
-**VNS PDF Version**: 0.3.0
+**VNS PDF Version**: 1.0.0
 **Premium Modules**: Encryption (✅ Complete), PDF/A (✅ Complete), Zlib (✅ Complete), Table (✅ Complete)

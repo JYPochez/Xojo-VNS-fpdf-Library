@@ -58,7 +58,6 @@ Protected Class VNSPDFTrueTypeFont
 		  If mCharToGlyph.HasKey(Str(charCode)) Then
 		    Return mCharToGlyph.Value(Str(charCode))
 		  Else
-		    // Character not in cmap, use default glyph (0)
 		    Return 0
 		  End If
 		End Function
@@ -69,73 +68,92 @@ Protected Class VNSPDFTrueTypeFont
 		  If Not mTables.HasKey("cmap") Then
 		    Return False
 		  End If
-		  
+
 		  Dim tableInfo As Dictionary = mTables.Value("cmap")
 		  Dim offset As Integer = tableInfo.Value("offset")
 
 		  Dim mb As MemoryBlock = GetFontDataAsMemoryBlock()
 		  If mb = Nil Then Return False
 		  mb.LittleEndian = False // Big-endian
-		  
+
 		  mCharToGlyph = New Dictionary
-		  
-		  // Read cmap header
-		  Dim version As UInt16 = mb.UInt16Value(offset)
+
+		  // Read cmap header (version at offset, numTables at offset+2)
 		  Dim numTables As UInt16 = mb.UInt16Value(offset + 2)
-		  
-		  // Look for format 4 (Windows Unicode BMP)
+
+		  // Look for cmap subtables - prefer Format 12 over Format 4
+		  // Format 12: Platform 3 (Windows), Encoding 10 (Unicode full repertoire)
+		  // Format 4: Platform 3 (Windows), Encoding 1 (Unicode BMP)
+		  Dim format12Offset As Integer = -1
 		  Dim format4Offset As Integer = -1
-		  
+
 		  For i As Integer = 0 To numTables - 1
 		    Dim entryOffset As Integer = offset + 4 + (i * 8)
 		    Dim platformID As UInt16 = mb.UInt16Value(entryOffset)
 		    Dim encodingID As UInt16 = mb.UInt16Value(entryOffset + 2)
 		    Dim subtableOffset As UInt32 = mb.UInt32Value(entryOffset + 4)
-		    
-		    // Platform 3 (Windows), Encoding 1 (Unicode BMP)
+
+		    // Platform 3 (Windows), Encoding 10 (Unicode full repertoire) - Format 12
+		    If platformID = 3 And encodingID = 10 Then
+		      format12Offset = offset + subtableOffset
+		    End If
+
+		    // Platform 3 (Windows), Encoding 1 (Unicode BMP) - Format 4
 		    If platformID = 3 And encodingID = 1 Then
 		      format4Offset = offset + subtableOffset
-		      Exit For
 		    End If
 		  Next
-		  
-		  If format4Offset < 0 Then
-		    // No suitable cmap found, create simple identity mapping
-		    For i As Integer = 32 To 126 // ASCII printable
-		      mCharToGlyph.Value(Str(i)) = i
-		    Next
-		    Return True
+
+		  // Try Format 12 first (full Unicode support)
+		  If format12Offset >= 0 Then
+		    Dim format As UInt16 = mb.UInt16Value(format12Offset)
+		    If format = 12 Then
+		      If ParseCmapFormat12(mb, format12Offset) Then
+		        Return True
+		      End If
+		    End If
 		  End If
-		  
-		  // Parse format 4 cmap
-		  Dim format As UInt16 = mb.UInt16Value(format4Offset)
-		  If format <> 4 Then
-		    // Fallback to identity mapping
-		    For i As Integer = 32 To 126
-		      mCharToGlyph.Value(Str(i)) = i
-		    Next
-		    Return True
+
+		  // Fall back to Format 4
+		  If format4Offset >= 0 Then
+		    Dim format As UInt16 = mb.UInt16Value(format4Offset)
+		    If format = 4 Then
+		      If ParseCmapFormat4(mb, format4Offset) Then
+		        Return True
+		      End If
+		    End If
 		  End If
-		  
+
+		  // No suitable cmap found, create simple identity mapping
+		  For i As Integer = 32 To 126 // ASCII printable
+		    mCharToGlyph.Value(Str(i)) = i
+		  Next
+		  Return True
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function ParseCmapFormat4(mb As MemoryBlock, formatOffset As Integer) As Boolean
+		  // Parse Format 4 cmap (segmented mapping for BMP)
 		  // Read format 4 data
-		  Dim segCount As UInt16 = mb.UInt16Value(format4Offset + 6) / 2
-		  
+		  Dim segCount As UInt16 = mb.UInt16Value(formatOffset + 6) / 2
+
 		  // Read arrays
-		  Dim endCountOffset As Integer = format4Offset + 14
+		  Dim endCountOffset As Integer = formatOffset + 14
 		  Dim startCountOffset As Integer = endCountOffset + (segCount * 2) + 2
 		  Dim idDeltaOffset As Integer = startCountOffset + (segCount * 2)
 		  Dim idRangeOffset As Integer = idDeltaOffset + (segCount * 2)
-		  
+
 		  // Build character to glyph mapping
 		  For seg As Integer = 0 To segCount - 1
 		    Dim endCode As UInt16 = mb.UInt16Value(endCountOffset + (seg * 2))
 		    Dim startCode As UInt16 = mb.UInt16Value(startCountOffset + (seg * 2))
 		    Dim idDelta As Int16 = mb.Int16Value(idDeltaOffset + (seg * 2))
 		    Dim idRangeOffsetValue As UInt16 = mb.UInt16Value(idRangeOffset + (seg * 2))
-		    
+
 		    For c As Integer = startCode To endCode
 		      Dim glyphIndex As Integer
-		      
+
 		      If idRangeOffsetValue = 0 Then
 		        glyphIndex = (c + idDelta) Mod 65536
 		      Else
@@ -145,11 +163,42 @@ Protected Class VNSPDFTrueTypeFont
 		          glyphIndex = (glyphIndex + idDelta) Mod 65536
 		        End If
 		      End If
-		      
+
 		      mCharToGlyph.Value(Str(c)) = glyphIndex
 		    Next
 		  Next
-		  
+
+		  Return True
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function ParseCmapFormat12(mb As MemoryBlock, formatOffset As Integer) As Boolean
+		  // Parse Format 12 cmap (segmented coverage for full Unicode)
+		  // Format 12 structure:
+		  // - format: UInt16 (12)
+		  // - reserved: UInt16
+		  // - length: UInt32
+		  // - language: UInt32
+		  // - numGroups: UInt32
+		  // - groups: array of (startCharCode: UInt32, endCharCode: UInt32, startGlyphID: UInt32)
+
+		  Dim numGroups As UInt32 = mb.UInt32Value(formatOffset + 12)
+		  Dim groupOffset As Integer = formatOffset + 16
+
+		  For i As Integer = 0 To numGroups - 1
+		    Dim grpOffset As Integer = groupOffset + (i * 12)
+		    Dim startCharCode As UInt32 = mb.UInt32Value(grpOffset)
+		    Dim endCharCode As UInt32 = mb.UInt32Value(grpOffset + 4)
+		    Dim startGlyphID As UInt32 = mb.UInt32Value(grpOffset + 8)
+
+		    // Build mapping for this range
+		    For c As UInt32 = startCharCode To endCharCode
+		      Dim glyphID As Integer = startGlyphID + (c - startCharCode)
+		      mCharToGlyph.Value(Str(c)) = glyphID
+		    Next
+		  Next
+
 		  Return True
 		End Function
 	#tag EndMethod

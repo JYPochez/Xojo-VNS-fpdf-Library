@@ -38,7 +38,6 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		    Dim postVersion As UInt32 = postMB.UInt32Value(0)
 		    If postVersion = &h00020000 And postLength >= 34 Then
 		      postMB.UInt16Value(32) = mSubsetNumGlyphs
-		      System.DebugLog("Updated 'post' table numberOfGlyphs to " + Str(mSubsetNumGlyphs))
 		    End If
 
 		    subsetTables.Value("post") = postMB
@@ -165,10 +164,6 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		    Wend
 		  Next
 		  
-		  System.DebugLog("Assembled subset font: " + Str(output.Size) + " bytes (original: " + Str(mFontMB.Size) + ")")
-		  Dim reduction As Double = (1.0 - (output.Size / mFontMB.Size)) * 100
-		  System.DebugLog("Size reduction: " + Str(Round(reduction * 10) / 10) + "%")
-		  
 		  Return output.StringValue(0, output.Size).DefineEncoding(Nil)
 		End Function
 	#tag EndMethod
@@ -229,8 +224,6 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  
 		  // Update length field
 		  mSubsetCmap.UInt16Value(subtableStart + 2) = mSubsetCmap.Size - subtableStart
-		  
-		  System.DebugLog("Built subset cmap table: " + Str(mSubsetCmap.Size) + " bytes")
 		  
 		  Return True
 		End Function
@@ -301,8 +294,6 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  // Final offset
 		  mSubsetGlyphOffsets(mSubsetNumGlyphs) = mSubsetGlyf.Size
 		  
-		  System.DebugLog("Built sparse subset glyf table: " + Str(mSubsetGlyf.Size) + " bytes, " + Str(mUsedGlyphIDs.Count) + " glyphs used out of " + Str(mSubsetNumGlyphs))
-		  
 		  Return True
 		End Function
 	#tag EndMethod
@@ -361,8 +352,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		    mSubsetHmtx.Int16Value((gid * 4) + 2) = leftSideBearing
 		  Next
 		  
-		  System.DebugLog("Built sparse subset hmtx table: " + Str(mSubsetHmtx.Size) + " bytes")
-		  
+		  		  
 		  Return True
 		End Function
 	#tag EndMethod
@@ -444,8 +434,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  
 		  mSubsetNumGlyphs = maxGlyphID + 1  // Include all IDs up to max (sparse)
 		  
-		  System.DebugLog("Created sparse glyph mapping: " + Str(mUsedGlyphIDs.Count) + " glyphs used, max ID " + Str(maxGlyphID) + ", subset size " + Str(mSubsetNumGlyphs))
-		  
+		  		  
 		End Sub
 	#tag EndMethod
 
@@ -553,8 +542,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		          If Not glyphsToCheck.HasKey(Str(componentGID)) Then
 		            glyphsToCheck.Value(Str(componentGID)) = True
 		            changed = True
-		            System.DebugLog("Added composite component: " + Str(componentGID))
-		          End If
+		            		          End If
 		          
 		          // Skip to next component based on flags
 		          pos = pos + 4
@@ -585,8 +573,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  Next
 		  mUsedGlyphIDs.Sort
 		  
-		  System.DebugLog("Expanded to " + Str(mUsedGlyphIDs.Count) + " glyphs (including composites)")
-		  
+		  		  
 		End Sub
 	#tag EndMethod
 
@@ -618,8 +605,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  // Read table count
 		  mNumTables = mFontMB.UInt16Value(4)
 		  
-		  System.DebugLog("Font header: version=" + Hex(mSfntVersion) + ", numTables=" + Str(mNumTables))
-		  
+		  		  
 		  // Parse table directory
 		  Dim offset As Integer = 12
 		  For i As Integer = 0 To mNumTables - 1
@@ -662,8 +648,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  // indexToLocFormat at offset 50
 		  mIndexToLocFormat = mFontMB.Int16Value(offset + 50)
 		  
-		  System.DebugLog("head: indexToLocFormat=" + Str(mIndexToLocFormat))
-		  
+		  		  
 		  Return True
 		End Function
 	#tag EndMethod
@@ -683,8 +668,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  // numberOfHMetrics at offset 34
 		  mNumberOfHMetrics = mFontMB.UInt16Value(offset + 34)
 		  
-		  System.DebugLog("hhea: numberOfHMetrics=" + Str(mNumberOfHMetrics))
-		  
+		  		  
 		  Return True
 		End Function
 	#tag EndMethod
@@ -719,8 +703,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		    Next
 		  End If
 		  
-		  System.DebugLog("loca: parsed " + Str(mGlyphOffsets.Count) + " glyph offsets")
-		  
+		  		  
 		  Return True
 		End Function
 	#tag EndMethod
@@ -740,8 +723,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  // numGlyphs at offset 4
 		  mNumGlyphs = mFontMB.UInt16Value(offset + 4)
 		  
-		  System.DebugLog("maxp: numGlyphs=" + Str(mNumGlyphs))
-		  
+		  		  
 		  Return True
 		End Function
 	#tag EndMethod
@@ -880,8 +862,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  // Update numGlyphs
 		  mSubsetMaxp.UInt16Value(4) = mSubsetNumGlyphs
 		  
-		  System.DebugLog("Updated header tables: head, hhea, maxp")
-		  
+		  		  
 		End Sub
 	#tag EndMethod
 

@@ -395,7 +395,7 @@ Protected Module VNSPDFModule
 
 	#tag Method, Flags = &h0, Description = 52656E64657220656D6F6A69206173206120636F6C6F7220696D6167652075736E6720706C6174666F726D277320656D6F6A6920666F6E742E0A
 		Function RenderEmojiToImage(emojiChar As String, sizeInPoints As Integer, webSession As Variant = Nil) As Picture
-		#Pragma Unused webSession
+		  #Pragma Unused webSession
 		  // Render an emoji character to a color image using platform's emoji font
 		  // Returns a Picture that can be saved and embedded in PDF
 		  // Supported on Desktop, iOS, and Web platforms
@@ -413,7 +413,7 @@ Protected Module VNSPDFModule
 		    Dim basePicSize As Integer = sizeInPoints * scaleFactor
 		    Dim padding As Integer = basePicSize * 0.3  // 30% padding on all sides
 		    Dim picSize As Integer = basePicSize + (padding * 2)
-
+		    
 		    Dim pic As New Picture(picSize, picSize, 32)
 		    Dim g As Graphics = pic.Graphics
 		    
@@ -531,8 +531,6 @@ Protected Module VNSPDFModule
 		    
 		  #ElseIf TargetWeb Then
 		    // Web: Use Picture/Graphics API - same approach as Desktop
-		    System.DebugLog("RenderEmojiToImage Web: Rendering emoji with Picture.Graphics...")
-		    
 		    #Pragma Unused webSession
 		    
 		    // Create a Picture large enough for the emoji with extra padding
@@ -541,7 +539,7 @@ Protected Module VNSPDFModule
 		    Dim basePicSize As Integer = sizeInPoints * scaleFactor
 		    Dim padding As Integer = basePicSize * 0.3  // 30% padding on all sides
 		    Dim picSize As Integer = basePicSize + (padding * 2)
-
+		    
 		    // IMPORTANT: 32-bit depth required for emoji color
 		    Dim pic As New Picture(picSize, picSize, 32)
 		    Dim g As Graphics = pic.Graphics

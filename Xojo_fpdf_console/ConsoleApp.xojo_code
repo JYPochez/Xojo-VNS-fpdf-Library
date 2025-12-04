@@ -71,17 +71,20 @@ Inherits ConsoleApplication
 		  Print("  19. Table Generation")
 		  Print("      SimpleTable, ImprovedTable, FancyTable (Premium)")
 		  Print("")
-		  Print("  20. Test Zlib")
+		  Print("  20. PDF Import")
+		  Print("      Import pages from existing PDFs as templates")
+		  Print("")
+		  Print("  21. Test Zlib")
 		  Print("      Premium pure Xojo compression tests")
 		  Print("")
-		  Print("  21. Test AES")
+		  Print("  22. Test AES")
 		  Print("      Premium pure Xojo encryption tests")
 		  Print("")
 		  Print("  0. Exit")
 		  Print("")
 
 		  While True
-		    StdOut.Write("Enter example number (0-21): ")
+		    StdOut.Write("Enter example number (0-22): ")
 		    Dim input As String = Input
 
 		    Select Case input.Trim
@@ -148,13 +151,16 @@ Inherits ConsoleApplication
 		      GenerateExample(19)
 
 		    Case "20"
-		      RunTest("Zlib")
+		      GenerateExample(20)
 
 		    Case "21"
+		      RunTest("Zlib")
+
+		    Case "22"
 		      RunTest("AES")
 
 		    Else
-		      Print("Invalid choice. Please enter 0-21.")
+		      Print("Invalid choice. Please enter 0-22.")
 		      Print("")
 		    End Select
 		  Wend
@@ -173,45 +179,48 @@ Inherits ConsoleApplication
 
 		  // Call the appropriate example from shared module
 		  Select Case exampleNum
-		  Case 1
+		  Case kExample1
 		    result = VNSPDFExamplesModule.GenerateExample1()
-		  Case 2
+		  Case kExample2
 		    result = VNSPDFExamplesModule.GenerateExample2()
-		  Case 3
+		  Case kExample3
 		    result = VNSPDFExamplesModule.GenerateExample3()
-		  Case 4
+		  Case kExample4
 		    result = VNSPDFExamplesModule.GenerateExample4()
-		  Case 5
+		  Case kExample5
 		    result = VNSPDFExamplesModule.GenerateExample5()
-		  Case 6
+		  Case kExample6
 		    result = VNSPDFExamplesModule.GenerateExample6()
-		  Case 7
+		  Case kExample7
 		    result = VNSPDFExamplesModule.GenerateExample7()
-		  Case 8
+		  Case kExample8
 		    result = VNSPDFExamplesModule.GenerateExample8()
-		  Case 9
+		  Case kExample9
 		    result = VNSPDFExamplesModule.GenerateExample9()
-		  Case 10
+		  Case kExample10
 		    result = VNSPDFExamplesModule.GenerateExample10()
-		  Case 11
+		  Case kExample11
 		    result = VNSPDFExamplesModule.GenerateExample11()
-		  Case 12
+		  Case kExample12
 		    result = VNSPDFExamplesModule.GenerateExample12()
-		  Case 13
+		  Case kExample13
 		    result = VNSPDFExamplesModule.GenerateExample13()
-		  Case 14
+		  Case kExample14
 		    // Example 14: Document Encryption (use RC4-40 which is available in FREE version)
 		    result = VNSPDFExamplesModule.GenerateExample14(VNSPDFModule.gkEncryptionRC4_40, "user123", "owner456", True, True, True, True, True, True, True, True)
-		  Case 15
+		  Case kExample15
 		    result = VNSPDFExamplesModule.GenerateExample15()
-		  Case 16
+		  Case kExample16
 		    result = VNSPDFExamplesModule.GenerateExample16()
-		  Case 17
+		  Case kExample17
 		    result = VNSPDFExamplesModule.GenerateExample17()
-		  Case 18
+		  Case kExample18
 		    result = VNSPDFExamplesModule.GenerateExample18()
-		  Case 19
+		  Case kExample19
 		    result = VNSPDFExamplesModule.GenerateExample19()
+		  Case kExample20
+		    // Example 20: PDF Import - uses default path to example19
+		    result = VNSPDFExamplesModule.GenerateExample20("")
 		  Else
 		    Print("Invalid example number")
 		    Return
@@ -234,7 +243,7 @@ Inherits ConsoleApplication
 		      stream.Close()
 
 		      Print("PDF saved: " + f.NativePath)
-		      Print("File size: " + Str(pdfData.LenB) + " bytes")
+		      Print("File size: " + Str(pdfData.Bytes) + " bytes")
 
 		    Catch e As IOException
 		      Print("Error saving file: " + e.Message)
@@ -296,6 +305,75 @@ Inherits ConsoleApplication
 		End Sub
 	#tag EndMethod
 
+
+	#tag Constants
+		#tag Constant, Name = kExample1, Type = Double, Dynamic = False, Default = \"1", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample2, Type = Double, Dynamic = False, Default = \"2", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample3, Type = Double, Dynamic = False, Default = \"3", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample4, Type = Double, Dynamic = False, Default = \"4", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample5, Type = Double, Dynamic = False, Default = \"5", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample6, Type = Double, Dynamic = False, Default = \"6", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample7, Type = Double, Dynamic = False, Default = \"7", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample8, Type = Double, Dynamic = False, Default = \"8", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample9, Type = Double, Dynamic = False, Default = \"9", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample10, Type = Double, Dynamic = False, Default = \"10", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample11, Type = Double, Dynamic = False, Default = \"11", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample12, Type = Double, Dynamic = False, Default = \"12", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample13, Type = Double, Dynamic = False, Default = \"13", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample14, Type = Double, Dynamic = False, Default = \"14", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample15, Type = Double, Dynamic = False, Default = \"15", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample16, Type = Double, Dynamic = False, Default = \"16", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample17, Type = Double, Dynamic = False, Default = \"17", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample18, Type = Double, Dynamic = False, Default = \"18", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample19, Type = Double, Dynamic = False, Default = \"19", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kExample20, Type = Double, Dynamic = False, Default = \"20", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kTestZlib, Type = Double, Dynamic = False, Default = \"21", Scope = Private
+		#tag EndConstant
+
+		#tag Constant, Name = kTestAES, Type = Double, Dynamic = False, Default = \"22", Scope = Private
+		#tag EndConstant
+
+	#tag EndConstants
 
 End Class
 #tag EndClass

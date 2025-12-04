@@ -1393,7 +1393,7 @@ Function GetVersionString() As String
 **Example**:
 ```xojo
 Dim version As String = pdf.GetVersionString()
-// Returns: "VNS PDF 0.3.0"
+// Returns: "VNS PDF 1.0.0"
 ```
 
 ##### GetConversionRatio
@@ -1520,7 +1520,7 @@ stream.Close()
 **JSON Structure**:
 ```json
 {
-  "version": "0.3.0",
+  "version": "1.0.0",
   "title": "My Document",
   "author": "John Doe",
   "pageWidth": 210.00,
@@ -1850,7 +1850,197 @@ Returns true if encryption keys have been generated.
 
 ### Notes
 
-- Only Revision 3 (RC4-128) is production-ready
-- Revisions 4-6 (AES) blocked by Xojo Crypto API limitation
+- **UPDATE v1.0.0**: All encryption revisions now fully working via pure Xojo AES implementation
+- AES-128 (Revision 4) and AES-256 (Revisions 5-6) production-ready
 - Permission restrictions enforced by PDF viewers
 - Compatible with PDF/A when properly declared in XMP metadata
+
+---
+
+## 📥 PDF Import Classes
+
+### VNSPDFReader
+
+**Purpose**: Main PDF parser for importing pages from existing PDF files.
+
+**Location**: `PDF_Library/Import/VNSPDFReader.xojo_code`
+
+#### Constructor
+```xojo
+Sub Constructor()
+```
+Creates a new PDF reader instance.
+
+#### OpenFile
+```xojo
+Function OpenFile(pdfFile As FolderItem) As Boolean
+```
+Opens and parses a PDF file.
+
+**Process**:
+1. Reads entire file into MemoryBlock
+2. Locates and parses cross-reference table (xref)
+3. Reads trailer to find document catalog
+4. Traverses page tree to build page list
+
+**Returns**: True if successful, False on error
+
+**Example**:
+```xojo
+Dim reader As New VNSPDFReader
+Dim pdfFile As FolderItem = New FolderItem("/path/to/file.pdf", FolderItem.PathModes.Native)
+If reader.OpenFile(pdfFile) Then
+  Dim pageCount As Integer = reader.GetPageCount()
+  MessageBox("PDF has " + Str(pageCount) + " pages")
+End If
+```
+
+#### GetPageCount
+```xojo
+Function GetPageCount() As Integer
+```
+Returns the number of pages in the opened PDF.
+
+**Returns**: Page count, or 0 if no PDF is loaded
+
+#### GetPage
+```xojo
+Function GetPage(pageNum As Integer) As VNSPDFImportedPage
+```
+Extracts a specific page with all its resources.
+
+**Parameters**:
+- `pageNum`: Page number (1-based)
+
+**Returns**: VNSPDFImportedPage object, or Nil on error
+
+**VNSPDFImportedPage Properties**:
+- `PageNumber As Integer` - Original page number
+- `MediaBox As Dictionary` - Page dimensions (X, Y, Width, Height)
+- `Contents As String` - Decompressed page content stream
+- `Resources As VNSPDFDictionary` - Fonts, images, XObjects
+- `XObjectForm As Dictionary` - XObject Form structure for embedding
+
+---
+
+### VNSPDFParser
+
+**Purpose**: Parses PDF objects and builds type system.
+
+**Location**: `PDF_Library/Import/VNSPDFParser.xojo_code`
+
+**Key Methods**:
+- `ParseIndirectObject(objNum, offset)` - Parse object at byte offset
+- `ParseValue()` - Parse PDF value (null, boolean, number, string, name, array, dict, stream, reference)
+- `ResolveReference(ref)` - Dereference indirect object references
+
+---
+
+### VNSPDFTokenizer
+
+**Purpose**: Lexical analysis of PDF syntax.
+
+**Location**: `PDF_Library/Import/VNSPDFTokenizer.xojo_code`
+
+**Token Types**:
+- Null (`null`)
+- Boolean (`true`, `false`)
+- Numeric (integer and real numbers)
+- String (literal strings in parentheses)
+- Hex String (hexadecimal strings in angle brackets)
+- Name (names with forward slash prefix)
+- Array (`[` ... `]`)
+- Dictionary (`<<` ... `>>`)
+- Stream (`stream` ... `endstream`)
+- Reference (`R` keyword)
+- Operator (PDF operators like `Do`, `cm`, `Tf`)
+
+---
+
+### VNSPDFStreamReader
+
+**Purpose**: Binary stream handling with position tracking.
+
+**Location**: `PDF_Library/Import/VNSPDFStreamReader.xojo_code`
+
+**Key Methods**:
+- `ReadByte()` - Read single byte
+- `ReadBytes(count)` - Read multiple bytes
+- `PeekByte()` - Look at next byte without advancing
+- `GetPosition()` - Get current position
+- `SetPosition(pos)` - Jump to position
+- `SkipWhitespace()` - Skip whitespace characters
+
+---
+
+### VNSPDFStreamDecoder
+
+**Purpose**: Decompress PDF streams.
+
+**Location**: `PDF_Library/Import/VNSPDFStreamDecoder.xojo_code`
+
+**Supported Filters**:
+- **FlateDecode** - zlib/deflate compression (via system libs or Premium Zlib)
+- **FlateDecode + PNG Predictors** - Requires Premium Zlib module
+- **LZWDecode** - Legacy LZW compression (VNSPDFLZWDecoder)
+- **ASCII85Decode** - Base-85 encoding
+- **ASCIIHexDecode** - Hexadecimal encoding
+- **DCTDecode** - JPEG (pass-through, no decompression)
+
+**Key Method**:
+```xojo
+Function Decode(streamData As String, filters As VNSPDFArray, _
+                decodeParms As VNSPDFArray) As String
+```
+
+---
+
+### VNSPDFType (Base Class)
+
+**Purpose**: Base class for all PDF type objects.
+
+**Location**: `PDF_Library/Import/VNSPDFType.xojo_code`
+
+**Subclasses** (12 types):
+1. **VNSPDFNull** - Null value
+2. **VNSPDFBoolean** - True/false
+3. **VNSPDFNumeric** - Integer numbers
+4. **VNSPDFReal** - Real (floating-point) numbers
+5. **VNSPDFString** - Literal strings
+6. **VNSPDFHexString** - Hexadecimal strings
+7. **VNSPDFName** - PDF names (e.g., `/Type`, `/Pages`)
+8. **VNSPDFArray** - Arrays of PDF objects
+9. **VNSPDFDictionary** - Key-value dictionaries
+10. **VNSPDFStream** - Binary data streams
+11. **VNSPDFReference** - Indirect object references
+12. **VNSPDFOperator** - PDF operators
+
+**Common Methods**:
+- `GetType() As String` - Returns type name
+- `Serialize() As String` - Converts to PDF syntax
+- `ToXojo() As Variant` - Converts to Xojo native type
+
+---
+
+### Usage Example
+
+```xojo
+// Import page from existing PDF
+Dim pdf As New VNSPDFDocument()
+
+// Set source file
+Dim sourceFile As FolderItem = New FolderItem("/path/to/source.pdf", FolderItem.PathModes.Native)
+Call pdf.SetSourceFile(sourceFile)
+
+// Import first page
+Dim templateID As Integer = pdf.ImportPage(1)
+
+// Use as template
+pdf.AddPage()
+pdf.UseTemplate(templateID, 0, 0, 210, 297)  // Full A4 page
+
+// Save result
+Dim output As String = pdf.Output()
+```
+
+For complete documentation, see [Chapter 17: PDF Import](17-pdf-import.md).

@@ -6104,6 +6104,252 @@ Protected Module VNSPDFExamplesModule
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h0
+		Function GenerateExample20(sourcePath As String = "") As Dictionary
+		  // Example 20: PDF Import - Import pages from existing PDFs
+		  // Demonstrates SetSourceFile(), ImportPage(), and UseTemplate()
+
+		  Dim result As New Dictionary
+		  Dim statusText As String = ""
+
+		  statusText = statusText + "Example 20: PDF Import (Pages as Templates)" + EndOfLine
+		  statusText = statusText + "========================================" + EndOfLine + EndOfLine
+
+		  // If no source path provided, use default example
+		  If sourcePath = "" Then
+		    #If TargetDesktop Or TargetConsole Then
+		      // Desktop/Console: Find pdf_examples folder relative to app location
+		      Dim pdfExamplesFolder As FolderItem
+		      Dim sourceFile As FolderItem
+
+		      // Try multiple locations to find pdf_examples folder
+		      // 1. CurrentWorkingDirectory/pdf_examples
+		      pdfExamplesFolder = SpecialFolder.CurrentWorkingDirectory.Child("pdf_examples")
+		      If pdfExamplesFolder.Exists Then
+		        sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
+		        If sourceFile.Exists Then
+		          sourcePath = sourceFile.NativePath
+		        End If
+		      End If
+
+		      // 2. App location/pdf_examples (for debug builds)
+		      If sourcePath = "" Then
+		        pdfExamplesFolder = App.ExecutableFile.Parent.Child("pdf_examples")
+		        If pdfExamplesFolder.Exists Then
+		          sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
+		          If sourceFile.Exists Then
+		            sourcePath = sourceFile.NativePath
+		          End If
+		        End If
+		      End If
+
+		      // 3. App location/../pdf_examples (for builds in subfolder)
+		      If sourcePath = "" And App.ExecutableFile.Parent.Parent <> Nil Then
+		        pdfExamplesFolder = App.ExecutableFile.Parent.Parent.Child("pdf_examples")
+		        If pdfExamplesFolder.Exists Then
+		          sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
+		          If sourceFile.Exists Then
+		            sourcePath = sourceFile.NativePath
+		          End If
+		        End If
+		      End If
+
+		      // 4. App location/../../pdf_examples (for deeper build folders)
+		      If sourcePath = "" And App.ExecutableFile.Parent.Parent <> Nil And App.ExecutableFile.Parent.Parent.Parent <> Nil Then
+		        pdfExamplesFolder = App.ExecutableFile.Parent.Parent.Parent.Child("pdf_examples")
+		        If pdfExamplesFolder.Exists Then
+		          sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
+		          If sourceFile.Exists Then
+		            sourcePath = sourceFile.NativePath
+		          End If
+		        End If
+		      End If
+
+		      // If still not found, show error
+		      If sourcePath = "" Then
+		        statusText = statusText + "✗ ERROR: Cannot find pdf_examples/example19_tables.pdf" + EndOfLine
+		        statusText = statusText + "   Searched from: " + App.ExecutableFile.Parent.NativePath + EndOfLine
+		        result.Value("success") = False
+		        result.Value("status") = statusText
+		        result.Value("filename") = ""
+		        Return result
+		      End If
+		    #ElseIf TargetiOS Then
+		      // iOS: Requires user to select a source PDF file
+		      // Note: iOS apps need file picker UI to let user choose PDF from Documents folder
+		      statusText = statusText + "✗ ERROR: No source PDF path provided" + EndOfLine
+		      statusText = statusText + "   iOS requires a source PDF file to be selected by the user" + EndOfLine
+		      statusText = statusText + "   Implement file picker UI to pass source file path to GenerateExample20()" + EndOfLine
+		      result.Value("success") = False
+		      result.Value("status") = statusText
+		      result.Value("filename") = ""
+		      Return result
+		    #Else
+		      // Web: No file system access, requires user to upload PDF via WebDialogPDFUpload
+		      statusText = statusText + "✗ ERROR: No source PDF path provided" + EndOfLine
+		      result.Value("success") = False
+		      result.Value("status") = statusText
+		      result.Value("filename") = ""
+		      Return result
+		    #EndIf
+		  End If
+
+		  // Create PDF
+		  Dim pdf As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, VNSPDFModule.ePageUnit.Millimeters, VNSPDFModule.ePageFormat.A4)
+
+		  Call pdf.SetTitle("Example 20 - PDF Import")
+		  Call pdf.SetAuthor("VNS PDF Library")
+		  Call pdf.SetSubject("Importing pages from existing PDFs")
+
+		  statusText = statusText + "Source PDF: " + sourcePath + EndOfLine + EndOfLine
+
+		  // Open source PDF
+		  Dim pageCount As Integer = pdf.SetSourceFile(sourcePath)
+
+		  If pdf.Err() Then
+		    statusText = statusText + "✗ ERROR: " + pdf.GetError() + EndOfLine
+		    result.Value("success") = False
+		    result.Value("status") = statusText
+		    result.Value("filename") = ""
+		    Return result
+		  End If
+
+		  statusText = statusText + "✓ Opened PDF successfully" + EndOfLine
+		  statusText = statusText + "  Pages found: " + Str(pageCount) + EndOfLine + EndOfLine
+
+		  // Create title page
+		  Call pdf.AddPage()
+		  Call pdf.SetFont("helvetica", "B", 20)
+		  Call pdf.Cell(0, 10, "PDF Import Example", 0, 1, "C")
+		  Call pdf.Ln(5)
+
+		  Call pdf.SetFont("helvetica", "", 12)
+		  Call pdf.MultiCell(0, 5, "This example demonstrates importing pages from an existing PDF file and placing them as templates in a new document using UseTemplate().", 0, "L")
+		  Call pdf.Ln(10)
+
+		  // Import ALL pages from source PDF
+		  Dim templateIDs() As Integer
+
+		  statusText = statusText + "Importing all " + Str(pageCount) + " pages..." + EndOfLine + EndOfLine
+
+		  For i As Integer = 1 To pageCount
+		    Dim templateID As Integer = pdf.ImportPage(i)
+
+		    If pdf.Err() Then
+		      statusText = statusText + "  ✗ ERROR importing page " + Str(i) + ": " + pdf.GetError() + EndOfLine
+		      pdf.ClearError()
+		      Continue
+		    End If
+
+		    templateIDs.Add(templateID)
+		  Next
+
+		  statusText = statusText + "✓ Successfully imported " + Str(templateIDs.Count) + " pages" + EndOfLine + EndOfLine
+
+		  // Display all pages as thumbnails - 4 pages per output page (2x2 grid)
+		  Dim thumbWidth As Double = 85  // Width for each thumbnail
+		  Dim thumbSpacing As Double = 5  // Space between thumbnails
+		  Dim pageMargin As Double = 15
+
+		  // Calculate positions for 2x2 grid
+		  Dim col1X As Double = pageMargin
+		  Dim col2X As Double = pageMargin + thumbWidth + thumbSpacing
+		  Dim row1Y As Double = 45
+		  Dim row2Y As Double = row1Y + 120  // Approximate height for A4 aspect ratio thumbnails
+
+		  Dim pageIndex As Integer = 0
+		  Dim outputPageNum As Integer = 0
+
+		  While pageIndex < templateIDs.Count
+		    // Add new output page for this set of 4 thumbnails
+		    Call pdf.AddPage()
+		    outputPageNum = outputPageNum + 1
+
+		    // Title
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "Source PDF Pages (Sheet " + Str(outputPageNum) + " of " + Str((templateIDs.Count + 3) \ 4) + ")", 0, 1, "C")
+		    Call pdf.Ln(5)
+
+		    // Display up to 4 thumbnails in 2x2 grid
+		    For gridPos As Integer = 0 To 3
+		      If pageIndex >= templateIDs.Count Then Exit For
+
+		      // Calculate position for this thumbnail
+		      Dim thumbX As Double
+		      Dim thumbY As Double
+
+		      Select Case gridPos
+		      Case 0  // Top-left
+		        thumbX = col1X
+		        thumbY = row1Y
+		      Case 1  // Top-right
+		        thumbX = col2X
+		        thumbY = row1Y
+		      Case 2  // Bottom-left
+		        thumbX = col1X
+		        thumbY = row2Y
+		      Case 3  // Bottom-right
+		        thumbX = col2X
+		        thumbY = row2Y
+		      End Select
+
+		      // Draw label above thumbnail
+		      Call pdf.SetFont("helvetica", "B", 10)
+		      Dim debugInfo As String = "Source Page " + Str(pageIndex + 1) + " (ID:" + Str(templateIDs(pageIndex)) + ", Arr:" + Str(pageIndex) + ")"
+		      Call pdf.Text(thumbX, thumbY - 3, debugInfo)
+
+		      // Place the thumbnail
+		      Call pdf.UseTemplate(templateIDs(pageIndex), thumbX, thumbY, thumbWidth, 0)
+
+		      pageIndex = pageIndex + 1
+		    Next
+		  Wend
+
+		  statusText = statusText + "✓ Created " + Str(outputPageNum) + " thumbnail overview pages" + EndOfLine
+
+		  statusText = statusText + EndOfLine + "✓ Example 20 completed" + EndOfLine
+
+		  // Generate PDF
+		  Dim pdfBytes As String = pdf.Output()
+
+		  If pdf.Err() Then
+		    statusText = statusText + "✗ ERROR generating PDF: " + pdf.GetError() + EndOfLine
+		    result.Value("success") = False
+		    result.Value("status") = statusText
+		    result.Value("filename") = ""
+		    Return result
+		  End If
+
+		  // Save to file
+		  #If TargetDesktop Or TargetConsole Then
+		    Dim outputFile As FolderItem = SpecialFolder.Desktop.Child("example20_pdf_import.pdf")
+		    Try
+		      Dim bos As BinaryStream = BinaryStream.Create(outputFile, True)
+		      bos.Write(pdfBytes)
+		      bos.Close()
+
+		      statusText = statusText + "✓ PDF saved to: " + outputFile.NativePath + EndOfLine
+		      result.Value("success") = True
+		      result.Value("filename") = "example20_pdf_import.pdf"
+		    Catch e As IOException
+		      statusText = statusText + "✗ ERROR saving file: " + e.Message + EndOfLine
+		      result.Value("success") = False
+		      result.Value("filename") = ""
+		    End Try
+		  #Else
+		    // iOS/Web: Return PDF data for UI layer to handle
+		    result.Value("success") = True
+		    result.Value("filename") = "example20_pdf_import.pdf"
+		  #EndIf
+
+
+		  // Return PDF data for all platforms (iOS/Web need this for display)
+		  result.Value("pdf") = pdfBytes
+		  result.Value("status") = statusText
+		  Return result
+		End Function
+	#tag EndMethod
+
 
 	#tag ViewBehavior
 		#tag ViewProperty

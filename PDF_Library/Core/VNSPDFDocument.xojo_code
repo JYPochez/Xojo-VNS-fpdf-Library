@@ -308,10 +308,7 @@ Protected Class VNSPDFDocument
 		    fontInfo.Value("usedRunes") = New Dictionary // Track used Unicode characters
 		    
 		    mFonts.Value(fontKey) = fontInfo
-		    
-		    // Debug: log font loading
-		    System.DebugLog("AddUTF8Font: " + fontKey + " -> " + ttf.FontName + " (number: " + Str(mFontNumber) + ")")
-		    
+
 		  Catch e As IOException
 		    mError = mError + "Error loading font file: " + e.Message + EndOfLine
 		  Catch e As RuntimeException
@@ -355,14 +352,6 @@ Protected Class VNSPDFDocument
 		    Return
 		  End If
 
-		  // Parse TrueType font directly from MemoryBlock
-		  #If TargetiOS Then
-		    // iOS: Pass MemoryBlock directly to avoid String conversion corruption
-		    System.DebugLog("AddUTF8FontFromBytes: Font data size = " + Str(fontBytes.Size) + " bytes")
-		  #Else
-		    System.DebugLog("AddUTF8FontFromBytes: Font data size = " + Str(fontBytes.Size) + " bytes")
-		  #EndIf
-
 		  // Parse TrueType font
 		  Try
 		    #If TargetiOS Then
@@ -402,9 +391,6 @@ Protected Class VNSPDFDocument
 
 		    mFonts.Value(fontKey) = fontInfo
 
-		    // Debug: log font loading
-		    System.DebugLog("AddUTF8FontFromBytes: " + fontKey + " -> " + ttf.FontName + " (number: " + Str(mFontNumber) + ")")
-
 		  Catch e As RuntimeException
 		    mError = mError + "Error loading font from bytes: " + e.Message + EndOfLine
 		  End Try
@@ -439,38 +425,21 @@ Protected Class VNSPDFDocument
 		  // So fonts start after all page objects: 1 + 1 + 2*mPage + 1 = 3 + 2*mPage
 		  
 		  Dim nextFontObjNum As Integer = 3 + (2 * mPage)
-		  
-		  System.DebugLog("AllocateFontObjects: Calculating font object numbers (starting at " + Str(nextFontObjNum) + ")...")
-		  
+
 		  For Each fontKey As Variant In mFonts.Keys
 		    Dim fontInfo As Dictionary = mFonts.Value(fontKey)
 		    Dim fontType As String = fontInfo.Value("type")
-		    
+
 		    If fontType = "UTF8" Then
-		      // UTF8 CID fonts need 6 objects:
-		      // 1. Type0 font
-		      // 2. CIDFont
-		      // 3. CIDSystemInfo
-		      // 4. FontDescriptor
-		      // 5. FontFile2
-		      // 6. ToUnicode CMap
-		      
+		      // UTF8 CID fonts need 6 objects
 		      fontInfo.Value("objNum") = nextFontObjNum
-		      System.DebugLog("  Font " + fontKey.StringValue + " -> objects " + Str(nextFontObjNum) + " to " + Str(nextFontObjNum + 5))
-		      
 		      nextFontObjNum = nextFontObjNum + 6
-		      
+
 		    ElseIf fontType = "TrueType" Then
-		      // TrueType fonts need object numbers too
 		      fontInfo.Value("objNum") = nextFontObjNum
-		      System.DebugLog("  Font " + fontKey.StringValue + " -> object " + Str(nextFontObjNum))
-		      
-		      nextFontObjNum = nextFontObjNum + 3  // Adjust based on actual need
+		      nextFontObjNum = nextFontObjNum + 3
 		    End If
-		    // Core fonts don't need object numbers (inline definitions)
 		  Next
-		  
-		  System.DebugLog("AllocateFontObjects: Font objects will end at " + Str(nextFontObjNum - 1))
 		End Sub
 	#tag EndMethod
 
@@ -1028,25 +997,21 @@ Protected Class VNSPDFDocument
 		        If fontInfo.HasKey("glyphMapping") Then
 		          glyphMapping = fontInfo.Value("glyphMapping")
 		        End If
-		        
-		        // Track used Unicode characters
+
+		        // Track used Unicode characters AFTER shaping
+		        // Shape Arabic text first (converts to presentation forms)
+		        Dim shapedText As String = ShapeArabicText(displayText)
+
 		        If fontInfo.HasKey("usedRunes") Then
 		          Dim usedRunes As Dictionary = fontInfo.Value("usedRunes")
-		          #If TargetiOS Then
-		            Dim textLen As Integer = displayText.Length
-		            For i As Integer = 0 To textLen - 1
-		              Dim char As String = displayText.Middle(i, 1)  // iOS: 0-based Middle()
-		              Dim codePoint As Integer = char.Asc
-		              usedRunes.Value(Str(codePoint)) = codePoint
-		            Next
-		          #Else
-		            Dim textLen As Integer = displayText.Length
-		            For i As Integer = 1 To textLen
-		              Dim char As String = displayText.Middle(i, 1)  // Desktop/Console/Web: 0-based Middle()
-		              Dim codePoint As Integer = char.Asc
-		              usedRunes.Value(Str(codePoint)) = codePoint
-		            Next
-		          #EndIf
+
+		          // Convert shaped text to Unicode code points (handles multi-byte UTF-8)
+		          Dim shapedCodePoints() As Integer = UTF8ToCodePoints(shapedText)
+
+		          For i As Integer = 0 To shapedCodePoints.Count - 1
+		            Dim codePoint As Integer = shapedCodePoints(i)
+		            usedRunes.Value(Str(codePoint)) = codePoint
+		          Next
 		        End If
 		      End If
 		    End If
@@ -1400,8 +1365,20 @@ Protected Class VNSPDFDocument
 		  End If
 		  
 		  // Save current page buffer if exists
+		  System.DebugLog("CloseDocument: Saving current page buffer...")
+		  System.DebugLog("CloseDocument:   mPage = " + Str(mPage))
+		  System.DebugLog("CloseDocument:   mBuffer.Length = " + Str(mBuffer.Length))
+		  If mBuffer.Length > 0 Then
+		    Dim preview As String = mBuffer
+		    If preview.Length > 300 Then preview = preview.Left(300) + "..."
+		    System.DebugLog("CloseDocument:   mBuffer preview: " + preview)
+		  End If
+
 		  If mPage > 0 And mBuffer <> "" Then
+		    System.DebugLog("CloseDocument: Saving mBuffer to mPages(" + Str(mPage) + ")")
 		    mPages.Value(Str(mPage)) = mBuffer
+		  Else
+		    System.DebugLog("CloseDocument: NOT saving buffer (mPage=" + Str(mPage) + ", mBuffer empty=" + Str(mBuffer = "") + ")")
 		  End If
 		  
 		  // Build complete PDF structure
@@ -1473,7 +1450,7 @@ Protected Class VNSPDFDocument
 		  // Initialize state
 		  mState = 0
 		  mPage = 0
-		  mObjectNumber = 1 // Start from 1 (object 1 = Pages root, object 2 = Resources)
+		  mObjectNumber = 3 // Start from 3 (objects 1-2 reserved for Pages root and Resources)
 		  mBuffer = ""
 		  mError = ""
 		  
@@ -1487,7 +1464,10 @@ Protected Class VNSPDFDocument
 		  mPageBoxes = New Dictionary
 		  mDefPageBoxes = New Dictionary
 		  mAliases = New Dictionary
-		  
+		  mImportedPages = New Dictionary
+		  mXObjects = New Dictionary
+		  mXObjectObjNums = New Dictionary
+
 		  // Initialize gradient list (index 0 is unused, like go-fpdf)
 		  ReDim mGradientList(0)
 		  
@@ -1805,16 +1785,12 @@ Protected Class VNSPDFDocument
 		      Static emojiCounter As Integer = 0
 		      emojiCounter = emojiCounter + 1
 		      Dim imageKey As String = "emoji_" + Str(emojiCounter) + "_" + Str(randomSuffix)
-		      System.DebugLog("Emoji: iOS imageKey = " + imageKey)
 		    #Else
 		      // Desktop/Web: Use Microseconds for uniqueness
 		      Dim imageKey As String = "emoji_" + Str(System.Microseconds) + "_" + Str(randomSuffix)
-		      System.DebugLog("Emoji: Desktop/Web imageKey = " + imageKey)
 		    #EndIf
 
-		    System.DebugLog("Emoji: Calling ImageFromPicture with size=" + Str(sizeInUserUnits))
 		    Call ImageFromPicture(pic, x, y, sizeInUserUnits, sizeInUserUnits, imageKey)
-		    System.DebugLog("Emoji: ImageFromPicture completed")
 
 		  #Else
 		    // Console: Emoji not supported
@@ -1858,31 +1834,456 @@ Protected Class VNSPDFDocument
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
+		Private Function ShapeArabicText(txt As String) As String
+		  // Shape Arabic text by converting base Unicode characters to presentation forms
+		  // This handles basic Arabic joining behavior for proper rendering
+		  // Returns: Shaped text with Arabic presentation forms + reversed RTL text
+
+		  // Arabic Unicode ranges
+		  Const kArabicStart = &h0600
+		  Const kArabicEnd = &h06FF
+
+		  // Check if text contains Arabic characters
+		  Dim hasArabic As Boolean = False
+		  Dim codePoints() As Integer = UTF8ToCodePoints(txt)
+
+		  For i As Integer = 0 To codePoints.Count - 1
+		    Dim cp As Integer = codePoints(i)
+		    If cp >= kArabicStart And cp <= kArabicEnd Then
+		      hasArabic = True
+		      Exit For i
+		    End If
+		  Next
+
+		  // If no Arabic, return original text
+		  If Not hasArabic Then
+		    Return txt
+		  End If
+
+		  // Apply Arabic shaping (convert base letters to presentation forms)
+		  Dim shaped() As Integer
+		  ReDim shaped(-1)
+
+		  For i As Integer = 0 To codePoints.Count - 1
+		    Dim cp As Integer = codePoints(i)
+
+		    // Check if this is an Arabic letter that needs shaping
+		    If IsArabicLetter(cp) Then
+		      // Determine position: 0=isolated, 1=initial, 2=final, 3=medial
+		      Dim position As Integer = 0  // Default: isolated
+
+		      // Check if previous letter joins to this one
+		      Dim hasJoiningPrev As Boolean = False
+		      If i > 0 Then
+		        Dim prevCP As Integer = codePoints(i - 1)
+		        If IsArabicLetter(prevCP) And DoesArabicLetterJoinToNext(prevCP) Then
+		          hasJoiningPrev = True
+		        End If
+		      End If
+
+		      // Check if this letter joins to next one
+		      Dim hasJoiningNext As Boolean = False
+		      If i < codePoints.Count - 1 Then
+		        Dim nextCP As Integer = codePoints(i + 1)
+		        If IsArabicLetter(nextCP) And DoesArabicLetterJoinToNext(cp) Then
+		          hasJoiningNext = True
+		        End If
+		      End If
+
+		      // Determine position based on joining context
+		      If hasJoiningPrev And hasJoiningNext Then
+		        position = 3  // Medial
+		      ElseIf hasJoiningPrev And Not hasJoiningNext Then
+		        position = 2  // Final
+		      ElseIf Not hasJoiningPrev And hasJoiningNext Then
+		        position = 1  // Initial
+		      Else
+		        position = 0  // Isolated
+		      End If
+
+		      // Get the appropriate presentation form
+		      Dim shapedCP As Integer = GetArabicPresentationForm(cp, position)
+		      shaped.Add(shapedCP)
+		    Else
+		      // Not an Arabic letter - keep as-is
+		      shaped.Add(cp)
+		    End If
+		  Next
+
+		  // Reverse ONLY the Arabic runs for RTL visual display in PDF
+		  // PDF renders LTR, so Arabic must be reversed for correct visual order
+		  Dim reversed() As Integer
+		  ReDim reversed(-1)
+
+		  Dim i As Integer = 0
+		  While i < shaped.Count
+		    Dim cp As Integer = shaped(i)
+
+		    // Check if this starts an Arabic run (including presentation forms)
+		    If (cp >= &h0600 And cp <= &h06FF) Or (cp >= &hFE70 And cp <= &hFEFF) Then
+		      // Find the end of this Arabic run
+		      Dim runStart As Integer = i
+		      Dim runEnd As Integer = i
+
+		      While runEnd < shaped.Count
+		        Dim nextCP As Integer = shaped(runEnd)
+		        // Continue while Arabic or space within Arabic text
+		        If (nextCP >= &h0600 And nextCP <= &h06FF) Or (nextCP >= &hFE70 And nextCP <= &hFEFF) Or nextCP = &h0020 Then
+		          runEnd = runEnd + 1
+		        Else
+		          Exit While
+		        End If
+		      Wend
+
+		      // Reverse this entire Arabic run (including spaces)
+		      For j As Integer = runEnd - 1 DownTo runStart
+		        reversed.Add(shaped(j))
+		      Next
+
+		      i = runEnd  // Continue after this run
+		    Else
+		      // Non-Arabic character - keep as-is
+		      reversed.Add(cp)
+		      i = i + 1
+		    End If
+		  Wend
+
+		  // Convert code points back to UTF-8 string
+		  Dim result As String = CodePointsToUTF8(reversed)
+
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function IsArabicLetter(cp As Integer) As Boolean
+		  // Check if a code point is an Arabic letter that participates in joining
+		  // Returns: True if Arabic letter, False otherwise
+
+		  // Main Arabic block (U+0600 to U+06FF)
+		  If cp >= &h0621 And cp <= &h064A Then Return True  // Arabic letters
+		  If cp >= &h0671 And cp <= &h06D3 Then Return True  // Extended Arabic
+		  If cp >= &h06FA And cp <= &h06FC Then Return True  // Additional letters
+
+		  // Arabic Presentation Forms-B (already shaped - shouldn't need joining)
+		  If cp >= &hFE70 And cp <= &hFEFF Then Return False
+
+		  Return False
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function DoesArabicLetterJoinToNext(cp As Integer) As Boolean
+		  // Check if an Arabic letter joins to the following letter
+		  // Some letters (like ا د ذ ر ز و) don't join to the next letter (right-joining only)
+		  // Returns: True if letter joins to next, False if right-joining only
+
+		  // Non-joining letters (alef, dal, thal, ra, zain, waw, etc.)
+		  Select Case cp
+		  Case &h0622, &h0623, &h0624, &h0625, &h0626, &h0627  // Alef variants
+		    Return False
+		  Case &h062F, &h0630  // Dal, Thal
+		    Return False
+		  Case &h0631, &h0632  // Reh, Zain
+		    Return False
+		  Case &h0648  // Waw
+		    Return False
+		  Case &h0698, &h06A9, &h06AF  // Additional non-joiners
+		    Return False
+		  Else
+		    // Most Arabic letters join to next
+		    Return True
+		  End Select
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function GetArabicPresentationForm(cp As Integer, position As Integer) As Integer
+		  // Map base Arabic character to presentation form based on position
+		  // position: 0=isolated, 1=initial, 2=final, 3=medial
+		  // Returns: Unicode code point for presentation form
+
+		  // Arabic Presentation Forms-B mapping (partial - common letters)
+		  // This is a simplified version - a complete implementation would use full Unicode data
+
+		  Select Case cp
+		  // Beh (ب)
+		  Case &h0628
+		    Select Case position
+		    Case 0
+		      Return &hFE8F  // Isolated
+		    Case 1
+		      Return &hFE91  // Initial
+		    Case 2
+		      Return &hFE90  // Final
+		    Case 3
+		      Return &hFE92  // Medial
+		    End Select
+
+		  // Teh (ت)
+		  Case &h062A
+		    Select Case position
+		    Case 0
+		      Return &hFE95  // Isolated
+		    Case 1
+		      Return &hFE97  // Initial
+		    Case 2
+		      Return &hFE96  // Final
+		    Case 3
+		      Return &hFE98  // Medial
+		    End Select
+
+		  // Alef (ا) - doesn't join to next
+		  Case &h0627
+		    Select Case position
+		    Case 0
+		      Return &hFE8D  // Isolated
+		    Case 2
+		      Return &hFE8E  // Final
+		    Else
+		      Return &hFE8D    // Initial treated as isolated
+		    End Select
+
+		  // Heh (ح)
+		  Case &h062D
+		    Select Case position
+		    Case 0
+		      Return &hFEA1  // Isolated
+		    Case 1
+		      Return &hFEA3  // Initial
+		    Case 2
+		      Return &hFEA2  // Final
+		    Case 3
+		      Return &hFEA4  // Medial
+		    End Select
+
+		  // Meem (م)
+		  Case &h0645
+		    Select Case position
+		    Case 0
+		      Return &hFEE1  // Isolated
+		    Case 1
+		      Return &hFEE3  // Initial
+		    Case 2
+		      Return &hFEE2  // Final
+		    Case 3
+		      Return &hFEE4  // Medial
+		    End Select
+
+		  // Reh (ر) - doesn't join to next
+		  Case &h0631
+		    Select Case position
+		    Case 0
+		      Return &hFEAD  // Isolated
+		    Case 2
+		      Return &hFEAE  // Final
+		    Else
+		      Return &hFEAD    // Initial treated as isolated
+		    End Select
+
+		  // Lam (ل)
+		  Case &h0644
+		    Select Case position
+		    Case 0
+		      Return &hFEDD  // Isolated
+		    Case 1
+		      Return &hFEDF  // Initial
+		    Case 2
+		      Return &hFEDE  // Final
+		    Case 3
+		      Return &hFEE0  // Medial
+		    End Select
+
+		  // Ain (ع)
+		  Case &h0639
+		    Select Case position
+		    Case 0
+		      Return &hFEC9  // Isolated
+		    Case 1
+		      Return &hFECB  // Initial
+		    Case 2
+		      Return &hFECA  // Final
+		    Case 3
+		      Return &hFECC  // Medial
+		    End Select
+
+		  // Yeh (ي)
+		  Case &h064A
+		    Select Case position
+		    Case 0
+		      Return &hFEF1  // Isolated
+		    Case 1
+		      Return &hFEF3  // Initial
+		    Case 2
+		      Return &hFEF2  // Final
+		    Case 3
+		      Return &hFEF4  // Medial
+		    End Select
+
+		  // Waw (و) - doesn't join to next
+		  Case &h0648
+		    Select Case position
+		    Case 0
+		      Return &hFEED  // Isolated
+		    Case 2
+		      Return &hFEEE  // Final
+		    Else
+		      Return &hFEED    // Initial treated as isolated
+		    End Select
+
+		  // Dal (د) - doesn't join to next
+		  Case &h062F
+		    Select Case position
+		    Case 0
+		      Return &hFEA9  // Isolated
+		    Case 2
+		      Return &hFEAA  // Final
+		    Else
+		      Return &hFEA9    // Initial treated as isolated
+		    End Select
+
+		  // Space and other non-letters
+		  Case &h0020
+		    Return &h0020  // Space stays as space
+
+		  // Add more letter mappings as needed...
+		  // For unmapped letters, return the base character
+		  Else
+		    Return cp
+		  End Select
+
+		  Return cp
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function ReverseArabicRuns(codePoints() As Integer) As Integer()
+		  // Reverse Arabic character runs for RTL rendering
+		  // PDF renders text LTR, so we need to reverse Arabic text
+		  // Keep Latin/numbers in original order (they're already LTR)
+		  // Returns: Reversed array of code points
+
+		  Dim result() As Integer
+		  ReDim result(-1)
+
+		  Dim arabicRun() As Integer
+		  ReDim arabicRun(-1)
+
+		  For i As Integer = 0 To codePoints.Count - 1
+		    Dim cp As Integer = codePoints(i)
+
+		    // Check if this is Arabic/RTL character
+		    If (cp >= &h0600 And cp <= &h06FF) Or (cp >= &hFE70 And cp <= &hFEFF) Then
+		      // Add to Arabic run
+		      arabicRun.Add(cp)
+		    Else
+		      // Non-Arabic character - flush Arabic run if any
+		      If arabicRun.Count > 0 Then
+		        // Reverse the Arabic run and add to result
+		        For j As Integer = arabicRun.Count - 1 DownTo 0
+		          result.Add(arabicRun(j))
+		        Next
+		        ReDim arabicRun(-1)
+		      End If
+
+		      // Add non-Arabic character as-is
+		      result.Add(cp)
+		    End If
+		  Next
+
+		  // Flush remaining Arabic run
+		  If arabicRun.Count > 0 Then
+		    For j As Integer = arabicRun.Count - 1 DownTo 0
+		      result.Add(arabicRun(j))
+		    Next
+		  End If
+
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function CodePointsToUTF8(codePoints() As Integer) As String
+		  // Convert array of Unicode code points back to UTF-8 string
+		  // This is the inverse of UTF8ToCodePoints()
+		  // Returns: UTF-8 encoded string
+
+		  Dim mb As New MemoryBlock(codePoints.Count * 4)  // Max 4 bytes per code point
+		  Dim pos As Integer = 0
+
+		  For i As Integer = 0 To codePoints.Count - 1
+		    Dim cp As Integer = codePoints(i)
+
+		    If cp < &h80 Then
+		      // 1-byte sequence (0xxxxxxx)
+		      mb.UInt8Value(pos) = cp
+		      pos = pos + 1
+		    ElseIf cp < &h800 Then
+		      // 2-byte sequence (110xxxxx 10xxxxxx)
+		      Dim byte1 As Integer = &hC0 Or Bitwise.ShiftRight(cp, 6)
+		      Dim byte2 As Integer = &h80 Or (cp And &h3F)
+		      mb.UInt8Value(pos) = byte1
+		      mb.UInt8Value(pos + 1) = byte2
+		      pos = pos + 2
+		    ElseIf cp < &h10000 Then
+		      // 3-byte sequence (1110xxxx 10xxxxxx 10xxxxxx)
+		      Dim byte1 As Integer = &hE0 Or Bitwise.ShiftRight(cp, 12)
+		      Dim shifted As Integer = Bitwise.ShiftRight(cp, 6)
+		      Dim byte2 As Integer = &h80 Or (shifted And &h3F)
+		      Dim byte3 As Integer = &h80 Or (cp And &h3F)
+		      mb.UInt8Value(pos) = byte1
+		      mb.UInt8Value(pos + 1) = byte2
+		      mb.UInt8Value(pos + 2) = byte3
+		      pos = pos + 3
+		    Else
+		      // 4-byte sequence (11110xxx 10xxxxxx 10xxxxxx 10xxxxxx)
+		      Dim byte1 As Integer = &hF0 Or Bitwise.ShiftRight(cp, 18)
+		      Dim shifted12 As Integer = Bitwise.ShiftRight(cp, 12)
+		      Dim byte2 As Integer = &h80 Or (shifted12 And &h3F)
+		      Dim shifted6 As Integer = Bitwise.ShiftRight(cp, 6)
+		      Dim byte3 As Integer = &h80 Or (shifted6 And &h3F)
+		      Dim byte4 As Integer = &h80 Or (cp And &h3F)
+		      mb.UInt8Value(pos) = byte1
+		      mb.UInt8Value(pos + 1) = byte2
+		      mb.UInt8Value(pos + 2) = byte3
+		      mb.UInt8Value(pos + 3) = byte4
+		      pos = pos + 4
+		    End If
+		  Next
+
+		  Return mb.StringValue(0, pos)
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
 		Private Function EncodeTextForTrueType(txt As String, ttf As VNSPDFTrueTypeFont, Optional glyphMapping As Dictionary = Nil) As String
 		  // Convert UTF-8 text to glyph IDs for Identity-H encoded TrueType fonts
 		  // Identity-H expects CIDs (character IDs) which map to glyph indices in the font
 		  // glyphMapping: Optional dictionary for remapping glyph IDs (used with font subsetting)
-		  
+
+		  // Shape Arabic text if needed (converts to presentation forms)
+		  Dim shapedText As String = ShapeArabicText(txt)
+
 		  // Convert UTF-8 string to Unicode code points
-		  Dim codePoints() As Integer = UTF8ToCodePoints(txt)
-		  
+		  Dim codePoints() As Integer = UTF8ToCodePoints(shapedText)
+
 		  // Convert Unicode code points to glyph IDs using font's cmap
 		  Dim glyphMB As New MemoryBlock(codePoints.Count * 2) // 2 bytes per glyph ID
 		  glyphMB.LittleEndian = False // Big-endian for PDF
-		  
+
 		  For i As Integer = 0 To codePoints.Count - 1
 		    Dim unicode As Integer = codePoints(i)
 		    Dim glyphID As Integer = ttf.GetGlyphID(unicode)
-		    
+
 		    // Remap glyph ID if font subsetting was used
 		    If glyphMapping <> Nil And glyphMapping.HasKey(Str(glyphID)) Then
 		      glyphID = glyphMapping.Value(Str(glyphID))
 		    End If
-		    
+
 		    // Write glyph ID as 16-bit big-endian
 		    glyphMB.UInt16Value(i * 2) = glyphID
 		  Next
-		  
+
 		  // Convert to hex string format <XXXX...>
 		  Dim hexStr As String = "<"
 		  For i As Integer = 0 To glyphMB.Size - 1
@@ -1893,7 +2294,7 @@ Protected Class VNSPDFDocument
 		    hexStr = hexStr + hexValue
 		  Next
 		  hexStr = hexStr + ">"
-		  
+
 		  Return hexStr
 		End Function
 	#tag EndMethod
@@ -2525,10 +2926,6 @@ Protected Class VNSPDFDocument
 		    Dim widthInPoints As Double = totalWidth * mFontSize / 1000.0
 		    Dim widthInUserUnits As Double = widthInPoints / mScaleFactor
 
-		    System.DebugLog("GetStringWidth('" + s + "'): totalUnits=" + VNSPDFModule.FormatHelper(totalWidth, "0.00") + _
-		    ", fontSize=" + VNSPDFModule.FormatHelper(mFontSize, "0.00") + "pt, scaleFactor=" + VNSPDFModule.FormatHelper(mScaleFactor, "0.0000") + _
-		    ", widthPt=" + VNSPDFModule.FormatHelper(widthInPoints, "0.00") + ", widthMM=" + VNSPDFModule.FormatHelper(widthInUserUnits, "0.00"))
-		    
 		    Return widthInUserUnits
 		    
 		  Else
@@ -2816,7 +3213,7 @@ Protected Class VNSPDFDocument
 		  // - image/jpeg, image/jpg -> "jpg"
 		  // - image/png -> "png"
 		  // - image/gif -> "gif"
-		  
+
 		  Select Case mimeStr.Lowercase
 		  Case "image/png"
 		    Return "png"
@@ -2829,6 +3226,581 @@ Protected Class VNSPDFDocument
 		    Return ""
 		  End Select
 		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0, Description = 4F70656E732061205044462066696C6520666F7220696D706F7274696E672070616765732E0A
+		Function SetSourceFile(path As String) As Integer
+		  // Open a PDF file for importing pages
+		  // path: Full path to the PDF file to import from
+		  // Returns: Number of pages in the source PDF, or 0 on error
+
+		  // Check for errors first
+		  If Err() Then Return 0
+
+		  // Create a new PDF reader
+		  mSourceReader = New VNSPDFReader
+
+		  // Open the PDF file
+		  If Not mSourceReader.OpenFile(path) Then
+		    Call SetError("Failed to open PDF file: " + path)
+		    mSourceReader = Nil
+		    Return 0
+		  End If
+
+		  // Clear object ID mapping for new source file
+		  mImportedObjectMap = New Dictionary
+
+		  // Return page count
+		  Return mSourceReader.GetPageCount()
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0, Description = 496D706F727473206120706167652066726F6D2074686520736F757263652050444620616E642072657475726E73206120746D706C617465204944420A
+		Function ImportPage(pageNum As Integer) As Integer
+		  // Import a specific page from the source PDF
+		  // pageNum: Page number to import (1-based)
+		  // Returns: Template ID for use with UseTemplate(), or 0 on error
+
+		  // Check for errors first
+		  If Err() Then
+		    Return 0
+		  End If
+
+		  // Check if source PDF is open
+		  If mSourceReader = Nil Then
+		    Call SetError("No source PDF file opened. Call SetSourceFile() first.")
+		    Return 0
+		  End If
+
+		  // Get the page from source PDF (pages now accessed from pre-built list)
+		  Dim importedPage As VNSPDFImportedPage = mSourceReader.GetPage(pageNum)
+		  If importedPage = Nil Then
+		    Call SetError("Failed to import page " + Str(pageNum) + " from source PDF")
+		    Return 0
+		  End If
+
+		  // Assign a template ID
+		  Dim templateID As Integer = mNextTemplateID
+		  mNextTemplateID = mNextTemplateID + 1
+
+		  // Store the imported page
+		  mImportedPages.Value(Str(templateID)) = importedPage
+
+		  Return templateID
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0, Description = 506C6163657320616E20696D706F727465642050444620706167652061742074686520737065696669656420636F6F7264696E6174732E0A
+		Sub UseTemplate(templateID As Integer, x As Double = 0, y As Double = 0, w As Double = 0, h As Double = 0)
+		  // Place an imported PDF page at the specified coordinates
+		  // templateID: Template ID returned by ImportPage()
+		  // x, y: Position on current page (in user units)
+		  // w, h: Width and height (0 = use original page size)
+
+		  // Check for errors first
+		  If Err() Then
+		    Return
+		  End If
+
+		  // Check if template exists
+		  Dim key As String = Str(templateID)
+		  If Not mImportedPages.HasKey(key) Then
+		    Call SetError("Template ID " + Str(templateID) + " not found. Call ImportPage() first.")
+		    Return
+		  End If
+
+		  // Get imported page
+		  Dim importedPage As VNSPDFImportedPage = mImportedPages.Value(key)
+
+		  // Use original page dimensions if w or h not specified
+		  If w = 0 And h = 0 Then
+		    w = importedPage.width / mScaleFactor
+		    h = importedPage.height / mScaleFactor
+		  ElseIf w = 0 Then
+		    w = h * importedPage.width / importedPage.height
+		  ElseIf h = 0 Then
+		    h = w * importedPage.height / importedPage.width
+		  End If
+
+		  // Phase 6.2: Create XObject from imported page and place it
+		  Dim xobjName As String = CreateXObjectFromPage(importedPage, templateID)
+		  If xobjName = "" Then
+		    Return  // Error already set
+		  End If
+
+		  // Calculate transformation matrix to place XObject at (x, y) with size (w, h)
+		  // PDF coordinates: (0,0) at bottom-left, y increases upward
+		  // User coordinates: (0,0) at top-left, y increases downward
+
+		  // Scale factors
+		  Dim scaleX As Double = w * mScaleFactor / importedPage.width
+		  Dim scaleY As Double = h * mScaleFactor / importedPage.height
+
+		  // Transform to PDF coordinates
+		  // Note: mPageHeight is in user units, so multiply by mScaleFactor to get points
+		  Dim pdfX As Double = x * mScaleFactor
+		  Dim pdfY As Double = (mPageHeight * mScaleFactor) - (y * mScaleFactor) - (h * mScaleFactor)
+
+		  // Build transformation matrix and place XObject
+		  // Format: scaleX 0 0 scaleY tx ty cm
+		  // Then: /XObjName Do
+		  System.DebugLog("UseTemplate: Placing XObject " + xobjName + " at (" + Str(x) + ", " + Str(y) + ") with size " + Str(w) + " x " + Str(h))
+		  System.DebugLog("UseTemplate:   scaleX=" + Str(scaleX) + ", scaleY=" + Str(scaleY) + ", pdfX=" + Str(pdfX) + ", pdfY=" + Str(pdfY))
+
+		  mBuffer = mBuffer + "q" + EndOfLine  // Save graphics state
+		  mBuffer = mBuffer + FormatPDF(scaleX) + " 0 0 " + FormatPDF(scaleY) + " "
+		  mBuffer = mBuffer + FormatPDF(pdfX) + " " + FormatPDF(pdfY) + " cm" + EndOfLine
+		  mBuffer = mBuffer + "/" + xobjName + " Do" + EndOfLine
+		  mBuffer = mBuffer + "Q" + EndOfLine  // Restore graphics state
+
+		  System.DebugLog("UseTemplate: Added commands to mBuffer (buffer length now " + Str(mBuffer.Length) + " bytes)")
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21, Description = 4372656174657320612046f726D2058E4f626A6563742066726F6D20616E20696D706F727465642070616765
+		Private Function CreateXObjectFromPage(importedPage As VNSPDFImportedPage, templateID As Integer) As String
+		  // Creates a Form XObject from an imported page
+		  // Returns: XObject name (e.g., "TPL1"), or empty string on error
+
+		  // Generate XObject name
+		  Dim xobjName As String = "TPL" + Str(templateID)
+
+		  // Check if XObject already exists
+		  If mXObjects <> Nil And mXObjects.HasKey(xobjName) Then
+		    System.DebugLog("CreateXObjectFromPage: XObject " + xobjName + " already exists, reusing it")
+		    Return xobjName
+		  End If
+
+		  System.DebugLog("CreateXObjectFromPage: Creating new XObject " + xobjName)
+
+		  // Get DECODED content stream (decompressed)
+		  // This avoids LZWDecode issues - we'll re-compress with FlateDecode if available
+		  Dim decodedContent As String = importedPage.GetDecodedContents(mSourceReader)
+		  If decodedContent = "" Then
+		    Call SetError("Failed to get content stream from imported page")
+		    Return ""
+		  End If
+
+		  // TEMP FIX: Disable compression for imported content
+		  // Our pure Xojo deflate compression may not be fully compatible with Adobe Reader
+		  // Store imported content uncompressed to avoid corruption
+		  Dim streamData As String = decodedContent
+		  Dim useFilter As String = ""
+
+		  // // Attempt compression (works on all platforms with premium zlib module)
+		  // Dim compressed As String = VNSZlibModule.Compress(decodedContent)
+		  // If compressed <> "" Then
+		  //   // Add filter when compression is available (premium zlib works on all platforms)
+		  //   #If TargetiOS Then
+		  //     If VNSPDFModule.hasPremiumZlibModule Then
+		  //       useFilter = "FlateDecode"
+		  //       streamData = compressed
+		  //     End If
+		  //   #Else
+		  //     useFilter = "FlateDecode"
+		  //     streamData = compressed
+		  //   #EndIf
+		  // End If
+
+		  // Create Form XObject dictionary
+		  Dim xobjDict As String = "<< /Type /XObject" + EndOfLine
+		  xobjDict = xobjDict + "   /Subtype /Form" + EndOfLine
+		  xobjDict = xobjDict + "   /FormType 1" + EndOfLine
+		  xobjDict = xobjDict + "   /BBox [0 0 " + FormatPDF(importedPage.width) + " " + FormatPDF(importedPage.height) + "]" + EndOfLine
+
+		  // Add Group dictionary if the imported page has one (for transparency blending)
+		  If importedPage.pageDict <> Nil Then
+		    Dim pageDict As Dictionary = importedPage.pageDict.value
+		    If pageDict.HasKey("Group") Then
+		      Dim groupObj As VNSPDFType = pageDict.Value("Group")
+		      Dim groupStr As String = SerializeType(groupObj)
+		      xobjDict = xobjDict + "   /Group " + groupStr + EndOfLine
+		    End If
+		  End If
+
+		  // Add Resources if the imported page has them
+		  If importedPage.resources <> Nil Then
+		    Dim resourcesStr As String = SerializeResources(importedPage.resources)
+		    If resourcesStr <> "" Then
+		      xobjDict = xobjDict + "   /Resources " + resourcesStr + EndOfLine
+		    Else
+		      System.DebugLog("CreateXObjectFromPage: WARNING - Resources serialization returned empty string!")
+		    End If
+		  Else
+		    System.DebugLog("CreateXObjectFromPage: WARNING - No resources dictionary on imported page!")
+		  End If
+
+		  // Add Filter if stream is compressed
+		  If useFilter <> "" Then
+		    xobjDict = xobjDict + "   /Filter /" + useFilter + EndOfLine
+		  End If
+
+		  // Add stream length (streamData already set above)
+		  xobjDict = xobjDict + "   /Length " + Str(streamData.Length) + EndOfLine
+		  xobjDict = xobjDict + ">>" + EndOfLine
+
+		  // Build complete XObject
+		  Dim xobjContent As String = xobjDict
+		  xobjContent = xobjContent + "stream" + EndOfLine
+		  xobjContent = xobjContent + streamData + EndOfLine
+		  xobjContent = xobjContent + "endstream" + EndOfLine
+
+		  // Add XObject to document
+		  Call AddXObject(xobjName, xobjContent)
+
+		  Return xobjName
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function SerializeResources(resources As VNSPDFDictionary) As String
+		  // Serialize a Resources dictionary to PDF format
+		  // For Phase 6.2, we'll do a simple serialization
+		  // TODO: Implement full object ID remapping for nested resources
+
+		  Dim dict As Dictionary = resources.value
+		  System.DebugLog("SerializeResources: dict.KeyCount = " + Str(dict.KeyCount))
+
+		  If dict.KeyCount = 0 Then
+		    System.DebugLog("SerializeResources: Empty dictionary, returning empty string")
+		    Return ""
+		  End If
+
+		  // Build resources dictionary
+		  Dim result As String = "<<" + EndOfLine
+
+		  // Add each resource type
+		  Dim keys() As Variant = dict.Keys
+		  For Each key As Variant In keys
+		    Dim keyStr As String = key.StringValue
+		    result = result + "   /" + keyStr + " "
+
+		    Dim value As Variant = dict.Value(keyStr)
+		    If value IsA VNSPDFType Then
+		      Dim valueType As VNSPDFType = VNSPDFType(value)
+		      Dim serialized As String = SerializeType(valueType)
+		      result = result + serialized + EndOfLine
+		    Else
+		      System.DebugLog("SerializeResources:   Value is NOT VNSPDFType! Type = " + Introspection.GetType(value).Name)
+		      result = result + "null" + EndOfLine
+		    End If
+		  Next
+
+		  result = result + ">>"
+		  System.DebugLog("SerializeResources: Final result (first 200): " + result.Left(200))
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function SerializeType(obj As VNSPDFType) As String
+		  // Serialize a PDF type to string format
+		  // Simple implementation for Phase 6.2
+
+		  If obj IsA VNSPDFDictionary Then
+		    Dim dict As Dictionary = VNSPDFDictionary(obj).value
+		    Dim keys() As Variant = dict.Keys
+		    Dim result As String = "<<"
+		    For Each key As Variant In keys
+		      Dim keyStr As String = key.StringValue
+		      Dim valObj As VNSPDFType = dict.Value(keyStr)
+		      Dim valStr As String = SerializeType(valObj)
+		      result = result + " /" + keyStr + " " + valStr
+		    Next
+		    result = result + " >>"
+		    Return result
+
+		  ElseIf obj IsA VNSPDFName Then
+		    Return "/" + VNSPDFName(obj).value
+
+		  ElseIf obj IsA VNSPDFNumeric Then
+		    // Format number properly for PDF - avoid scientific notation
+		    Dim numVal As Double = VNSPDFNumeric(obj).value
+		    // Check if it's effectively an integer
+		    If Abs(numVal - Round(numVal)) < 0.0000001 Then
+		      // Output as integer (no decimal point)
+		      Return Str(CType(numVal, Int64))
+		    Else
+		      // Output as decimal with proper formatting (no scientific notation)
+		      // Replace comma with period for locale-independence (PDF requires period)
+		      Return FormatHelper(numVal, "-#########0.######").ReplaceAll(",", ".")
+		    End If
+
+		  ElseIf obj IsA VNSPDFArray Then
+		    // Serialize array: [item1 item2 item3]
+		    Dim arr As VNSPDFArray = VNSPDFArray(obj)
+		    Dim elements() As VNSPDFType = arr.value
+		    Dim result As String = "["
+		    For i As Integer = 0 To elements.LastIndex
+		      If i > 0 Then result = result + " "
+		      result = result + SerializeType(elements(i))
+		    Next
+		    result = result + "]"
+		    Return result
+
+		  ElseIf obj IsA VNSPDFIndirectObjectReference Then
+		    // REMAP indirect references by copying object from source to output
+		    Dim ref As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(obj)
+		    System.DebugLog("SerializeType: Indirect ref to object " + Str(ref.objectNumber) + " gen " + Str(ref.generation))
+		    Dim newObjNum As Integer = CopyObjectFromSource(ref.objectNumber)
+		    If newObjNum = 0 Then
+		      // Failed to copy - keep original reference (fallback)
+		      System.DebugLog("SerializeType: CopyObjectFromSource returned 0, using original ref " + Str(ref.objectNumber))
+		      Return Str(ref.objectNumber) + " " + Str(ref.generation) + " R"
+		    End If
+		    System.DebugLog("SerializeType: Using placeholder " + Str(newObjNum) + " for source object " + Str(ref.objectNumber))
+		    Return Str(newObjNum) + " 0 R"
+
+		  Else
+		    // Fallback - this shouldn't happen
+		    System.DebugLog("SerializeType: FALLBACK - Unknown type: " + Introspection.GetType(obj).Name)
+		    Return ""
+		  End If
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function CopyObjectFromSource(sourceObjNum As Integer) As Integer
+		  // Copy an object from source PDF and prepare it for output
+		  // Objects are stored and written during Output() in PutImportedObjects()
+		  // sourceObjNum: Object number in source PDF
+		  // Returns: New object number in output PDF (placeholder), or 0 on error
+
+		  // Initialize dictionaries if needed
+		  If mImportedObjectMap = Nil Then
+		    mImportedObjectMap = New Dictionary
+		  End If
+		  If mImportedObjects = Nil Then
+		    mImportedObjects = New Dictionary
+		  End If
+
+		  // Check if object already copied
+		  Dim key As String = Str(sourceObjNum)
+		  If mImportedObjectMap.HasKey(key) Then
+		    Dim mappedNum As Integer = mImportedObjectMap.Value(key)
+		    System.DebugLog("CopyObjectFromSource: Already copied, returning cached placeholder " + Str(mappedNum))
+		    Return mappedNum
+		  End If
+
+		  // Get object from source PDF
+		  If mSourceReader = Nil Then
+		    System.DebugLog("CopyObjectFromSource: ERROR - mSourceReader is Nil!")
+		    Return 0
+		  End If
+
+		  Dim sourceObj As VNSPDFType = mSourceReader.GetObject(sourceObjNum)
+		  If sourceObj = Nil Then
+		    System.DebugLog("CopyObjectFromSource: ERROR - Could not get source object " + Str(sourceObjNum))
+		    Return 0
+		  End If
+
+		  // System.DebugLog("CopyObjectFromSource: Got source object of type " + Introspection.GetType(sourceObj).Name)
+
+		  // Assign placeholder object number (will be finalized during Output())
+		  // Use negative numbers to avoid conflicts with real object numbers
+		  Dim placeholderNum As Integer = -(mImportedObjects.KeyCount + 1)
+
+		  // System.DebugLog("CopyObjectFromSource: Assigned placeholder " + Str(placeholderNum) + " for source obj " + Str(sourceObjNum))
+
+		  // Store mapping BEFORE serializing (to handle circular references)
+		  mImportedObjectMap.Value(key) = placeholderNum
+
+		  // CRITICAL: Reserve the slot in mImportedObjects BEFORE serializing
+		  // This ensures nested calls to CopyObjectFromSource get unique placeholders
+		  // (because mImportedObjects.KeyCount will have increased)
+		  mImportedObjects.Value(Str(placeholderNum)) = ""  // Placeholder, will be replaced
+
+		  // Serialize the object with recursive remapping
+		  Dim objContent As String = SerializeObjectForCopy(sourceObj)
+
+		  // Store object content for later output
+		  mImportedObjects.Value(Str(placeholderNum)) = objContent
+
+		  Return placeholderNum
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function SerializeObjectForCopy(obj As Variant) As String
+		  // Serialize an object for copying, recursively remapping any nested indirect references
+		  // This is similar to SerializeType() but handles more complex structures
+		  // obj: Can be VNSPDFType or Variant containing VNSPDFType
+
+		  If obj IsA VNSPDFDictionary Then
+		    Dim dict As Dictionary = VNSPDFDictionary(obj).value
+		    Dim result As String = "<<" + EndOfLine
+		    Dim keys() As Variant = dict.Keys
+		    For Each key As Variant In keys
+		      Dim keyStr As String = key.StringValue
+		      result = result + "  /" + keyStr + " " + SerializeObjectForCopy(dict.Value(keyStr)) + EndOfLine
+		    Next
+		    result = result + ">>"
+		    Return result
+
+		  ElseIf obj IsA VNSPDFArray Then
+		    Dim arrayObj As VNSPDFArray = VNSPDFArray(obj)
+		    Dim result As String = "["
+		    // Get array with correct type (VNSPDFType, not Variant)
+		    Dim arrValue() As VNSPDFType = arrayObj.value
+		    // Iterate using For Each
+		    Dim isFirst As Boolean = True
+		    For Each item As VNSPDFType In arrValue
+		      If Not isFirst Then result = result + " "
+		      result = result + SerializeObjectForCopy(item)
+		      isFirst = False
+		    Next
+		    result = result + "]"
+		    Return result
+
+		  ElseIf obj IsA VNSPDFName Then
+		    Return "/" + VNSPDFName(obj).value
+
+		  ElseIf obj IsA VNSPDFNumeric Then
+		    // Format number properly for PDF - avoid scientific notation
+		    Dim numValue As Double = VNSPDFNumeric(obj).value
+		    // Check if it's effectively an integer
+		    If Abs(numValue - Round(numValue)) < 0.0000001 Then
+		      // Output as integer (no decimal point)
+		      Return Str(CType(numValue, Int64))
+		    Else
+		      // Output as decimal with proper formatting (no scientific notation)
+		      // Replace comma with period for locale-independence (PDF requires period)
+		      Return FormatHelper(numValue, "-#########0.######").ReplaceAll(",", ".")
+		    End If
+
+		  ElseIf obj IsA VNSPDFIndirectObjectReference Then
+		    // RECURSIVELY copy referenced object and remap
+		    Dim ref As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(obj)
+		    Dim newObjNum As Integer = CopyObjectFromSource(ref.objectNumber)
+		    If newObjNum = 0 Then
+		      // Failed to copy - return original reference
+		      Return Str(ref.objectNumber) + " " + Str(ref.generation) + " R"
+		    End If
+		    Return Str(newObjNum) + " 0 R"
+
+		  ElseIf obj IsA VNSPDFString Then
+		    // Literal string - escape special characters
+		    Dim str As String = VNSPDFString(obj).value
+		    str = str.ReplaceAll("\", "\\")
+		    str = str.ReplaceAll("(", "\(")
+		    str = str.ReplaceAll(")", "\)")
+		    Return "(" + str + ")"
+
+		  ElseIf obj IsA VNSPDFBoolean Then
+		    If VNSPDFBoolean(obj).value Then
+		      Return "true"
+		    Else
+		      Return "false"
+		    End If
+
+		  ElseIf obj IsA VNSPDFStream Then
+		    // Serialize stream object (e.g., font programs, images)
+		    Dim stream As VNSPDFStream = VNSPDFStream(obj)
+
+		    // Fix incomplete Group dictionaries in copied XObject Form streams
+		    Dim streamDict As Dictionary = stream.dictionary.value
+		    If streamDict.HasKey("Type") And streamDict.HasKey("Subtype") Then
+		      Dim typeObj As VNSPDFType = streamDict.Value("Type")
+		      Dim subtypeObj As VNSPDFType = streamDict.Value("Subtype")
+		      If typeObj IsA VNSPDFName And subtypeObj IsA VNSPDFName Then
+		        If VNSPDFName(typeObj).value = "XObject" And VNSPDFName(subtypeObj).value = "Form" Then
+		          // This is a Form XObject - check for incomplete Group dictionary
+		          If streamDict.HasKey("Group") Then
+		            Dim groupObj As VNSPDFType = streamDict.Value("Group")
+		            If groupObj IsA VNSPDFDictionary Then
+		              Dim groupDict As Dictionary = VNSPDFDictionary(groupObj).value
+		              // Check if Group dictionary is missing /CS (ColorSpace)
+		              If Not groupDict.HasKey("CS") Then
+		                System.DebugLog("SerializeObjectForCopy: XObject Form has Group dictionary without /CS - adding /DeviceRGB")
+		                // Add /CS /DeviceRGB to Group dictionary
+		                Dim csName As New VNSPDFName
+		                csName.value = "DeviceRGB"
+		                groupDict.Value("CS") = csName
+		              End If
+		            End If
+		          End If
+		        End If
+		      End If
+		    End If
+
+		    // Check the /Length value in dictionary vs actual stream data size
+		    Dim lengthDict As Dictionary = stream.dictionary.value
+		    Dim declaredLength As Integer = -1
+		    If lengthDict.HasKey("Length") Then
+		      Dim lengthObj As VNSPDFType = lengthDict.Value("Length")
+		      If lengthObj IsA VNSPDFNumeric Then
+		        declaredLength = VNSPDFNumeric(lengthObj).value
+		      End If
+		    End If
+		    Dim actualSize As Integer = stream.data.Size
+		    System.DebugLog("SerializeObjectForCopy: Stream /Length=" + Str(declaredLength) + ", actual data size=" + Str(actualSize))
+
+		    // Serialize dictionary with recursive remapping
+		    Dim result As String = SerializeObjectForCopy(stream.dictionary) + EndOfLine.UNIX
+
+		    // Add stream data - preserve binary bytes without encoding conversion
+		    // CRITICAL: Define encoding as Nil BEFORE concatenation to prevent corruption
+		    result = result.DefineEncoding(Nil)
+
+		    Dim streamKeyword As String = "stream"
+		    streamKeyword = streamKeyword.DefineEncoding(Nil)
+		    Dim lf As String = EndOfLine.UNIX
+		    lf = lf.DefineEncoding(Nil)
+		    result = result + streamKeyword + lf
+
+		    // Get stream data and skip leading newline if present
+		    // Some source PDFs have newline after "stream" keyword that's part of the stream data
+		    Dim streamDataOffset As Integer = 0
+		    Dim streamDataSize As Integer = stream.data.Size
+		    If streamDataSize > 0 Then
+		      Dim firstByte As Integer = stream.data.UInt8Value(0)
+		      If firstByte = 10 Or firstByte = 13 Then  // LF or CR
+		        streamDataOffset = 1
+		        streamDataSize = streamDataSize - 1
+		        System.DebugLog("SerializeObjectForCopy: Skipping leading newline in stream data")
+		      End If
+		    End If
+
+		    Dim streamBytes As String = stream.data.StringValue(streamDataOffset, streamDataSize)
+		    streamBytes = streamBytes.DefineEncoding(Nil)
+		    result = result + streamBytes
+
+		    // PDF spec requires newline before "endstream" keyword
+		    // This newline is NOT part of the stream data length
+		    Dim lfBeforeEnd As String = EndOfLine.UNIX
+		    lfBeforeEnd = lfBeforeEnd.DefineEncoding(Nil)
+		    result = result + lfBeforeEnd
+
+		    Dim endstreamKeyword As String = "endstream"
+		    endstreamKeyword = endstreamKeyword.DefineEncoding(Nil)
+		    result = result + endstreamKeyword
+
+		    Return result
+
+		  Else
+		    // Fallback
+		    System.DebugLog("SerializeObjectForCopy: Unknown type " + Introspection.GetType(obj).Name)
+		    Return ""
+		  End If
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub AddXObject(name As String, content As String)
+		  // Add an XObject to the current page's resources
+		  // For Phase 6.2, we'll store XObjects in a dictionary
+
+		  // Initialize XObjects dictionaries if needed
+		  If mXObjects = Nil Then
+		    mXObjects = New Dictionary
+		  End If
+		  If mXObjectObjNums = Nil Then
+		    mXObjectObjNums = New Dictionary
+		  End If
+
+		  // Store the XObject content
+		  mXObjects.Value(name) = content
+		End Sub
 	#tag EndMethod
 
 	#tag Method, Flags = &h0, Description = 44726177732061206C696E652066726F6D20706F696E742028783B2C2079312920746F2028782C2079322920757E696E672074686520637572E282AC656E742064726177696E6720636F6CF6220616E64206C696E652077696474682
@@ -3501,6 +4473,13 @@ Protected Class VNSPDFDocument
 	#tag Method, Flags = &h21
 		Private Sub PutImages()
 		  // Output image XObjects
+
+		  // Ensure object 2 is reserved for Resources dictionary
+		  If mObjectNumber < 3 Then
+		    System.DebugLog("PutImages: WARNING - mObjectNumber is " + Str(mObjectNumber) + ", adjusting to 3 to reserve objects 1-2")
+		    mObjectNumber = 3
+		  End If
+
 		  System.DebugLog("PutImages: Outputting " + Str(mImages.KeyCount) + " images...")
 		  
 		  // Image index is already assigned during RegisterImage()
@@ -3794,8 +4773,15 @@ Protected Class VNSPDFDocument
 		  Dim pageContent As String
 		  If mPages.HasKey(Str(pageNum)) Then
 		    pageContent = mPages.Value(Str(pageNum))
+		    System.DebugLog("PutPage(" + Str(pageNum) + "): Read page content from mPages - length=" + Str(pageContent.Length))
+		    If pageContent.Length > 0 Then
+		      Dim preview As String = pageContent
+		      If preview.Length > 300 Then preview = preview.Left(300) + "..."
+		      System.DebugLog("PutPage(" + Str(pageNum) + "): Content preview: " + preview)
+		    End If
 		  Else
 		    pageContent = ""
+		    System.DebugLog("PutPage(" + Str(pageNum) + "): No content in mPages for this page")
 		  End If
 		  
 		  Call Put("/Contents " + Str(mObjectNumber) + " 0 R")
@@ -3947,9 +4933,8 @@ Protected Class VNSPDFDocument
 		Private Sub PutResourceDict()
 		  // Output the shared Resources dictionary as object 2 (FORCED)
 		  // This is referenced by all pages via "/Resources 2 0 R"
-		  // Write offset for object 2, then output the object manually
-		  mOffsets.Value("2") = VNSPDFModule.StringLenB(mBuffer)
-		  Call Put("2 0 obj")
+		  // Use NewObj(2) to properly track object number usage
+		  Call NewObj(2)
 		  Call Put("<<")
 		  Call Put("/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]")
 		  
@@ -3980,9 +4965,12 @@ Protected Class VNSPDFDocument
 		    Call Put(">>")
 		  End If
 		  
-		  // Image XObject resources
-		  If mImages.KeyCount > 0 Then
+		  // Image XObject resources + Imported Page XObjects
+		  Dim hasXObjects As Boolean = (mImages.KeyCount > 0) Or (mXObjects <> Nil And mXObjects.KeyCount > 0)
+		  If hasXObjects Then
 		    Call Put("/XObject <<")
+
+		    // Add image XObjects
 		    For Each imageKey As Variant In mImages.Keys
 		      Dim imageInfo As Dictionary = mImages.Value(imageKey)
 		      If imageInfo.HasKey("n") Then
@@ -3991,6 +4979,20 @@ Protected Class VNSPDFDocument
 		        Call Put("/I" + Str(imageIdx) + " " + Str(objNum) + " 0 R")
 		      End If
 		    Next
+
+		    // Add imported page XObjects
+		    If mXObjectObjNums <> Nil And mXObjectObjNums.KeyCount > 0 Then
+		      System.DebugLog("PutResourceDict: Adding " + Str(mXObjectObjNums.KeyCount) + " imported XObjects to Resources...")
+		      For Each xobjName As Variant In mXObjectObjNums.Keys
+		        Dim objNum As Integer = mXObjectObjNums.Value(xobjName)
+		        Dim resEntry As String = "/" + xobjName.StringValue + " " + Str(objNum) + " 0 R"
+		        System.DebugLog("PutResourceDict:   " + resEntry)
+		        Call Put(resEntry)
+		      Next
+		    Else
+		      System.DebugLog("PutResourceDict: No imported XObjects (mXObjectObjNums is " + If(mXObjectObjNums = Nil, "Nil", "empty") + ")")
+		    End If
+
 		    Call Put(">>")
 		  End If
 		  
@@ -4022,29 +5024,162 @@ Protected Class VNSPDFDocument
 	#tag Method, Flags = &h21
 		Private Sub PutResources()
 		  // Output fonts first (assigns object numbers)
-		  System.DebugLog("PutResources: Outputting " + Str(mFonts.KeyCount) + " fonts...")
 		  For Each fontKey As Variant In mFonts.Keys
 		    Dim fontInfo As Dictionary = mFonts.Value(fontKey)
 		    Dim fontType As String = fontInfo.Value("type")
-		    
+
 		    If fontType = "TrueType" Then
 		      Call PutTrueTypeFont(fontInfo)
 		    ElseIf fontType = "UTF8" Then
 		      Call PutUTF8Font(fontInfo)
 		    End If
 		  Next
-		  
+
 		  // Output images second (assigns object numbers)
 		  Call PutImages()
-		  
+
+		  // Output imported PDF objects (fonts, resources) BEFORE XObjects
+		  Call PutImportedObjects()
+
+		  // Output imported page XObjects (assigns object numbers)
+		  Call PutXObjects()
+
 		  // Blend modes (alpha/transparency)
 		  Call PutBlendModes()
-		  
+
 		  // Gradients (shading patterns)
 		  Call PutGradients()
-		  
+
 		  // Output Resources dictionary as object 2 (FORCED object number)
 		  Call PutResourceDict()
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub PutXObjects()
+		  // Output imported page XObjects as indirect objects
+		  // Each XObject gets assigned an object number for reference in Resources
+
+		  If mXObjects = Nil Or mXObjects.KeyCount = 0 Then
+		    Return
+		  End If
+
+		  // Ensure object 2 is reserved for Resources dictionary
+		  If mObjectNumber < 3 Then
+		    System.DebugLog("PutXObjects: WARNING - mObjectNumber is " + Str(mObjectNumber) + ", adjusting to 3 to reserve objects 1-2")
+		    mObjectNumber = 3
+		  End If
+
+		  System.DebugLog("PutXObjects: Outputting " + Str(mXObjects.KeyCount) + " XObjects...")
+
+		  For Each xobjName As Variant In mXObjects.Keys
+		    Dim xobjContent As String = mXObjects.Value(xobjName)
+
+		    // Log XObject content BEFORE replacement (first 500 chars) - DISABLED to reduce log spam
+		    // System.DebugLog("PutXObjects: BEFORE replacement - " + xobjName.StringValue + " content (first 500 chars):")
+		    // Dim preview As String = xobjContent
+		    // If preview.Length > 500 Then preview = preview.Left(500) + "..."
+		    // System.DebugLog(preview)
+
+		    // Replace placeholder references with real object numbers
+		    If mPlaceholderToReal <> Nil And mPlaceholderToReal.KeyCount > 0 Then
+		      // System.DebugLog("PutXObjects: Replacing " + Str(mPlaceholderToReal.KeyCount) + " placeholders in " + xobjName.StringValue)
+		      For Each ph As Variant In mPlaceholderToReal.Keys
+		        Dim phNum As Integer = Val(ph.StringValue)
+		        Dim realNum As Integer = mPlaceholderToReal.Value(ph)
+		        Dim searchStr As String = Str(phNum) + " 0 R"
+		        Dim replaceStr As String = Str(realNum) + " 0 R"
+
+		        // Replace all occurrences
+		        xobjContent = xobjContent.ReplaceAll(searchStr, replaceStr)
+		      Next
+		      // System.DebugLog("PutXObjects: Completed placeholder replacement in " + xobjName.StringValue)
+		    End If
+
+		    // Log XObject content AFTER replacement (first 500 chars) - DISABLED to reduce log spam
+		    // System.DebugLog("PutXObjects: AFTER replacement - " + xobjName.StringValue + " content (first 500 chars):")
+		    // Dim preview As String = xobjContent
+		    // If preview.Length > 500 Then preview = preview.Left(500) + "..."
+		    // System.DebugLog(preview)
+
+		    // Create new object and store its number
+		    // Read mObjectNumber BEFORE NewObj() since NewObj() increments it
+		    Dim objNum As Integer = mObjectNumber
+		    Call NewObj()
+		    System.DebugLog("PutXObjects: Created object " + Str(objNum) + " for " + xobjName.StringValue)
+
+		    // Store object number in separate dictionary for later reference in Resources
+		    mXObjectObjNums.Value(xobjName) = objNum
+
+		    // Output the XObject content
+		    Call Put(xobjContent)
+		    Call Put("endobj")
+		    System.DebugLog("PutXObjects: Output XObject " + xobjName.StringValue + " (" + Str(xobjContent.Length) + " bytes)")
+		  Next
+
+		  System.DebugLog("PutXObjects: All " + Str(mXObjects.KeyCount) + " XObjects output successfully")
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub PutImportedObjects()
+		  // Output imported PDF objects (fonts, resources, etc.)
+		  // This is called during Output() to write objects that were copied from source PDF
+
+		  If mImportedObjects = Nil Or mImportedObjects.KeyCount = 0 Then
+		    Return
+		  End If
+
+		  // Ensure object 2 is reserved for Resources dictionary
+		  If mObjectNumber < 3 Then
+		    System.DebugLog("PutImportedObjects: WARNING - mObjectNumber is " + Str(mObjectNumber) + ", adjusting to 3 to reserve objects 1-2")
+		    mObjectNumber = 3
+		  End If
+
+		  System.DebugLog("PutImportedObjects: Outputting " + Str(mImportedObjects.KeyCount) + " imported objects...")
+
+		  // First pass: Assign real object numbers to all placeholders
+		  mPlaceholderToReal = New Dictionary
+		  For Each placeholderKey As Variant In mImportedObjects.Keys
+		    Dim placeholderNum As Integer = Val(placeholderKey.StringValue)
+		    Dim realNum As Integer = mObjectNumber
+		    mObjectNumber = mObjectNumber + 1
+		    mPlaceholderToReal.Value(placeholderKey) = realNum
+		    System.DebugLog("PutImportedObjects: Placeholder " + Str(placeholderNum) + " -> real " + Str(realNum))
+		  Next
+
+		  // Update mImportedObjectMap to use real numbers
+		  For Each sourceKey As Variant In mImportedObjectMap.Keys
+		    Dim placeholderNum As Integer = mImportedObjectMap.Value(sourceKey)
+		    If mPlaceholderToReal.HasKey(Str(placeholderNum)) Then
+		      Dim realNum As Integer = mPlaceholderToReal.Value(Str(placeholderNum))
+		      mImportedObjectMap.Value(sourceKey) = realNum
+		      System.DebugLog("PutImportedObjects: Updated mapping for source obj " + sourceKey.StringValue + " to real " + Str(realNum))
+		    End If
+		  Next
+
+		  // Second pass: Output each object with placeholder references replaced
+		  For Each placeholderKey As Variant In mImportedObjects.Keys
+		    Dim objContent As String = mImportedObjects.Value(placeholderKey)
+		    Dim realNum As Integer = mPlaceholderToReal.Value(placeholderKey)
+
+		    // Replace all placeholder references in content with real references
+		    For Each ph As Variant In mPlaceholderToReal.Keys
+		      Dim phNum As Integer = Val(ph.StringValue)
+		      Dim rNum As Integer = mPlaceholderToReal.Value(ph)
+		      // Replace "placeholder 0 R" with "real 0 R"
+		      objContent = objContent.ReplaceAll(Str(phNum) + " 0 R", Str(rNum) + " 0 R")
+		    Next
+
+		    // Write object
+		    mOffsets.Value(Str(realNum)) = VNSPDFModule.StringLenB(mBuffer)
+		    Call Put(Str(realNum) + " 0 obj")
+		    Call Put(objContent)
+		    Call Put("endobj")
+		    System.DebugLog("PutImportedObjects: Output object " + Str(realNum) + " (" + Str(objContent.Length) + " bytes)")
+		  Next
+
+		  System.DebugLog("PutImportedObjects: All " + Str(mImportedObjects.KeyCount) + " imported objects output successfully")
 		End Sub
 	#tag EndMethod
 
@@ -4185,15 +5320,6 @@ Protected Class VNSPDFDocument
 		  Dim fontFileObjNum As Integer = type0ObjNum + 4
 		  Dim toUnicodeObjNum As Integer = type0ObjNum + 5
 		  
-		  // Debug: log CID font structure
-		  System.DebugLog("Outputting UTF8 CID font: " + fontName)
-		  System.DebugLog("  Type0 font object: " + Str(type0ObjNum))
-		  System.DebugLog("  CIDFont object: " + Str(cidFontObjNum))
-		  System.DebugLog("  CIDSystemInfo object: " + Str(cidSystemInfoObjNum))
-		  System.DebugLog("  FontDescriptor object: " + Str(fontDescriptorObjNum))
-		  System.DebugLog("  FontFile2 object: " + Str(fontFileObjNum))
-		  System.DebugLog("  ToUnicode object: " + Str(toUnicodeObjNum))
-		  
 		  // Type0 Font (Composite font with Identity-H encoding)
 		  Call NewObj()
 		  Call Put("<<")
@@ -4302,18 +5428,13 @@ Protected Class VNSPDFDocument
 		        End If
 		      Next
 		      
-		      System.DebugLog("Font subsetting: " + Str(usedGlyphIDs.Count) + " glyphs used")
-		      
 		      // Create subset font
 		      Dim subsetter As New VNSPDFTrueTypeFontSubsetter(fontData, usedGlyphIDs)
 		      finalFontData = subsetter.CreateSubset()
-		      
+
 		      If finalFontData = "" Then
-		        System.DebugLog("Font subsetting failed: " + subsetter.GetError())
 		        finalFontData = fontData  // Fallback to full font
 		      Else
-		        Dim reduction As Double = (1.0 - (VNSPDFModule.StringLenB(finalFontData) / VNSPDFModule.StringLenB(fontData))) * 100
-		        System.DebugLog("Font subset created: " + Str(VNSPDFModule.StringLenB(finalFontData)) + " bytes (was " + Str(VNSPDFModule.StringLenB(fontData)) + "), " + VNSPDFModule.FormatHelper(Round(reduction * 10) / 10, "0.0") + "% reduction")
 		        
 		        // Store glyph mapping for text encoding
 		        fontInfo.Value("glyphMapping") = subsetter.GetGlyphMapping()
@@ -4333,7 +5454,7 @@ Protected Class VNSPDFDocument
 		  Call Put("endstream")
 		  Call Put("endobj")
 		  
-		  // ToUnicode CMap (minimal version for now)
+		  // ToUnicode CMap (maps GID to Unicode for copy/paste support)
 		  Call NewObj()
 		  Dim toUnicode As String = "/CIDInit /ProcSet findresource begin" + EndOfLine.UNIX
 		  toUnicode = toUnicode + "12 dict begin" + EndOfLine.UNIX
@@ -4344,14 +5465,74 @@ Protected Class VNSPDFDocument
 		  toUnicode = toUnicode + "1 begincodespacerange" + EndOfLine.UNIX
 		  toUnicode = toUnicode + "<0000> <FFFF>" + EndOfLine.UNIX
 		  toUnicode = toUnicode + "endcodespacerange" + EndOfLine.UNIX
-		  toUnicode = toUnicode + "1 beginbfrange" + EndOfLine.UNIX
-		  toUnicode = toUnicode + "<0000> <FFFF> <0000>" + EndOfLine.UNIX
-		  toUnicode = toUnicode + "endbfrange" + EndOfLine.UNIX
+
+		  // Build GID → Unicode mapping from used characters
+		  If fontInfo.HasKey("usedRunes") And fontInfo.HasKey("ttf") Then
+		    Dim usedRunes As Dictionary = fontInfo.Value("usedRunes")
+		    Dim fontTTF As VNSPDFTrueTypeFont = fontInfo.Value("ttf")
+
+		    If usedRunes.KeyCount > 0 Then
+		      // Collect GID → Unicode mappings
+		      Dim gidToUnicode As New Dictionary
+		      For Each key As Variant In usedRunes.Keys
+		        Dim unicode As Integer = key.IntegerValue
+		        Dim glyphID As Integer = fontTTF.GetGlyphID(unicode)
+
+		        // Handle font subsetting glyph remapping
+		        If fontInfo.HasKey("glyphMapping") Then
+		          Dim glyphMapping As Dictionary = fontInfo.Value("glyphMapping")
+		          If glyphMapping.HasKey(Str(glyphID)) Then
+		            glyphID = glyphMapping.Value(Str(glyphID))
+		          End If
+		        End If
+
+		        gidToUnicode.Value(Str(glyphID)) = unicode
+		      Next
+
+		      // Sort GIDs for PDF efficiency
+		      Dim sortedGIDs() As Integer
+		      For Each key As Variant In gidToUnicode.Keys
+		        sortedGIDs.Add(key.IntegerValue)
+		      Next
+		      sortedGIDs.Sort
+
+		      // Output bfchar mapping (GID → Unicode)
+		      toUnicode = toUnicode + Str(sortedGIDs.Count) + " beginbfchar" + EndOfLine.UNIX
+		      For Each gid As Integer In sortedGIDs
+		        Dim unicode As Integer = gidToUnicode.Value(Str(gid))
+
+		        // Format as 4-digit hex
+		        Dim gidHex As String = Hex(gid)
+		        While gidHex.Length < 4
+		          gidHex = "0" + gidHex
+		        Wend
+
+		        Dim unicodeHex As String = Hex(unicode)
+		        While unicodeHex.Length < 4
+		          unicodeHex = "0" + unicodeHex
+		        Wend
+
+		        toUnicode = toUnicode + "<" + gidHex + "> <" + unicodeHex + ">" + EndOfLine.UNIX
+		      Next
+		      toUnicode = toUnicode + "endbfchar" + EndOfLine.UNIX
+		    Else
+		      // No used characters - use identity mapping as fallback
+		      toUnicode = toUnicode + "1 beginbfrange" + EndOfLine.UNIX
+		      toUnicode = toUnicode + "<0000> <FFFF> <0000>" + EndOfLine.UNIX
+		      toUnicode = toUnicode + "endbfrange" + EndOfLine.UNIX
+		    End If
+		  Else
+		    // No character usage data - use identity mapping as fallback
+		    toUnicode = toUnicode + "1 beginbfrange" + EndOfLine.UNIX
+		    toUnicode = toUnicode + "<0000> <FFFF> <0000>" + EndOfLine.UNIX
+		    toUnicode = toUnicode + "endbfrange" + EndOfLine.UNIX
+		  End If
+
 		  toUnicode = toUnicode + "endcmap" + EndOfLine.UNIX
 		  toUnicode = toUnicode + "CMapName currentdict /CMap defineresource pop" + EndOfLine.UNIX
 		  toUnicode = toUnicode + "end" + EndOfLine.UNIX
 		  toUnicode = toUnicode + "end" + EndOfLine.UNIX
-		  
+
 		  Call Put("<<")
 		  Call Put("/Length " + Str(VNSPDFModule.StringLenB(toUnicode)))
 		  Call Put(">>")
@@ -4360,7 +5541,7 @@ Protected Class VNSPDFDocument
 		  mBuffer = mBuffer + EndOfLine.UNIX  // EOL before endstream (required for PDF/A)
 		  Call Put("endstream")
 		  Call Put("endobj")
-		  
+
 		End Sub
 	#tag EndMethod
 
@@ -5014,9 +6195,6 @@ Protected Class VNSPDFDocument
 		  
 		  // Set current font
 		  mCurrentFont = fontKey
-
-		  // Debug: log font selection
-		  System.DebugLog("SetFont: " + fontKey + " (size: " + VNSPDFModule.FormatHelper(size, "0.00") + ")")
 
 		  // If page is active, output font selection
 		  If mPage > 0 Then
@@ -5677,25 +6855,21 @@ Protected Class VNSPDFDocument
 		      If fontInfo.HasKey("glyphMapping") Then
 		        glyphMapping = fontInfo.Value("glyphMapping")
 		      End If
-		      
-		      // Track used Unicode characters
+
+		      // Track used Unicode characters AFTER shaping
+		      // Shape Arabic text first (converts to presentation forms)
+		      Dim shapedText As String = ShapeArabicText(txt)
+
 		      If fontInfo.HasKey("usedRunes") Then
 		        Dim usedRunes As Dictionary = fontInfo.Value("usedRunes")
-		        #If TargetiOS Then
-		          Dim txtLen As Integer = txt.Length
-		          For i As Integer = 0 To txtLen - 1
-		            Dim char As String = txt.Middle(i, 1)  // iOS: 0-based Middle()
-		            Dim codePoint As Integer = char.Asc
-		            usedRunes.Value(Str(codePoint)) = codePoint
-		          Next
-		        #Else
-		          Dim txtLen As Integer = txt.Length
-		          For i As Integer = 1 To txtLen
-		            Dim char As String = txt.Middle(i, 1)  // Desktop/Console/Web: 0-based Middle()
-		            Dim codePoint As Integer = char.Asc
-		            usedRunes.Value(Str(codePoint)) = codePoint
-		          Next
-		        #EndIf
+
+		        // Convert shaped text to Unicode code points (handles multi-byte UTF-8)
+		        Dim shapedCodePoints() As Integer = UTF8ToCodePoints(shapedText)
+
+		        For i As Integer = 0 To shapedCodePoints.Count - 1
+		          Dim codePoint As Integer = shapedCodePoints(i)
+		          usedRunes.Value(Str(codePoint)) = codePoint
+		        Next
 		      End If
 		    End If
 		  End If
@@ -5735,9 +6909,6 @@ Protected Class VNSPDFDocument
 		  cmd = cmd + encodedText + " Tj" + EndOfLine.UNIX // Show text (hex for TrueType, escaped for core fonts)
 		  cmd = cmd + "ET" + EndOfLine.UNIX // End Text
 
-		  // Debug: log text rendering
-		  System.DebugLog("Text() rendering: """ + txt + """ at (" + VNSPDFModule.FormatHelper(x, "0.00") + ", " + VNSPDFModule.FormatHelper(y, "0.00") + ") font=" + mCurrentFont + " UTF8=" + Str(isUTF8))
-		  
 		  mBuffer = mBuffer + cmd
 		End Sub
 	#tag EndMethod
@@ -6798,6 +7969,38 @@ Protected Class VNSPDFDocument
 
 	#tag Property, Flags = &h21
 		Private mXrefOffset As Integer
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mSourceReader As VNSPDFReader = Nil
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mImportedPages As Dictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mImportedObjectMap As Dictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mImportedObjects As Dictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mPlaceholderToReal As Dictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mNextTemplateID As Integer = 1
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mXObjects As Dictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mXObjectObjNums As Dictionary
 	#tag EndProperty
 
 	#tag ComputedProperty, Flags = &h0
