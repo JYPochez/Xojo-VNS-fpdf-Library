@@ -218,11 +218,11 @@ Protected Module VNSPDFExamplesModule
 		    pdf.SetDrawColor(0, 0, 255) // Blue
 		    pdf.SetFillColor(0, 0, 255) // Blue
 		    pdf.Arrow(120, 255, 160, 265, False, True, 4)
-
+		    
 		    // Polygon demonstration
 		    pdf.SetFont("helvetica", "B", 10)
 		    pdf.Text(10, 282, "Polygons:")
-
+		    
 		    // Triangle (3 points) - outline only
 		    Dim triangle() As Point
 		    triangle.Add(New Point(25, 285))
@@ -231,7 +231,7 @@ Protected Module VNSPDFExamplesModule
 		    pdf.SetDrawColor(255, 0, 0) // Red
 		    pdf.SetLineWidth(1)
 		    pdf.Polygon(triangle, "D")
-
+		    
 		    // Pentagon (5 points) - filled
 		    Dim pentagon() As Point
 		    pentagon.Add(New Point(70, 285))
@@ -241,7 +241,7 @@ Protected Module VNSPDFExamplesModule
 		    pentagon.Add(New Point(55, 280))
 		    pdf.SetFillColor(0, 200, 100) // Green
 		    pdf.Polygon(pentagon, "F")
-
+		    
 		    // Hexagon (6 points) - filled and outlined
 		    Dim hexagon() As Point
 		    hexagon.Add(New Point(110, 285))
@@ -254,7 +254,7 @@ Protected Module VNSPDFExamplesModule
 		    pdf.SetFillColor(200, 220, 255) // Light blue
 		    pdf.SetLineWidth(1.5)
 		    pdf.Polygon(hexagon, "DF")
-
+		    
 		    // Star shape (10 points) - filled and outlined
 		    Dim star() As Point
 		    Dim starCenterX As Double = 160
@@ -275,7 +275,7 @@ Protected Module VNSPDFExamplesModule
 		    pdf.SetFillColor(255, 215, 0) // Gold fill
 		    pdf.SetLineWidth(1)
 		    pdf.Polygon(star, "DF")
-
+		    
 		    // Add second page for transparency demonstration
 		    Call pdf.AddPage()
 		    
@@ -1000,13 +1000,13 @@ Protected Module VNSPDFExamplesModule
 		    
 		    pdf.SetXmpMetadata(xmp)
 		    statusText = statusText + "XMP metadata added (PDF/A-1b conformance declared)" + EndOfLine
-
+		    
 		    // Verify XMP metadata was set
 		    Dim retrievedXmp As String = pdf.GetXmpMetadata()
 		    If retrievedXmp <> "" Then
 		      statusText = statusText + "XMP metadata verified: " + Str(retrievedXmp.Length) + " characters" + EndOfLine
 		    End If
-
+		    
 		    // PDF/A compliance requires embedded fonts
 		    // When Output Intent is added, core fonts are not allowed
 		    If iccFound Then
@@ -1022,17 +1022,17 @@ Protected Module VNSPDFExamplesModule
 		          // Try Helvetica as fallback
 		          fontFile = New FolderItem("/System/Library/Fonts/Helvetica.ttc", FolderItem.PathModes.Native)
 		        End If
-
+		        
 		        If fontFile <> Nil And fontFile.Exists Then
 		          // Load TrueType fonts for PDF/A compliance
 		          pdf.AddUTF8Font("arial", "", fontFile.NativePath)
-
+		          
 		          // Try to load Arial Bold for testing multiple font faces
 		          Dim fontBold As FolderItem = New FolderItem("/Library/Fonts/Arial Bold.ttf", FolderItem.PathModes.Native)
 		          If fontBold = Nil Or Not fontBold.Exists Then
 		            fontBold = New FolderItem("/System/Library/Fonts/Supplemental/Arial Bold.ttf", FolderItem.PathModes.Native)
 		          End If
-
+		          
 		          If fontBold <> Nil And fontBold.Exists Then
 		            pdf.AddUTF8Font("arial", "B", fontBold.NativePath)
 		            statusText = statusText + "TrueType fonts embedded: Arial (regular + bold)" + EndOfLine
@@ -1048,10 +1048,10 @@ Protected Module VNSPDFExamplesModule
 		        statusText = statusText + "iOS: Font embedding would use app bundle resources" + EndOfLine
 		      #EndIf
 		    End If
-
+		    
 		    // Add page
 		    Call pdf.AddPage()
-
+		    
 		    // PDF/A Compliance Enforcement Example:
 		    // If you tried to use a core font without embedding it first, you would get:
 		    // RuntimeException: "PDF/A compliance violation: Core fonts are not allowed in PDF/A mode.
@@ -1060,7 +1060,7 @@ Protected Module VNSPDFExamplesModule
 		    //
 		    // Uncommenting the next line would trigger this exception:
 		    // pdf.SetFont("times", "", 12)  // ← Would raise RuntimeException in PDF/A mode!
-
+		    
 		    // Select font based on PDF/A mode
 		    Dim fontName As String
 		    If iccFound Then
@@ -1068,20 +1068,20 @@ Protected Module VNSPDFExamplesModule
 		    Else
 		      fontName = "helvetica"  // Core font when not in PDF/A mode
 		    End If
-
+		    
 		    // Title
 		    pdf.SetFont(fontName, "", 20)
 		    pdf.SetTextColor(0, 0, 128)
 		    pdf.Cell(0, 15, "PDF/A-1b Compliance Example", 0, 1, "C")
-
+		    
 		    // Reset color
 		    pdf.SetTextColor(0, 0, 0)
 		    pdf.Ln(5)
-
+		    
 		    // Section 1: What is PDF/A?
 		    pdf.SetFont(fontName, "", 14)
 		    pdf.Cell(0, 10, "What is PDF/A?", 0, 1, "L")
-
+		    
 		    pdf.SetFont(fontName, "", 11)
 		    pdf.MultiCell(0, 6, "PDF/A is an ISO-standardized version of PDF designed for long-term archiving of electronic documents. It ensures that documents can be reproduced exactly the same way in the future.", 0, "L")
 		    pdf.Ln(3)
@@ -1093,7 +1093,7 @@ Protected Module VNSPDFExamplesModule
 		      pdf.SetFont(fontName, "", 14)
 		    End If
 		    pdf.Cell(0, 10, "Key PDF/A Requirements:", 0, 1, "L")
-
+		    
 		    pdf.SetFont(fontName, "", 11)
 		    pdf.Cell(10, 6, "", 0, 0)
 		    pdf.Cell(0, 6, "1. All fonts must be embedded", 0, 1)
@@ -1114,7 +1114,7 @@ Protected Module VNSPDFExamplesModule
 		      pdf.SetFont(fontName, "", 14)
 		    End If
 		    pdf.Cell(0, 10, "This Document:", 0, 1, "L")
-
+		    
 		    pdf.SetFont(fontName, "", 11)
 		    If iccFound Then
 		      pdf.SetTextColor(0, 128, 0)
@@ -1147,7 +1147,7 @@ Protected Module VNSPDFExamplesModule
 		      pdf.SetFont(fontName, "", 14)
 		    End If
 		    pdf.Cell(0, 10, "Color Management:", 0, 1, "L")
-
+		    
 		    pdf.SetFont(fontName, "", 11)
 		    pdf.Cell(0, 6, "Colors rendered according to sRGB color space:", 0, 1)
 		    pdf.Ln(2)
@@ -1203,8 +1203,8 @@ Protected Module VNSPDFExamplesModule
 		    pdf.SetFont(fontName, "", 8)
 		    pdf.SetTextColor(100, 100, 100)
 		    pdf.Cell(0, 5, "https://demo.verapdf.org/", 0, 1, "C")
-
-
+		    
+		    
 		    // Check for errors
 		    If pdf.Err() Then
 		      statusText = statusText + "ERROR: " + pdf.GetError() + EndOfLine
@@ -1259,14 +1259,14 @@ Protected Module VNSPDFExamplesModule
 	#tag Method, Flags = &h0
 		Function GenerateExample14(revision As Integer, userPassword As String, ownerPassword As String, allowPrint As Boolean, allowModify As Boolean, allowCopy As Boolean, allowAnnotate As Boolean, allowFillForms As Boolean, allowExtract As Boolean, allowAssemble As Boolean, allowPrintHighQuality As Boolean) As Dictionary
 		  // Example 14: PDF Security - Password protection and encryption with all 8 permission bits
-
+		  
 		  Dim result As New Dictionary
 		  Dim statusText As String = "Generating Example 14: PDF Security (ENCRYPTED)..." + EndOfLine
-
+		  
 		  Try
 		    // Create PDF document
 		    Dim pdf As New VNSPDFDocument()
-
+		    
 		    // Configure encryption with user's settings (all 8 permission bits)
 		    Call pdf.SetProtection(userPassword, ownerPassword, allowPrint, allowModify, allowCopy, allowAnnotate, allowFillForms, allowExtract, allowAssemble, allowPrintHighQuality, revision)
 		    statusText = statusText + "Encryption enabled with Revision " + Str(revision) + EndOfLine
@@ -1579,23 +1579,23 @@ Protected Module VNSPDFExamplesModule
 		    pdf.Cell(10, 6, "", 0, 0)
 		    pdf.Cell(10, 6, If(allowAnnotate, "[X]", "[ ]"), 0, 0)
 		    pdf.Cell(0, 6, "Allow Annotations", 0, 1)
-
+		    
 		    pdf.Cell(10, 6, "", 0, 0)
 		    pdf.Cell(10, 6, If(allowFillForms, "[X]", "[ ]"), 0, 0)
 		    pdf.Cell(0, 6, "Allow Filling Forms", 0, 1)
-
+		    
 		    pdf.Cell(10, 6, "", 0, 0)
 		    pdf.Cell(10, 6, If(allowExtract, "[X]", "[ ]"), 0, 0)
 		    pdf.Cell(0, 6, "Allow Text Extraction (Accessibility)", 0, 1)
-
+		    
 		    pdf.Cell(10, 6, "", 0, 0)
 		    pdf.Cell(10, 6, If(allowAssemble, "[X]", "[ ]"), 0, 0)
 		    pdf.Cell(0, 6, "Allow Page Assembly (Insert/Rotate/Delete)", 0, 1)
-
+		    
 		    pdf.Cell(10, 6, "", 0, 0)
 		    pdf.Cell(10, 6, If(allowPrintHighQuality, "[X]", "[ ]"), 0, 0)
 		    pdf.Cell(0, 6, "Allow High-Quality Printing", 0, 1)
-
+		    
 		    pdf.Ln(5)
 		    
 		    // Footer note
@@ -1627,7 +1627,7 @@ Protected Module VNSPDFExamplesModule
 		    statusText = statusText + EndOfLine
 		    statusText = statusText + "SUCCESS! PDF Security example created." + EndOfLine
 		    statusText = statusText + "This PDF is encrypted with RC4-40 (available in free version)." + EndOfLine
-	    statusText = statusText + "Use password 'user123' to open the PDF." + EndOfLine
+		    statusText = statusText + "Use password 'user123' to open the PDF." + EndOfLine
 		    
 		    result.Value("success") = True
 		    result.Value("status") = statusText
@@ -1872,12 +1872,12 @@ Protected Module VNSPDFExamplesModule
 		  If a4Size <> Nil Then
 		    Call pdf.Cell(0, 7, "A4 size: " + FormatHelper(a4Size.Left, "0.00") + " x " + FormatHelper(a4Size.Right, "0.00") + " mm", 0, 1)
 		  End If
-
+		  
 		  Dim letterSize As Pair = pdf.GetPageSizeStr("letter")
 		  If letterSize <> Nil Then
 		    Call pdf.Cell(0, 7, "Letter size: " + FormatHelper(letterSize.Left, "0.00") + " x " + FormatHelper(letterSize.Right, "0.00") + " mm", 0, 1)
 		  End If
-
+		  
 		  Dim a5Size As Pair = pdf.GetPageSizeStr("a5")
 		  If a5Size <> Nil Then
 		    Call pdf.Cell(0, 7, "A5 size: " + FormatHelper(a5Size.Left, "0.00") + " x " + FormatHelper(a5Size.Right, "0.00") + " mm", 0, 1)
@@ -1926,19 +1926,12 @@ Protected Module VNSPDFExamplesModule
 		  Call pdf.Cell(0, 5, "JSON excerpt (first 500 chars):", 0, 1)
 		  
 		  Dim jsonExcerpt As String
-		  #If TargetiOS Then
-		    If jsonState.Length > 500 Then
-		      jsonExcerpt = jsonState.Left(500) + "..."
-		    Else
-		      jsonExcerpt = jsonState
-		    End If
-		  #Else
-		    If jsonState.Length > 500 Then
-		      jsonExcerpt = jsonState.Left(500) + "..."
-		    Else
-		      jsonExcerpt = jsonState
-		    End If
-		  #EndIf
+		  
+		  If jsonState.Length > 500 Then
+		    jsonExcerpt = jsonState.Left(500) + "..."
+		  Else
+		    jsonExcerpt = jsonState
+		  End If
 		  
 		  // Split into lines for display
 		  Dim jsonLines() As String = jsonExcerpt.Split(EndOfLine)
@@ -1980,6 +1973,1011 @@ Protected Module VNSPDFExamplesModule
 		  result.Value("filename") = "example17_utilities.pdf"
 		  
 		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0, Description = 4578616D706C652031383A20456E6372797074696F6E20506C7567696E204172636869746563747572652054657374696E67
+		Function GenerateExample18() As Dictionary
+		  // Example 18: Encryption Plugin Architecture Testing
+		  // Tests that RC4-40 works (free) and RC4-128 is blocked (premium)
+		  
+		  Dim result As New Dictionary
+		  Dim statusText As String = ""
+		  
+		  statusText = statusText + "Example 18: Encryption Plugin Architecture Testing" + EndOfLine
+		  statusText = statusText + "=============================================" + EndOfLine + EndOfLine
+		  
+		  statusText = statusText + "⚠️  IMPORTANT: Password-Protected PDFs Generated!" + EndOfLine
+		  statusText = statusText + "   User Password: user123" + EndOfLine
+		  statusText = statusText + "   Owner Password: owner456" + EndOfLine
+		  statusText = statusText + "   You will need 'user123' to open the generated PDFs." + EndOfLine + EndOfLine
+		  
+		  // ===== TEST 1: RC4-40 (Revision 2) - FREE VERSION =====
+		  statusText = statusText + "TEST 1: RC4-40 Encryption (Revision 2 - FREE)" + EndOfLine
+		  statusText = statusText + "----------------------------------------------" + EndOfLine
+		  
+		  // Create PDF with RC4-40 encryption
+		  Dim pdf1 As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, VNSPDFModule.ePageUnit.Millimeters, VNSPDFModule.ePageFormat.A4)
+		  Call pdf1.SetTitle("Example 18 - RC4-40 Test (Free)")
+		  Call pdf1.SetAuthor("VNS PDF Library")
+		  Call pdf1.SetSubject("Testing free RC4-40 encryption")
+		  Call pdf1.AddPage()
+		  
+		  // Set RC4-40 encryption (revision 2) - This should work in free version
+		  // Minimal permissions: allow print and copy only
+		  Call pdf1.SetProtection("user123", "owner456", True, False, True, False, False, False, False, False, VNSPDFModule.gkEncryptionRC4_40)
+		  
+		  If pdf1.Err() Then
+		    statusText = statusText + "✗ FAILED: " + pdf1.GetError() + EndOfLine
+		    result.Value("success") = False
+		    result.Value("status") = statusText
+		    Return result
+		  Else
+		    statusText = statusText + "✓ PASSED: RC4-40 encryption set successfully (free version)" + EndOfLine
+		  End If
+		  
+		  // Add content
+		  Call pdf1.SetFont("helvetica", "B", 16)
+		  Call pdf1.Cell(0, 10, "RC4-40 Encryption Test", 0, 1, "C")
+		  Call pdf1.Ln(5)
+		  
+		  Call pdf1.SetFont("helvetica", "", 11)
+		  Call pdf1.MultiCell(0, 6, "This PDF is encrypted with RC4-40 (40-bit) encryption, which is available in the FREE version of VNS PDF Library. You need the password 'user123' to open this document.", 0, "L")
+		  Call pdf1.Ln(3)
+		  
+		  Call pdf1.SetFont("helvetica", "B", 12)
+		  Call pdf1.Cell(0, 7, "Encryption Details:", 0, 1)
+		  Call pdf1.SetFont("courier", "", 9)
+		  Call pdf1.Cell(0, 5, "- Revision: VNSPDFModule.gkEncryptionRC4_40 (RC4-40)", 0, 1)
+		  Call pdf1.Cell(0, 5, "- User Password: user123", 0, 1)
+		  Call pdf1.Cell(0, 5, "- Owner Password: owner456", 0, 1)
+		  Call pdf1.Cell(0, 5, "- Allow Print (low quality): Yes", 0, 1)
+		  Call pdf1.Cell(0, 5, "- Allow Modify: No", 0, 1)
+		  Call pdf1.Cell(0, 5, "- Allow Copy: Yes", 0, 1)
+		  Call pdf1.Cell(0, 5, "- Allow Annotations: No", 0, 1)
+		  Call pdf1.Cell(0, 5, "- Allow Fill Forms: No", 0, 1)
+		  Call pdf1.Cell(0, 5, "- Allow Extract (accessibility): No", 0, 1)
+		  Call pdf1.Cell(0, 5, "- Allow Assemble (pages): No", 0, 1)
+		  Call pdf1.Cell(0, 5, "- Allow Print High Quality: No", 0, 1)
+		  Call pdf1.Ln(5)
+		  
+		  Call pdf1.SetFont("helvetica", "", 11)
+		  Call pdf1.MultiCell(0, 6, "This is the basic encryption level suitable for casual document protection. For stronger security, use RC4-128 (gkEncryptionRC4_128) or AES encryption (gkEncryptionAES128, gkEncryptionAES256, gkEncryptionAES256_PDF2) available in the premium Encryption module.", 0, "L")
+		  
+		  If pdf1.Err() Then
+		    statusText = statusText + "ERROR during PDF generation: " + pdf1.GetError() + EndOfLine
+		    result.Value("success") = False
+		    result.Value("status") = statusText
+		    Return result
+		  End If
+		  
+		  statusText = statusText + "✓ RC4-40 PDF generated successfully" + EndOfLine + EndOfLine
+		  
+		  // ===== TEST 2: RC4-128 (Revision 3) - PREMIUM (Should be blocked) =====
+		  statusText = statusText + "TEST 2: RC4-128 Encryption (Revision 3 - PREMIUM)" + EndOfLine
+		  statusText = statusText + "----------------------------------------------" + EndOfLine
+		  
+		  // Create PDF and try to set RC4-128 encryption (should fail without premium module)
+		  Dim pdf2 As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, VNSPDFModule.ePageUnit.Millimeters, VNSPDFModule.ePageFormat.A4)
+		  Call pdf2.SetTitle("Example 18 - RC4-128 Test (Premium)")
+		  Call pdf2.SetAuthor("VNS PDF Library")
+		  Call pdf2.SetSubject("Testing premium RC4-128 encryption")
+		  Call pdf2.AddPage()
+		  
+		  // Try to set RC4-128 encryption (revision 3) - This should fail in free version
+		  // Full permissions for testing
+		  Call pdf2.SetProtection("user123", "owner456", True, True, True, True, True, True, True, True, VNSPDFModule.gkEncryptionRC4_128)
+		  
+		  If pdf2.Err() Then
+		    // Expected: Should fail because hasPremiumEncryptionModule = False
+		    Dim errorMsg As String = pdf2.GetError()
+		    
+		    // Check if it's the expected error message about premium module
+		    #If TargetiOS Then
+		      Dim isPremiumError As Boolean = (errorMsg.IndexOf("premium Encryption module") >= 0)
+		    #Else
+		      Dim isPremiumError As Boolean = (errorMsg.IndexOf("premium Encryption module") > 0)
+		    #EndIf
+		    
+		    If isPremiumError Then
+		      statusText = statusText + "✓ PASSED: RC4-128 correctly blocked (premium required)" + EndOfLine
+		      statusText = statusText + "  Error message: " + errorMsg + EndOfLine
+		    Else
+		      statusText = statusText + "✗ FAILED: Unexpected error: " + errorMsg + EndOfLine
+		      result.Value("success") = False
+		      result.Value("status") = statusText
+		      Return result
+		    End If
+		  Else
+		    // This means RC4-128 worked without the premium flag - THIS IS A BUG!
+		    statusText = statusText + "✗ FAILED: RC4-128 should be blocked without premium module!" + EndOfLine
+		    statusText = statusText + "  BUG: Encryption was allowed when it should have been blocked." + EndOfLine
+		    result.Value("success") = False
+		    result.Value("status") = statusText
+		    Return result
+		  End If
+		  
+		  statusText = statusText + EndOfLine
+		  
+		  // ===== Instructions for enabling premium module =====
+		  statusText = statusText + "ENABLING PREMIUM ENCRYPTION MODULE:" + EndOfLine
+		  statusText = statusText + "===================================" + EndOfLine
+		  statusText = statusText + "To enable RC4-128 and AES encryption (revisions 3-6):" + EndOfLine + EndOfLine
+		  statusText = statusText + "1. Open: PDF_Library/VNSPDFModule.xojo_code" + EndOfLine
+		  statusText = statusText + "2. Find the constant: hasPremiumEncryptionModule" + EndOfLine
+		  statusText = statusText + "3. Change Default from ""False"" to ""True""" + EndOfLine
+		  statusText = statusText + "4. Rebuild your project" + EndOfLine + EndOfLine
+		  statusText = statusText + "The constant should look like this when enabled:" + EndOfLine
+		  statusText = statusText + "#tag Constant, Name = hasPremiumEncryptionModule, Type = Boolean," + EndOfLine
+		  statusText = statusText + "    Dynamic = False, Default = ""True"", Scope = Public" + EndOfLine + EndOfLine
+		  statusText = statusText + "After enabling, RC4-128 (revision 3) will work, and you can" + EndOfLine
+		  statusText = statusText + "test it by running this example again." + EndOfLine + EndOfLine
+		  
+		  // ===== Summary =====
+		  statusText = statusText + "TEST SUMMARY:" + EndOfLine
+		  statusText = statusText + "=============" + EndOfLine
+		  statusText = statusText + "✓ Plugin architecture working correctly" + EndOfLine
+		  statusText = statusText + "✓ RC4-40 (revision 2) available in free version" + EndOfLine
+		  statusText = statusText + "✓ RC4-128 (revision 3) properly gated by premium flag" + EndOfLine
+		  statusText = statusText + "✓ Clear error messages guide users to premium features" + EndOfLine + EndOfLine
+		  
+		  result.Value("success") = True
+		  result.Value("status") = statusText
+		  result.Value("pdf") = pdf1.Output()  // Return the working RC4-40 PDF data
+		  result.Value("filename") = "example18_plugin_architecture.pdf"
+		  
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function GenerateExample19() As Dictionary
+		  #If VNSPDFModule.hasPremiumTableModule Then
+		    // Example 19: Table Generation (Premium Feature)
+		    // Demonstrates SimpleTable, ImprovedTable, and FancyTable with optional grand footers
+		    
+		    Dim result As New Dictionary
+		    Dim statusText As String = ""
+		    
+		    statusText = statusText + "Example 19: Table Generation with Footers (Premium)" + EndOfLine
+		    statusText = statusText + "========================================" + EndOfLine + EndOfLine
+		    
+		    // Check if table module is available
+		    #If Not VNSPDFModule.hasPremiumTableModule Then
+		      statusText = statusText + "✗ SKIPPED: Table generation requires premium Table module" + EndOfLine
+		      statusText = statusText + "Set VNSPDFModule.hasPremiumTableModule = True to enable" + EndOfLine + EndOfLine
+		      result.Value("success") = False
+		      result.Value("status") = statusText
+		      result.Value("filename") = ""
+		      Return result
+		    #EndIf
+		    
+		    statusText = statusText + "✓ Table module is enabled" + EndOfLine + EndOfLine
+		    
+		    // Create PDF
+		    Dim pdf As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, VNSPDFModule.ePageUnit.Millimeters, VNSPDFModule.ePageFormat.A4)
+		    
+		    Call pdf.SetTitle("Example 19 - Table Generation with Footers")
+		    Call pdf.SetAuthor("VNS PDF Library")
+		    Call pdf.SetSubject("Demonstrating table generation features with optional grand footers")
+		    
+		    Call pdf.AddPage()
+		    
+		    // Title
+		    Call pdf.SetFont("helvetica", "B", 16)
+		    Call pdf.Cell(0, 10, "Table Generation Examples with Footers", 0, 1, "C")
+		    Call pdf.Ln(5)
+		    
+		    // ===== Example 1: Simple Table =====
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "1. Simple Table (Equal Width Columns)", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Basic table with equal-width columns and simple borders.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    // Create in-memory database for table 1
+		    Dim db1 As New SQLiteDatabase
+		    db1.DatabaseFile = Nil  // In-memory database
+		    
+		    Try
+		      db1.Connect()
+		      db1.ExecuteSQL("CREATE TABLE countries (country TEXT, capital TEXT, area TEXT, population TEXT)")
+		      db1.ExecuteSQL("INSERT INTO countries VALUES ('Austria', 'Vienna', '83,871', '8,859,000')")
+		      db1.ExecuteSQL("INSERT INTO countries VALUES ('Belgium', 'Brussels', '30,528', '11,515,000')")
+		      db1.ExecuteSQL("INSERT INTO countries VALUES ('France', 'Paris', '551,695', '67,750,000')")
+		      db1.ExecuteSQL("INSERT INTO countries VALUES ('Germany', 'Berlin', '357,022', '83,240,000')")
+		      db1.ExecuteSQL("INSERT INTO countries VALUES ('Italy', 'Rome', '301,340', '60,360,000')")
+		      
+		      Dim rs1 As RowSet = db1.SelectSQL("SELECT country AS Country, capital AS Capital, area AS ""Area (sq km)"", population AS Population FROM countries")
+		      
+		      Call pdf.SetFont("helvetica", "", 9)
+		      Call VNSPDFTablePremium.SimpleTable(pdf, rs1, 40.0, 6.0)
+		      Call pdf.Ln(8)
+		      rs1.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 1: " + e.Message + EndOfLine
+		    End Try
+		    db1.Close
+		    
+		    statusText = statusText + "✓ Simple table generated" + EndOfLine
+		    
+		    // ===== Example 1b: Simple Table with Footer =====
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "1b. Simple Table with Grand Footer", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Simple table with grand footer showing total population.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    // Create footer configuration
+		    Dim footerConfig1b As New VNSPDFTableFooterConfig
+		    footerConfig1b.Type = "grand"  // Only grand footer
+		    footerConfig1b.LabelColumnIndex = 0  // Put label in first column
+		    footerConfig1b.GrandLabel = "Total Population:"
+		    
+		    // Configure grand footer style
+		    footerConfig1b.GrandStyle = New VNSPDFTableFooterStyle  // Use default styling
+		    
+		    // Configure calculations for population column
+		    Redim footerConfig1b.ColumnCalculations(-1)
+		    
+		    // Column 3 (Population): Sum only
+		    Dim popCalc1b As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "{sum}")
+		    popCalc1b.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
+		    footerConfig1b.ColumnCalculations.Add(popCalc1b)
+		    
+		    // Create in-memory database for table 1b
+		    Dim db1b As New SQLiteDatabase
+		    db1b.DatabaseFile = Nil  // In-memory database
+		    
+		    Try
+		      db1b.Connect()
+		      db1b.ExecuteSQL("CREATE TABLE countries (country TEXT, capital TEXT, area TEXT, population REAL)")
+		      db1b.ExecuteSQL("INSERT INTO countries VALUES ('Austria', 'Vienna', '83,871', 8859000)")
+		      db1b.ExecuteSQL("INSERT INTO countries VALUES ('Belgium', 'Brussels', '30,528', 11515000)")
+		      db1b.ExecuteSQL("INSERT INTO countries VALUES ('France', 'Paris', '551,695', 67750000)")
+		      db1b.ExecuteSQL("INSERT INTO countries VALUES ('Germany', 'Berlin', '357,022', 83240000)")
+		      db1b.ExecuteSQL("INSERT INTO countries VALUES ('Italy', 'Rome', '301,340', 60360000)")
+		      
+		      Dim rs1b As RowSet = db1b.SelectSQL("SELECT country AS Country, capital AS Capital, area AS ""Area (sq km)"", population AS Population FROM countries")
+		      
+		      Call pdf.SetFont("helvetica", "", 9)
+		      Call VNSPDFTablePremium.SimpleTable(pdf, rs1b, 40.0, 6.0, True, footerConfig1b)
+		      Call pdf.Ln(8)
+		      rs1b.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 1b: " + e.Message + EndOfLine
+		    End Try
+		    db1b.Close
+		    
+		    statusText = statusText + "✓ Simple table with footer generated" + EndOfLine
+		    
+		    // ===== Example 1c: Simple Table with Intermediate Footer =====
+		    Call pdf.AddPage()
+		    
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "1c. Simple Table with Intermediate Footer (Grouped)", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Simple table with intermediate footers showing subtotals per region. Data is grouped by the Region column.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    // Create footer configuration with intermediate footers
+		    Dim footerConfig1c As New VNSPDFTableFooterConfig
+		    footerConfig1c.Type = "both"  // Both intermediate and grand footers
+		    footerConfig1c.GroupByColumn = 0  // Group by Region column (column index 0)
+		    footerConfig1c.LabelColumnIndex = 1  // Put labels in Product column
+		    footerConfig1c.IntermediateLabelFormat = "Subtotal for {group}"
+		    footerConfig1c.GrandLabel = "GRAND TOTAL"
+		    
+		    // Configure intermediate footer style (default)
+		    footerConfig1c.IntermediateStyle = New VNSPDFTableFooterStyle
+		    
+		    // Configure grand footer style (default)
+		    footerConfig1c.GrandStyle = New VNSPDFTableFooterStyle
+		    
+		    // Configure calculations for columns
+		    Redim footerConfig1c.ColumnCalculations(-1)
+		    
+		    // Column 2 (Sales): Sum only
+		    Dim salesCalc1c As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
+		    salesCalc1c.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
+		    footerConfig1c.ColumnCalculations.Add(salesCalc1c)
+		    
+		    // Create in-memory database with regional sales data
+		    Dim db1c As New SQLiteDatabase
+		    db1c.DatabaseFile = Nil
+		    
+		    Try
+		      db1c.Connect()
+		      db1c.ExecuteSQL("CREATE TABLE sales (region TEXT, product TEXT, sales REAL)")
+		      db1c.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Widget A', 12500)")
+		      db1c.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Widget B', 8900)")
+		      db1c.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Widget C', 15200)")
+		      db1c.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Widget A', 9800)")
+		      db1c.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Widget B', 11200)")
+		      db1c.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Widget C', 13500)")
+		      db1c.ExecuteSQL("INSERT INTO sales VALUES ('South', 'Widget A', 7600)")
+		      db1c.ExecuteSQL("INSERT INTO sales VALUES ('South', 'Widget B', 9100)")
+		      
+		      Dim rs1c As RowSet = db1c.SelectSQL("SELECT region AS Region, product AS Product, sales AS Sales FROM sales ORDER BY region, product")
+		      
+		      Call pdf.SetFont("helvetica", "", 9)
+		      Call VNSPDFTablePremium.SimpleTable(pdf, rs1c, 60.0, 6.0, True, footerConfig1c)
+		      Call pdf.Ln(8)
+		      rs1c.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 1c: " + e.Message + EndOfLine
+		    End Try
+		    db1c.Close
+		    
+		    statusText = statusText + "✓ Simple table with intermediate footer generated" + EndOfLine
+		    
+		    // ===== Example 2: Improved Table =====
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "2. Improved Table (Custom Column Widths)", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Table with custom column widths and automatic number alignment.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    // Custom widths for each column
+		    Dim widths2() As Double = Array(45.0, 35.0, 30.0, 40.0)
+		    
+		    // Reuse the same database query
+		    Dim db2 As New SQLiteDatabase
+		    db2.DatabaseFile = Nil
+		    Try
+		      db2.Connect()
+		      db2.ExecuteSQL("CREATE TABLE countries (country TEXT, capital TEXT, area TEXT, population TEXT)")
+		      db2.ExecuteSQL("INSERT INTO countries VALUES ('Austria', 'Vienna', '83,871', '8,859,000')")
+		      db2.ExecuteSQL("INSERT INTO countries VALUES ('Belgium', 'Brussels', '30,528', '11,515,000')")
+		      db2.ExecuteSQL("INSERT INTO countries VALUES ('France', 'Paris', '551,695', '67,750,000')")
+		      db2.ExecuteSQL("INSERT INTO countries VALUES ('Germany', 'Berlin', '357,022', '83,240,000')")
+		      db2.ExecuteSQL("INSERT INTO countries VALUES ('Italy', 'Rome', '301,340', '60,360,000')")
+		      
+		      Dim rs2 As RowSet = db2.SelectSQL("SELECT country AS Country, capital AS Capital, area AS ""Area (sq km)"", population AS Population FROM countries")
+		      
+		      Call pdf.SetFont("helvetica", "", 9)
+		      Call VNSPDFTablePremium.ImprovedTable(pdf, rs2, widths2, 6.0)
+		      Call pdf.Ln(8)
+		      rs2.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 2: " + e.Message + EndOfLine
+		    End Try
+		    db2.Close
+		    
+		    statusText = statusText + "✓ Improved table generated" + EndOfLine
+		    
+		    // ===== Example 2b: Improved Table with Footer =====
+		    Call pdf.AddPage()
+		    
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "2b. Improved Table with Grand Footer", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Improved table with grand footer showing total area and population.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    // Create footer configuration
+		    Dim footerConfig2b As New VNSPDFTableFooterConfig
+		    footerConfig2b.Type = "grand"  // Only grand footer
+		    footerConfig2b.LabelColumnIndex = 0  // Put label in first column
+		    footerConfig2b.GrandLabel = "TOTALS:"
+		    
+		    // Configure grand footer style
+		    footerConfig2b.GrandStyle = New VNSPDFTableFooterStyle  // Use default styling
+		    
+		    // Configure calculations for columns
+		    Redim footerConfig2b.ColumnCalculations(-1)
+		    
+		    // Column 2 (Area): Sum only
+		    Dim areaCalc2b As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum), "{sum}")
+		    areaCalc2b.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
+		    footerConfig2b.ColumnCalculations.Add(areaCalc2b)
+		    
+		    // Column 3 (Population): Sum only
+		    Dim popCalc2b As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "{sum}")
+		    popCalc2b.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
+		    footerConfig2b.ColumnCalculations.Add(popCalc2b)
+		    
+		    // Create in-memory database for table 2b
+		    Dim db2b As New SQLiteDatabase
+		    db2b.DatabaseFile = Nil
+		    
+		    Try
+		      db2b.Connect()
+		      db2b.ExecuteSQL("CREATE TABLE countries (country TEXT, capital TEXT, area REAL, population REAL)")
+		      db2b.ExecuteSQL("INSERT INTO countries VALUES ('Austria', 'Vienna', 83871, 8859000)")
+		      db2b.ExecuteSQL("INSERT INTO countries VALUES ('Belgium', 'Brussels', 30528, 11515000)")
+		      db2b.ExecuteSQL("INSERT INTO countries VALUES ('France', 'Paris', 551695, 67750000)")
+		      db2b.ExecuteSQL("INSERT INTO countries VALUES ('Germany', 'Berlin', 357022, 83240000)")
+		      db2b.ExecuteSQL("INSERT INTO countries VALUES ('Italy', 'Rome', 301340, 60360000)")
+		      
+		      Dim rs2b As RowSet = db2b.SelectSQL("SELECT country AS Country, capital AS Capital, area AS ""Area (sq km)"", population AS Population FROM countries")
+		      
+		      Call pdf.SetFont("helvetica", "", 9)
+		      Call VNSPDFTablePremium.ImprovedTable(pdf, rs2b, widths2, 6.0, True, footerConfig2b)
+		      Call pdf.Ln(8)
+		      rs2b.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 2b: " + e.Message + EndOfLine
+		    End Try
+		    db2b.Close
+		    
+		    statusText = statusText + "✓ Improved table with footer generated" + EndOfLine
+		    
+		    // ===== Example 2c: Improved Table with Intermediate Footer =====
+		    Call pdf.AddPage()
+		    
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "2c. Improved Table with Intermediate Footer (Grouped)", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Improved table with custom column widths, intermediate footers showing subtotals per category, and grand total.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    // Create footer configuration with intermediate footers
+		    Dim footerConfig2c As New VNSPDFTableFooterConfig
+		    footerConfig2c.Type = "both"  // Both intermediate and grand footers
+		    footerConfig2c.GroupByColumn = 0  // Group by Category column (column index 0)
+		    footerConfig2c.LabelColumnIndex = 1  // Put labels in Item column
+		    footerConfig2c.IntermediateLabelFormat = "Subtotal for {group}"
+		    footerConfig2c.GrandLabel = "GRAND TOTAL"
+		    
+		    // Configure intermediate footer style (default)
+		    footerConfig2c.IntermediateStyle = New VNSPDFTableFooterStyle
+		    
+		    // Configure grand footer style (default)
+		    footerConfig2c.GrandStyle = New VNSPDFTableFooterStyle
+		    
+		    // Configure calculations for columns
+		    Redim footerConfig2c.ColumnCalculations(-1)
+		    
+		    // Column 3 (Amount): Sum only
+		    Dim amountCalc2c As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
+		    amountCalc2c.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.2f"
+		    footerConfig2c.ColumnCalculations.Add(amountCalc2c)
+		    
+		    // Custom widths for columns: Category, Item, Qty, Amount
+		    Dim widths2c() As Double = Array(40.0, 60.0, 20.0, 30.0)
+		    
+		    // Create in-memory database with expense data
+		    Dim db2c As New SQLiteDatabase
+		    db2c.DatabaseFile = Nil
+		    
+		    Try
+		      db2c.Connect()
+		      db2c.ExecuteSQL("CREATE TABLE expenses (category TEXT, item TEXT, qty INTEGER, amount REAL)")
+		      db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Office', 'Paper Reams', 5, 45.50)")
+		      db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Office', 'Pens Box', 3, 18.75)")
+		      db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Office', 'Staplers', 2, 24.00)")
+		      db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Travel', 'Flight', 1, 450.00)")
+		      db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Travel', 'Hotel', 2, 280.00)")
+		      db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Travel', 'Meals', 4, 96.50)")
+		      db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Equipment', 'Laptop', 1, 1299.99)")
+		      db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Equipment', 'Monitor', 2, 398.00)")
+		      
+		      Dim rs2c As RowSet = db2c.SelectSQL("SELECT category AS Category, item AS Item, qty AS Qty, amount AS Amount FROM expenses ORDER BY category, item")
+		      
+		      Call pdf.SetFont("helvetica", "", 9)
+		      Call VNSPDFTablePremium.ImprovedTable(pdf, rs2c, widths2c, 6.0, True, footerConfig2c)
+		      Call pdf.Ln(8)
+		      rs2c.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 2c: " + e.Message + EndOfLine
+		    End Try
+		    db2c.Close
+		    
+		    statusText = statusText + "✓ Improved table with intermediate footer generated" + EndOfLine
+		    
+		    // ===== Example 3: Fancy Table =====
+		    
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "3. Fancy Table (With Colors)", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Styled table with colored header and alternating row colors.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    // Create in-memory database for table 3
+		    Dim db3 As New SQLiteDatabase
+		    db3.DatabaseFile = Nil
+		    Try
+		      db3.Connect()
+		      db3.ExecuteSQL("CREATE TABLE countries (country TEXT, capital TEXT, area TEXT, population TEXT)")
+		      db3.ExecuteSQL("INSERT INTO countries VALUES ('Austria', 'Vienna', '83,871', '8,859,000')")
+		      db3.ExecuteSQL("INSERT INTO countries VALUES ('Belgium', 'Brussels', '30,528', '11,515,000')")
+		      db3.ExecuteSQL("INSERT INTO countries VALUES ('France', 'Paris', '551,695', '67,750,000')")
+		      db3.ExecuteSQL("INSERT INTO countries VALUES ('Germany', 'Berlin', '357,022', '83,240,000')")
+		      db3.ExecuteSQL("INSERT INTO countries VALUES ('Italy', 'Rome', '301,340', '60,360,000')")
+		      
+		      Dim rs3 As RowSet = db3.SelectSQL("SELECT country AS Country, capital AS Capital, area AS ""Area (sq km)"", population AS Population FROM countries")
+		      
+		      Call pdf.SetFont("helvetica", "", 9)
+		      Call VNSPDFTablePremium.FancyTable(pdf, rs3, widths2, 6.0)
+		      Call pdf.Ln(10)
+		      rs3.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 3: " + e.Message + EndOfLine
+		    End Try
+		    db3.Close
+		    
+		    statusText = statusText + "✓ Fancy table generated" + EndOfLine + EndOfLine
+		    
+		    // ===== Example 4: Sales Data Table =====
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "4. Sales Report Table", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Professional sales report with numeric data formatting.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    Dim widths4() As Double = Array(70.0, 25.0, 20.0, 35.0)
+		    
+		    // Create in-memory database for table 4
+		    Dim db4 As New SQLiteDatabase
+		    db4.DatabaseFile = Nil
+		    Try
+		      db4.Connect()
+		      db4.ExecuteSQL("CREATE TABLE sales (product TEXT, price TEXT, qty TEXT, total TEXT)")
+		      db4.ExecuteSQL("INSERT INTO sales VALUES ('Professional Services', '150.00', '8', '1200.00')")
+		      db4.ExecuteSQL("INSERT INTO sales VALUES ('Software License', '599.99', '3', '1799.97')")
+		      db4.ExecuteSQL("INSERT INTO sales VALUES ('Hardware Bundle', '1299.50', '2', '2599.00')")
+		      db4.ExecuteSQL("INSERT INTO sales VALUES ('Training Session', '450.00', '4', '1800.00')")
+		      db4.ExecuteSQL("INSERT INTO sales VALUES ('Support Contract', '2500.00', '1', '2500.00')")
+		      
+		      Dim rs4 As RowSet = db4.SelectSQL("SELECT product AS Product, price AS Price, qty AS Qty, total AS Total FROM sales")
+		      
+		      Call pdf.SetFont("helvetica", "", 9)
+		      Call VNSPDFTablePremium.FancyTable(pdf, rs4, widths4, 6.0)
+		      rs4.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 4: " + e.Message + EndOfLine
+		    End Try
+		    db4.Close
+		    
+		    statusText = statusText + "✓ Sales report table generated" + EndOfLine + EndOfLine
+		    
+		    // ===== Example 5: Multi-Page Table =====
+		    Call pdf.AddPage()
+		    
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "5. Multi-Page Table (Pagination)", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Large dataset demonstrating automatic page breaks. Table spans multiple pages with 100 rows of employee data. Headers automatically repeat on each new page.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    Dim widths5() As Double = Array(60.0, 40.0, 30.0, 40.0)
+		    
+		    // Create in-memory database with 100 employee records
+		    Dim db5 As New SQLiteDatabase
+		    db5.DatabaseFile = Nil
+		    Try
+		      db5.Connect()
+		      db5.ExecuteSQL("CREATE TABLE employees (name TEXT, department TEXT, employee_id TEXT, salary TEXT)")
+		      
+		      // Generate 100 employee records with more variety
+		      Dim departments() As String = Array("Engineering", "Sales", "Marketing", "HR", "Finance", "Operations", "IT", "Legal", "R&D", "Support")
+		      Dim firstNames() As String = Array("John", "Jane", "Michael", "Sarah", "David", "Emma", "James", "Lisa", "Robert", "Maria", "William", "Emily", "Daniel", "Sophia", "Matthew")
+		      Dim lastNames() As String = Array("Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Taylor", "Anderson", "Wilson", "Moore", "Jackson")
+		      
+		      For i As Integer = 1 To 99
+		        Dim firstName As String = firstNames((i - 1) Mod firstNames.Count)
+		        Dim lastName As String = lastNames((i - 1) Mod lastNames.Count)
+		        Dim name As String = firstName + " " + lastName
+		        Dim dept As String = departments((i - 1) Mod departments.Count)
+		        Dim empId As String = "EMP" + FormatHelper(i, "000")
+		        Dim salary As String = FormatHelper(45000 + (i * 500), "#,##0")
+		        
+		        db5.ExecuteSQL("INSERT INTO employees VALUES ('" + name + "', '" + dept + "', '" + empId + "', '" + salary + "')")
+		      Next
+		      
+		      Dim rs5 As RowSet = db5.SelectSQL("SELECT name AS ""Employee Name"", department AS Department, employee_id AS ""ID"", salary AS ""Salary ($)"" FROM employees")
+		      
+		      Call pdf.SetFont("helvetica", "", 8)
+		      // Use repeatHeaders=True (default) to show headers on each page
+		      Call VNSPDFTablePremium.FancyTable(pdf, rs5, widths5, 5.0, True)
+		      rs5.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 5: " + e.Message + EndOfLine
+		    End Try
+		    db5.Close
+		    
+		    statusText = statusText + "✓ Multi-page table generated (99 rows with repeated headers)" + EndOfLine + EndOfLine
+		    
+		    // ===== Example 6: Table with Grand Footer =====
+		    Call pdf.AddPage()
+		    
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "6. Table with Grand Footer (Totals)", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Demonstrates grand footer with sum and count calculations.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    // SQL Query for this example:
+		    Call pdf.SetFont("courier", "", 8)
+		    Call pdf.SetTextColor(0, 100, 0)
+		    Call pdf.MultiCell(0, 3, "SELECT product AS Product, price AS Price, qty AS Qty, total AS Total FROM sales", 0, "L")
+		    Call pdf.SetTextColor(0, 0, 0)
+		    Call pdf.Ln(2)
+		    
+		    // Create sales data with numbers for totaling
+		    Dim db6 As New SQLiteDatabase
+		    db6.DatabaseFile = Nil
+		    Try
+		      db6.Connect()
+		      db6.ExecuteSQL("CREATE TABLE sales (product TEXT, price REAL, qty INTEGER, total REAL)")
+		      db6.ExecuteSQL("INSERT INTO sales VALUES ('Professional Services', 150.00, 8, 1200.00)")
+		      db6.ExecuteSQL("INSERT INTO sales VALUES ('Software License', 599.99, 3, 1799.97)")
+		      db6.ExecuteSQL("INSERT INTO sales VALUES ('Hardware Bundle', 1299.50, 2, 2599.00)")
+		      db6.ExecuteSQL("INSERT INTO sales VALUES ('Training Session', 450.00, 4, 1800.00)")
+		      db6.ExecuteSQL("INSERT INTO sales VALUES ('Support Contract', 2500.00, 1, 2500.00)")
+		      
+		      Dim rs6 As RowSet = db6.SelectSQL("SELECT product AS Product, price AS Price, qty AS Qty, total AS Total FROM sales")
+		      
+		      // Configure grand footer
+		      Dim footerConfig As New VNSPDFTableFooterConfig
+		      footerConfig.Type = "grand"
+		      footerConfig.LabelColumnIndex = 0
+		      footerConfig.GrandLabel = "TOTAL"
+		      
+		      // Configure grand footer style
+		      footerConfig.GrandStyle = New VNSPDFTableFooterStyle
+		      footerConfig.GrandStyle.BackgroundColor = Color.RGB(52, 73, 94)  // Dark blue
+		      footerConfig.GrandStyle.TextColor = Color.RGB(255, 255, 255)  // White
+		      footerConfig.GrandStyle.BorderColor = Color.RGB(0, 0, 0)
+		      footerConfig.GrandStyle.FontStyle = "B"
+		      footerConfig.GrandStyle.CellHeight = 7.0
+		      
+		      // Configure calculations for columns
+		      Redim footerConfig.ColumnCalculations(-1)
+		      
+		      // Column 2 (Qty): Sum and Count
+		      Dim qtyCalc As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum, VNSPDFTablePremium.kCalcTypeCount), "{sum} ({count})")
+		      qtyCalc.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
+		      qtyCalc.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeCount) = "%d"
+		      footerConfig.ColumnCalculations.Add(qtyCalc)
+		      
+		      // Column 3 (Total): Sum only
+		      Dim totalCalc As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
+		      totalCalc.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.2f"
+		      footerConfig.ColumnCalculations.Add(totalCalc)
+		      
+		      Call pdf.SetFont("helvetica", "", 9)
+		      Call VNSPDFTablePremium.FancyTable(pdf, rs6, widths4, 6.0, True, footerConfig)
+		      rs6.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 6: " + e.Message + EndOfLine
+		    End Try
+		    db6.Close
+		    
+		    statusText = statusText + "✓ Table with grand footer generated" + EndOfLine + EndOfLine
+		    
+		    // ===== Example 7: Multi-Page Table with Grand Footer =====
+		    Call pdf.AddPage()
+		    
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "7. Multi-Page Table with Grand Footer", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Large dataset demonstrating grand footer at the end of a multi-page table. Table spans multiple pages with 50 sales records, but the grand total only appears once at the very end.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    // SQL Query for this example:
+		    Call pdf.SetFont("courier", "", 8)
+		    Call pdf.SetTextColor(0, 100, 0)
+		    Call pdf.MultiCell(0, 3, "SELECT product AS Product, price AS Price, qty AS Qty, total AS Total FROM sales", 0, "L")
+		    Call pdf.SetTextColor(0, 0, 0)
+		    Call pdf.Ln(2)
+		    
+		    // Create in-memory database with 50 sales records
+		    Dim db7 As New SQLiteDatabase
+		    db7.DatabaseFile = Nil
+		    Try
+		      db7.Connect()
+		      db7.ExecuteSQL("CREATE TABLE sales (product TEXT, price REAL, qty INTEGER, total REAL)")
+		      
+		      Dim products() As String = Array("Professional Services", "Software License", "Hardware Bundle", "Training Session", "Support Contract", "Consulting Hours", "Cloud Subscription", "Premium Support")
+		      
+		      For i As Integer = 1 To 50
+		        Dim product As String = products((i - 1) Mod products.Count)
+		        Dim price As Double = 100.0 + (i * 27.50)
+		        Dim qty As Integer = 1 + ((i - 1) Mod 5)
+		        Dim total As Double = price * qty
+		        
+		        db7.ExecuteSQL("INSERT INTO sales VALUES ('" + product + "', " + Str(price) + ", " + Str(qty) + ", " + Str(total) + ")")
+		      Next
+		      
+		      Dim rs7 As RowSet = db7.SelectSQL("SELECT product AS Product, price AS Price, qty AS Qty, total AS Total FROM sales")
+		      
+		      // Configure grand footer
+		      Dim footerConfig7 As New VNSPDFTableFooterConfig
+		      footerConfig7.Type = "grand"
+		      footerConfig7.LabelColumnIndex = 0
+		      footerConfig7.GrandLabel = "GRAND TOTAL"
+		      
+		      // Configure grand footer style
+		      footerConfig7.GrandStyle = New VNSPDFTableFooterStyle
+		      footerConfig7.GrandStyle.BackgroundColor = Color.RGB(44, 62, 80)  // Dark gray
+		      footerConfig7.GrandStyle.TextColor = Color.RGB(255, 255, 255)  // White
+		      footerConfig7.GrandStyle.BorderColor = Color.RGB(0, 0, 0)
+		      footerConfig7.GrandStyle.FontStyle = "B"
+		      footerConfig7.GrandStyle.CellHeight = 8.0
+		      
+		      // Configure calculations for columns
+		      Redim footerConfig7.ColumnCalculations(-1)
+		      
+		      // Column 2 (Qty): Sum and Count
+		      Dim qtyCalc7 As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum, VNSPDFTablePremium.kCalcTypeCount), "{sum} items ({count} rows)")
+		      qtyCalc7.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
+		      qtyCalc7.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeCount) = "%d"
+		      footerConfig7.ColumnCalculations.Add(qtyCalc7)
+		      
+		      // Column 3 (Total): Sum, Avg, Min, Max
+		      Dim totalCalc7 As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
+		      totalCalc7.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.2f"
+		      footerConfig7.ColumnCalculations.Add(totalCalc7)
+		      
+		      Call pdf.SetFont("helvetica", "", 8)
+		      Call VNSPDFTablePremium.FancyTable(pdf, rs7, widths4, 5.0, True, footerConfig7)
+		      rs7.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 7: " + e.Message + EndOfLine
+		    End Try
+		    db7.Close
+		    
+		    statusText = statusText + "✓ Multi-page table with grand footer generated (50 rows)" + EndOfLine + EndOfLine
+		    
+		    // ===== Example 8: Table with Intermediate Footers (Subtotals) =====
+		    Call pdf.AddPage()
+		    
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "8. Table with Intermediate Footers (Subtotals by Region)", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Demonstrates intermediate footers showing subtotals when the Region column changes. Each region gets its own subtotal before moving to the next region.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    // SQL Query for this example:
+		    Call pdf.SetFont("courier", "", 8)
+		    Call pdf.SetTextColor(0, 100, 0)
+		    Call pdf.MultiCell(0, 3, "SELECT region AS Region, product AS Product, qty AS Qty, total AS Total FROM sales ORDER BY region", 0, "L")
+		    Call pdf.SetTextColor(0, 0, 0)
+		    Call pdf.Ln(2)
+		    
+		    // Create sales data grouped by region
+		    Dim db8 As New SQLiteDatabase
+		    db8.DatabaseFile = Nil
+		    Try
+		      db8.Connect()
+		      db8.ExecuteSQL("CREATE TABLE sales (region TEXT, product TEXT, qty INTEGER, total REAL)")
+		      
+		      // East region sales
+		      db8.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Professional Services', 5, 750.00)")
+		      db8.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Software License', 3, 1799.97)")
+		      db8.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Training Session', 2, 900.00)")
+		      
+		      // West region sales
+		      db8.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Hardware Bundle', 4, 5198.00)")
+		      db8.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Support Contract', 2, 5000.00)")
+		      db8.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Professional Services', 3, 450.00)")
+		      
+		      // South region sales
+		      db8.ExecuteSQL("INSERT INTO sales VALUES ('South', 'Software License', 6, 3599.94)")
+		      db8.ExecuteSQL("INSERT INTO sales VALUES ('South', 'Training Session', 8, 3600.00)")
+		      db8.ExecuteSQL("INSERT INTO sales VALUES ('South', 'Hardware Bundle', 1, 1299.50)")
+		      
+		      Dim rs8 As RowSet = db8.SelectSQL("SELECT region AS Region, product AS Product, qty AS Qty, total AS Total FROM sales ORDER BY region")
+		      
+		      // Configure intermediate and grand footers
+		      Dim footerConfig8 As New VNSPDFTableFooterConfig
+		      footerConfig8.Type = "both"  // Both intermediate and grand
+		      footerConfig8.GroupByColumn = 0  // Group by Region column
+		      footerConfig8.LabelColumnIndex = 1  // Put labels in Product column
+		      footerConfig8.IntermediateLabelFormat = "Subtotal for {group}"
+		      footerConfig8.GrandLabel = "GRAND TOTAL"
+		      
+		      // Configure intermediate footer style (lighter)
+		      footerConfig8.IntermediateStyle = New VNSPDFTableFooterStyle
+		      #If TargetiOS Then
+		        footerConfig8.IntermediateStyle.BackgroundColor = Color.RGB(149, 165, 166)  // Medium gray
+		        footerConfig8.IntermediateStyle.TextColor = Color.RGB(255, 255, 255)  // White
+		        footerConfig8.IntermediateStyle.BorderColor = Color.RGB(0, 0, 0)
+		      #Else
+		        footerConfig8.IntermediateStyle.BackgroundColor = RGB(149, 165, 166)  // Medium gray
+		        footerConfig8.IntermediateStyle.TextColor = RGB(255, 255, 255)  // White
+		        footerConfig8.IntermediateStyle.BorderColor = RGB(0, 0, 0)
+		      #EndIf
+		      footerConfig8.IntermediateStyle.FontStyle = "B"
+		      footerConfig8.IntermediateStyle.CellHeight = 6.5
+		      
+		      // Configure grand footer style (darker)
+		      footerConfig8.GrandStyle = New VNSPDFTableFooterStyle
+		      footerConfig8.GrandStyle.BackgroundColor = Color.RGB(44, 62, 80)  // Dark gray
+		      footerConfig8.GrandStyle.TextColor = Color.RGB(255, 255, 255)  // White
+		      footerConfig8.GrandStyle.BorderColor = Color.RGB(0, 0, 0)
+		      footerConfig8.GrandStyle.FontStyle = "B"
+		      footerConfig8.GrandStyle.CellHeight = 8.0
+		      
+		      // Configure calculations for columns
+		      Redim footerConfig8.ColumnCalculations(-1)
+		      
+		      // Column 2 (Qty): Sum
+		      Dim qtyCalc8 As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum), "{sum}")
+		      qtyCalc8.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
+		      footerConfig8.ColumnCalculations.Add(qtyCalc8)
+		      
+		      // Column 3 (Total): Sum
+		      Dim totalCalc8 As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
+		      totalCalc8.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.2f"
+		      footerConfig8.ColumnCalculations.Add(totalCalc8)
+		      
+		      Dim widths8() As Double = Array(30.0, 70.0, 20.0, 40.0)
+		      
+		      Call pdf.SetFont("helvetica", "", 9)
+		      Call VNSPDFTablePremium.FancyTable(pdf, rs8, widths8, 6.0, True, footerConfig8)
+		      rs8.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 8: " + e.Message + EndOfLine
+		    End Try
+		    db8.Close
+		    
+		    statusText = statusText + "✓ Table with intermediate footers generated (3 regions with subtotals)" + EndOfLine + EndOfLine
+		    
+		    // ===== Example 9: Multi-Page Table with Intermediate and Grand Footers =====
+		    Call pdf.AddPage()
+		    
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "9. Multi-Page Table with Subtotals and Grand Total", 0, 1)
+		    Call pdf.Ln(2)
+		    
+		    Call pdf.SetFont("helvetica", "", 10)
+		    Call pdf.MultiCell(0, 5, "Demonstrates a multi-page table (90 rows across 3 regions) with intermediate footers showing regional subtotals and a grand total at the end. Each region has 30 sales records.", 0, "L")
+		    Call pdf.Ln(3)
+		    
+		    // SQL Query for this example:
+		    Call pdf.SetFont("courier", "", 8)
+		    Call pdf.SetTextColor(0, 100, 0)
+		    Call pdf.MultiCell(0, 3, "SELECT region AS Region, product AS Product, qty AS Qty, total AS Total FROM sales ORDER BY region", 0, "L")
+		    Call pdf.SetTextColor(0, 0, 0)
+		    Call pdf.Ln(2)
+		    
+		    // Create large dataset with 90 sales records (30 per region)
+		    Dim db9 As New SQLiteDatabase
+		    db9.DatabaseFile = Nil
+		    Try
+		      db9.Connect()
+		      db9.ExecuteSQL("CREATE TABLE sales (region TEXT, product TEXT, qty INTEGER, total REAL)")
+		      
+		      Dim products9() As String = Array("Professional Services", "Software License", "Hardware Bundle", "Training Session", "Support Contract", "Consulting Hours", "Cloud Subscription", "Premium Support", "Implementation", "Maintenance")
+		      
+		      // East region - 30 records
+		      For i As Integer = 1 To 30
+		        Dim product9 As String = products9((i - 1) Mod products9.Count)
+		        Dim qty9 As Integer = 1 + ((i - 1) Mod 8)
+		        Dim price9 As Double = 50.0 + (i * 13.75)
+		        Dim total9 As Double = price9 * qty9
+		        db9.ExecuteSQL("INSERT INTO sales VALUES ('East', '" + product9 + "', " + Str(qty9) + ", " + Str(total9) + ")")
+		      Next
+		      
+		      // South region - 30 records
+		      For i As Integer = 31 To 60
+		        Dim product9 As String = products9((i - 1) Mod products9.Count)
+		        Dim qty9 As Integer = 1 + ((i - 1) Mod 6)
+		        Dim price9 As Double = 75.0 + (i * 11.50)
+		        Dim total9 As Double = price9 * qty9
+		        db9.ExecuteSQL("INSERT INTO sales VALUES ('South', '" + product9 + "', " + Str(qty9) + ", " + Str(total9) + ")")
+		      Next
+		      
+		      // West region - 30 records
+		      For i As Integer = 61 To 90
+		        Dim product9 As String = products9((i - 1) Mod products9.Count)
+		        Dim qty9 As Integer = 1 + ((i - 1) Mod 7)
+		        Dim price9 As Double = 100.0 + (i * 9.25)
+		        Dim total9 As Double = price9 * qty9
+		        db9.ExecuteSQL("INSERT INTO sales VALUES ('West', '" + product9 + "', " + Str(qty9) + ", " + Str(total9) + ")")
+		      Next
+		      
+		      Dim rs9 As RowSet = db9.SelectSQL("SELECT region AS Region, product AS Product, qty AS Qty, total AS Total FROM sales ORDER BY region")
+		      
+		      // Configure intermediate and grand footers
+		      Dim footerConfig9 As New VNSPDFTableFooterConfig
+		      footerConfig9.Type = "both"  // Both intermediate and grand
+		      footerConfig9.GroupByColumn = 0  // Group by Region column
+		      footerConfig9.LabelColumnIndex = 1  // Put labels in Product column
+		      footerConfig9.IntermediateLabelFormat = "Subtotal for {group}"
+		      footerConfig9.GrandLabel = "GRAND TOTAL (All Regions)"
+		      
+		      // Configure intermediate footer style (lighter blue-gray)
+		      footerConfig9.IntermediateStyle = New VNSPDFTableFooterStyle
+		      #If TargetiOS Then
+		        footerConfig9.IntermediateStyle.BackgroundColor = Color.RGB(149, 165, 166)  // Medium gray
+		        footerConfig9.IntermediateStyle.TextColor = Color.RGB(255, 255, 255)  // White
+		        footerConfig9.IntermediateStyle.BorderColor = Color.RGB(0, 0, 0)
+		      #Else
+		        footerConfig9.IntermediateStyle.BackgroundColor = RGB(149, 165, 166)  // Medium gray
+		        footerConfig9.IntermediateStyle.TextColor = RGB(255, 255, 255)  // White
+		        footerConfig9.IntermediateStyle.BorderColor = RGB(0, 0, 0)
+		      #EndIf
+		      footerConfig9.IntermediateStyle.FontStyle = "B"
+		      footerConfig9.IntermediateStyle.CellHeight = 6.5
+		      
+		      // Configure grand footer style (dark blue-gray)
+		      footerConfig9.GrandStyle = New VNSPDFTableFooterStyle
+		      footerConfig9.GrandStyle.BackgroundColor = Color.RGB(44, 62, 80)  // Dark gray
+		      footerConfig9.GrandStyle.TextColor = Color.RGB(255, 255, 255)  // White
+		      footerConfig9.GrandStyle.BorderColor = Color.RGB(0, 0, 0)
+		      footerConfig9.GrandStyle.FontStyle = "B"
+		      footerConfig9.GrandStyle.CellHeight = 8.0
+		      
+		      // Configure calculations for columns
+		      Redim footerConfig9.ColumnCalculations(-1)
+		      
+		      // Column 2 (Qty): Sum and Count
+		      Dim qtyCalc9 As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum, VNSPDFTablePremium.kCalcTypeCount), "{sum} items ({count} rows)")
+		      qtyCalc9.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
+		      qtyCalc9.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeCount) = "%d"
+		      footerConfig9.ColumnCalculations.Add(qtyCalc9)
+		      
+		      // Column 3 (Total): Sum
+		      Dim totalCalc9 As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
+		      totalCalc9.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.2f"
+		      footerConfig9.ColumnCalculations.Add(totalCalc9)
+		      
+		      Dim widths9() As Double = Array(30.0, 70.0, 30.0, 40.0)
+		      
+		      Call pdf.SetFont("helvetica", "", 9)
+		      Call VNSPDFTablePremium.FancyTable(pdf, rs9, widths9, 5.5, True, footerConfig9)
+		      rs9.Close
+		    Catch e As DatabaseException
+		      statusText = statusText + "ERROR creating table 9: " + e.Message + EndOfLine
+		    End Try
+		    db9.Close
+		    
+		    statusText = statusText + "✓ Multi-page table with intermediate and grand footers generated (90 rows, 3 regions)" + EndOfLine + EndOfLine
+		    
+		    // Check for errors
+		    If pdf.Err() Then
+		      statusText = statusText + "ERROR: " + pdf.GetError() + EndOfLine
+		      result.Value("success") = False
+		      result.Value("status") = statusText
+		      result.Value("filename") = ""
+		      Return result
+		    End If
+		    
+		    // Generate PDF
+		    Dim pdfData As String = pdf.Output()
+		    
+		    result.Value("success") = True
+		    result.Value("status") = statusText
+		    result.Value("pdf") = pdfData
+		    result.Value("filename") = "example19_tables.pdf"
+		    
+		    Return result
+		  #Else
+		    // Table module not available in free version
+		    Dim result As New Dictionary
+		    result.Value("success") = False
+		    result.Value("status") = "Example 19 requires Premium Table Module"
+		    result.Value("message") = "Table generation features are available in the premium version only."
+		    Return result
+		  #EndIf
 		End Function
 	#tag EndMethod
 
@@ -2067,6 +3065,252 @@ Protected Module VNSPDFExamplesModule
 		    result.Value("error") = e.Message
 		  End Try
 		  
+		  result.Value("status") = statusText
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function GenerateExample20(sourcePath As String = "") As Dictionary
+		  // Example 20: PDF Import - Import pages from existing PDFs
+		  // Demonstrates SetSourceFile(), ImportPage(), and UseTemplate()
+		  
+		  Dim result As New Dictionary
+		  Dim statusText As String = ""
+		  
+		  statusText = statusText + "Example 20: PDF Import (Pages as Templates)" + EndOfLine
+		  statusText = statusText + "========================================" + EndOfLine + EndOfLine
+		  
+		  // If no source path provided, use default example
+		  If sourcePath = "" Then
+		    #If TargetDesktop Or TargetConsole Then
+		      // Desktop/Console: Find pdf_examples folder relative to app location
+		      Dim pdfExamplesFolder As FolderItem
+		      Dim sourceFile As FolderItem
+		      
+		      // Try multiple locations to find pdf_examples folder
+		      // 1. CurrentWorkingDirectory/pdf_examples
+		      pdfExamplesFolder = SpecialFolder.CurrentWorkingDirectory.Child("pdf_examples")
+		      If pdfExamplesFolder.Exists Then
+		        sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
+		        If sourceFile.Exists Then
+		          sourcePath = sourceFile.NativePath
+		        End If
+		      End If
+		      
+		      // 2. App location/pdf_examples (for debug builds)
+		      If sourcePath = "" Then
+		        pdfExamplesFolder = App.ExecutableFile.Parent.Child("pdf_examples")
+		        If pdfExamplesFolder.Exists Then
+		          sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
+		          If sourceFile.Exists Then
+		            sourcePath = sourceFile.NativePath
+		          End If
+		        End If
+		      End If
+		      
+		      // 3. App location/../pdf_examples (for builds in subfolder)
+		      If sourcePath = "" And App.ExecutableFile.Parent.Parent <> Nil Then
+		        pdfExamplesFolder = App.ExecutableFile.Parent.Parent.Child("pdf_examples")
+		        If pdfExamplesFolder.Exists Then
+		          sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
+		          If sourceFile.Exists Then
+		            sourcePath = sourceFile.NativePath
+		          End If
+		        End If
+		      End If
+		      
+		      // 4. App location/../../pdf_examples (for deeper build folders)
+		      If sourcePath = "" And App.ExecutableFile.Parent.Parent <> Nil And App.ExecutableFile.Parent.Parent.Parent <> Nil Then
+		        pdfExamplesFolder = App.ExecutableFile.Parent.Parent.Parent.Child("pdf_examples")
+		        If pdfExamplesFolder.Exists Then
+		          sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
+		          If sourceFile.Exists Then
+		            sourcePath = sourceFile.NativePath
+		          End If
+		        End If
+		      End If
+		      
+		      // If still not found, show error
+		      If sourcePath = "" Then
+		        statusText = statusText + "✗ ERROR: Cannot find pdf_examples/example19_tables.pdf" + EndOfLine
+		        statusText = statusText + "   Searched from: " + App.ExecutableFile.Parent.NativePath + EndOfLine
+		        result.Value("success") = False
+		        result.Value("status") = statusText
+		        result.Value("filename") = ""
+		        Return result
+		      End If
+		    #ElseIf TargetiOS Then
+		      // iOS: Requires user to select a source PDF file
+		      // Note: iOS apps need file picker UI to let user choose PDF from Documents folder
+		      statusText = statusText + "✗ ERROR: No source PDF path provided" + EndOfLine
+		      statusText = statusText + "   iOS requires a source PDF file to be selected by the user" + EndOfLine
+		      statusText = statusText + "   Implement file picker UI to pass source file path to GenerateExample20()" + EndOfLine
+		      result.Value("success") = False
+		      result.Value("status") = statusText
+		      result.Value("filename") = ""
+		      Return result
+		    #Else
+		      // Web: No file system access, requires user to upload PDF via WebDialogPDFUpload
+		      statusText = statusText + "✗ ERROR: No source PDF path provided" + EndOfLine
+		      result.Value("success") = False
+		      result.Value("status") = statusText
+		      result.Value("filename") = ""
+		      Return result
+		    #EndIf
+		  End If
+		  
+		  // Create PDF
+		  Dim pdf As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, VNSPDFModule.ePageUnit.Millimeters, VNSPDFModule.ePageFormat.A4)
+		  
+		  Call pdf.SetTitle("Example 20 - PDF Import")
+		  Call pdf.SetAuthor("VNS PDF Library")
+		  Call pdf.SetSubject("Importing pages from existing PDFs")
+		  
+		  statusText = statusText + "Source PDF: " + sourcePath + EndOfLine + EndOfLine
+		  
+		  // Open source PDF
+		  Dim pageCount As Integer = pdf.SetSourceFile(sourcePath)
+		  
+		  If pdf.Err() Then
+		    statusText = statusText + "✗ ERROR: " + pdf.GetError() + EndOfLine
+		    result.Value("success") = False
+		    result.Value("status") = statusText
+		    result.Value("filename") = ""
+		    Return result
+		  End If
+		  
+		  statusText = statusText + "✓ Opened PDF successfully" + EndOfLine
+		  statusText = statusText + "  Pages found: " + Str(pageCount) + EndOfLine + EndOfLine
+		  
+		  // Create title page
+		  Call pdf.AddPage()
+		  Call pdf.SetFont("helvetica", "B", 20)
+		  Call pdf.Cell(0, 10, "PDF Import Example", 0, 1, "C")
+		  Call pdf.Ln(5)
+		  
+		  Call pdf.SetFont("helvetica", "", 12)
+		  Call pdf.MultiCell(0, 5, "This example demonstrates importing pages from an existing PDF file and placing them as templates in a new document using UseTemplate().", 0, "L")
+		  Call pdf.Ln(10)
+		  
+		  // Import ALL pages from source PDF
+		  Dim templateIDs() As Integer
+		  
+		  statusText = statusText + "Importing all " + Str(pageCount) + " pages..." + EndOfLine + EndOfLine
+		  
+		  For i As Integer = 1 To pageCount
+		    Dim templateID As Integer = pdf.ImportPage(i)
+		    
+		    If pdf.Err() Then
+		      statusText = statusText + "  ✗ ERROR importing page " + Str(i) + ": " + pdf.GetError() + EndOfLine
+		      pdf.ClearError()
+		      Continue
+		    End If
+		    
+		    templateIDs.Add(templateID)
+		  Next
+		  
+		  statusText = statusText + "✓ Successfully imported " + Str(templateIDs.Count) + " pages" + EndOfLine + EndOfLine
+		  
+		  // Display all pages as thumbnails - 4 pages per output page (2x2 grid)
+		  Dim thumbWidth As Double = 85  // Width for each thumbnail
+		  Dim thumbSpacing As Double = 5  // Space between thumbnails
+		  Dim pageMargin As Double = 15
+		  
+		  // Calculate positions for 2x2 grid
+		  Dim col1X As Double = pageMargin
+		  Dim col2X As Double = pageMargin + thumbWidth + thumbSpacing
+		  Dim row1Y As Double = 45
+		  Dim row2Y As Double = row1Y + 120  // Approximate height for A4 aspect ratio thumbnails
+		  
+		  Dim pageIndex As Integer = 0
+		  Dim outputPageNum As Integer = 0
+		  
+		  While pageIndex < templateIDs.Count
+		    // Add new output page for this set of 4 thumbnails
+		    Call pdf.AddPage()
+		    outputPageNum = outputPageNum + 1
+		    
+		    // Title
+		    Call pdf.SetFont("helvetica", "B", 14)
+		    Call pdf.Cell(0, 8, "Source PDF Pages (Sheet " + Str(outputPageNum) + " of " + Str((templateIDs.Count + 3) \ 4) + ")", 0, 1, "C")
+		    Call pdf.Ln(5)
+		    
+		    // Display up to 4 thumbnails in 2x2 grid
+		    For gridPos As Integer = 0 To 3
+		      If pageIndex >= templateIDs.Count Then Exit For
+		      
+		      // Calculate position for this thumbnail
+		      Dim thumbX As Double
+		      Dim thumbY As Double
+		      
+		      Select Case gridPos
+		      Case 0  // Top-left
+		        thumbX = col1X
+		        thumbY = row1Y
+		      Case 1  // Top-right
+		        thumbX = col2X
+		        thumbY = row1Y
+		      Case 2  // Bottom-left
+		        thumbX = col1X
+		        thumbY = row2Y
+		      Case 3  // Bottom-right
+		        thumbX = col2X
+		        thumbY = row2Y
+		      End Select
+		      
+		      // Draw label above thumbnail
+		      Call pdf.SetFont("helvetica", "B", 10)
+		      Dim debugInfo As String = "Source Page " + Str(pageIndex + 1) + " (ID:" + Str(templateIDs(pageIndex)) + ", Arr:" + Str(pageIndex) + ")"
+		      Call pdf.Text(thumbX, thumbY - 3, debugInfo)
+		      
+		      // Place the thumbnail
+		      Call pdf.UseTemplate(templateIDs(pageIndex), thumbX, thumbY, thumbWidth, 0)
+		      
+		      pageIndex = pageIndex + 1
+		    Next
+		  Wend
+		  
+		  statusText = statusText + "✓ Created " + Str(outputPageNum) + " thumbnail overview pages" + EndOfLine
+		  
+		  statusText = statusText + EndOfLine + "✓ Example 20 completed" + EndOfLine
+		  
+		  // Generate PDF
+		  Dim pdfBytes As String = pdf.Output()
+		  
+		  If pdf.Err() Then
+		    statusText = statusText + "✗ ERROR generating PDF: " + pdf.GetError() + EndOfLine
+		    result.Value("success") = False
+		    result.Value("status") = statusText
+		    result.Value("filename") = ""
+		    Return result
+		  End If
+		  
+		  // Save to file
+		  #If TargetDesktop Or TargetConsole Then
+		    Dim outputFile As FolderItem = SpecialFolder.Desktop.Child("example20_pdf_import.pdf")
+		    Try
+		      Dim bos As BinaryStream = BinaryStream.Create(outputFile, True)
+		      bos.Write(pdfBytes)
+		      bos.Close()
+		      
+		      statusText = statusText + "✓ PDF saved to: " + outputFile.NativePath + EndOfLine
+		      result.Value("success") = True
+		      result.Value("filename") = "example20_pdf_import.pdf"
+		    Catch e As IOException
+		      statusText = statusText + "✗ ERROR saving file: " + e.Message + EndOfLine
+		      result.Value("success") = False
+		      result.Value("filename") = ""
+		    End Try
+		  #Else
+		    // iOS/Web: Return PDF data for UI layer to handle
+		    result.Value("success") = True
+		    result.Value("filename") = "example20_pdf_import.pdf"
+		  #EndIf
+		  
+		  
+		  // Return PDF data for all platforms (iOS/Web need this for display)
+		  result.Value("pdf") = pdfBytes
 		  result.Value("status") = statusText
 		  Return result
 		End Function
@@ -2747,13 +3991,13 @@ Protected Module VNSPDFExamplesModule
 		    pdf.ClipText(20, 190, "PDF", True)
 		    pdf.RadialGradient(20, 160, 100, 50, 255, 255, 100, 100, 100, 255, 0.3, 0.2, 0.7, 0.8, 0.6)
 		    pdf.ClipEnd()
-
+		    
 		    // Polygons with line styles
 		    pdf.SetY(210)
 		    pdf.SetFont("helvetica", "B", 10)
 		    pdf.Cell(0, 6, "Polygons with Line Styles:", 0, 1)
 		    pdf.Ln(2)
-
+		    
 		    // Triangle with thin outline
 		    Dim tri1() As Point
 		    tri1.Add(New Point(30, 255))
@@ -2764,7 +4008,7 @@ Protected Module VNSPDFExamplesModule
 		    pdf.Polygon(tri1, "D")
 		    pdf.SetFont("helvetica", "", 8)
 		    pdf.Text(32, 262, "0.5mm")
-
+		    
 		    // Triangle with thick outline
 		    Dim tri2() As Point
 		    tri2.Add(New Point(90, 255))
@@ -2774,7 +4018,7 @@ Protected Module VNSPDFExamplesModule
 		    pdf.SetLineWidth(3)
 		    pdf.Polygon(tri2, "D")
 		    pdf.Text(95, 262, "3mm")
-
+		    
 		    // Pentagon with dashed outline
 		    Dim pent() As Point
 		    pent.Add(New Point(165, 255))
@@ -2788,12 +4032,12 @@ Protected Module VNSPDFExamplesModule
 		    pdf.Polygon(pent, "D")
 		    pdf.SetDashPattern(solidDash, 0)
 		    pdf.Text(150, 262, "Dashed")
-
+		    
 		    // Filled hexagon with different join styles
 		    pdf.SetY(268)
 		    pdf.SetFont("helvetica", "", 9)
 		    pdf.Cell(0, 5, "Filled polygons with thick outlines:", 0, 1)
-
+		    
 		    // Filled triangle with miter joins
 		    Dim filledTri() As Point
 		    filledTri.Add(New Point(30, 295))
@@ -2805,7 +4049,7 @@ Protected Module VNSPDFExamplesModule
 		    pdf.SetLineJoinStyle("miter")
 		    pdf.Polygon(filledTri, "DF")
 		    pdf.Text(30, 300, "Miter join")
-
+		    
 		    // Filled triangle with round joins
 		    Dim filledTri2() As Point
 		    filledTri2.Add(New Point(95, 295))
@@ -2816,7 +4060,7 @@ Protected Module VNSPDFExamplesModule
 		    pdf.SetLineJoinStyle("round")
 		    pdf.Polygon(filledTri2, "DF")
 		    pdf.Text(95, 300, "Round join")
-
+		    
 		    // Filled triangle with bevel joins
 		    Dim filledTri3() As Point
 		    filledTri3.Add(New Point(160, 295))
@@ -2827,14 +4071,14 @@ Protected Module VNSPDFExamplesModule
 		    pdf.SetLineJoinStyle("bevel")
 		    pdf.Polygon(filledTri3, "DF")
 		    pdf.Text(160, 300, "Bevel join")
-
+		    
 		    // Reset all line styles
 		    pdf.SetLineWidth(0.5)
 		    pdf.SetDrawColor(0, 0, 0)
 		    pdf.SetLineCapStyle("butt")
 		    pdf.SetLineJoinStyle("miter")
 		    pdf.SetDashPattern(solidDash, 0)
-
+		    
 		    // Generate PDF
 		    Dim pdfData As String = pdf.Output()
 		    
@@ -2939,7 +4183,7 @@ Protected Module VNSPDFExamplesModule
 		    
 		    If fontFile <> Nil And fontFile.Exists Then
 		      statusText = statusText + "Font file found: " + fontPath + EndOfLine
-
+		      
 		      // Load TrueType font
 		      #If TargetiOS Then
 		        // iOS: Load font from MemoryBlock (file is in bundle)
@@ -2947,7 +4191,7 @@ Protected Module VNSPDFExamplesModule
 		          Dim fontStream As BinaryStream = BinaryStream.Open(fontFile)
 		          Dim fontBytes As MemoryBlock = fontStream.Read(fontStream.Length)
 		          fontStream.Close
-
+		          
 		          pdf.AddUTF8FontFromBytes("unicode_ttf", "", fontBytes)
 		          statusText = statusText + "Font loaded from bundle (" + Str(fontBytes.Size) + " bytes)" + EndOfLine
 		        Catch e As IOException
@@ -2958,7 +4202,7 @@ Protected Module VNSPDFExamplesModule
 		        // Desktop/Console/Web: Load font from file path
 		        pdf.AddUTF8Font("unicode_ttf", "", fontPath)
 		      #EndIf
-
+		      
 		      If pdf.Error = "" Then
 		        statusText = statusText + "Font loaded successfully!" + EndOfLine
 		        
@@ -3033,7 +4277,7 @@ Protected Module VNSPDFExamplesModule
 		        pdf.Cell(0, 7, "← → ↑ ↓ ↔ ↕ ⇐ ⇒ ⇔ ▲ ▼ ◀ ▶", 1, 1)
 		        pdf.Cell(0, 7, "★ ☆ ♠ ♣ ♥ ♦ ♪ ♫ ☎ ✓ ✗ ✉ ☺ ☹", 1, 1)
 		        pdf.Ln(2)
-
+		        
 		        // Section: Color Emoji (Desktop, iOS - rendered as images)
 		        // Note: Web emoji support is planned but not yet implemented (see docs/EMOJI_FONT_PARSING.md)
 		        #If TargetDesktop Or TargetiOS Then
@@ -3129,11 +4373,11 @@ Protected Module VNSPDFExamplesModule
 		          Next
 		          
 		          pdf.Ln(1)
-
+		          
 		          pdf.SetFont("helvetica", "", 8)
 		          pdf.MultiCell(0, 3, "Note: Image-based emoji rendering works on Desktop (macOS, Windows, Linux) using Picture.Graphics API with native emoji fonts, and on iOS using UIKit declares.", 1)
 		          pdf.Ln(2)
-
+		          
 		        #ElseIf TargetWeb Then
 		          // Web: Emoji not yet supported
 		          pdf.SetFont("helvetica", "B", 10)
@@ -3141,7 +4385,7 @@ Protected Module VNSPDFExamplesModule
 		          pdf.SetFont("helvetica", "", 9)
 		          pdf.MultiCell(0, 4, "Image-based emoji rendering is not yet supported on Web platform. The server-side Picture.Graphics API cannot access emoji fonts (Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji). Implementation is planned - see docs/EMOJI_FONT_PARSING.md for details.", 1)
 		          pdf.Ln(2)
-
+		          
 		        #Else
 		          // Console: Emoji not supported
 		          pdf.SetFont("helvetica", "B", 10)
@@ -3804,12 +5048,12 @@ Protected Module VNSPDFExamplesModule
 		      testFile = SpecialFolder.Documents.Child("Test.pdf.png")
 		      If testFile <> Nil And testFile.Exists Then pngFile = testFile
 		    #EndIf
-
+		    
 		    // iOS: Check for bundled images using SpecialFolder.Resource()
 		    #If TargetiOS Then
 		      Dim bundledPic As Picture
 		      Dim resourceFile As FolderItem
-
+		      
 		      // Try to load bundled image - try multiple name variations
 		      If jpegFile = Nil And pngFile = Nil Then
 		        // Try "Testpdf.png" (capital T - matches iOS bundle)
@@ -3824,7 +5068,7 @@ Protected Module VNSPDFExamplesModule
 		        Catch e As RuntimeException
 		          statusText = statusText + "Testpdf.png not found" + EndOfLine
 		        End Try
-
+		        
 		        // Try "testpdf.png" (all lowercase)
 		        If bundledPic = Nil Then
 		          Try
@@ -3839,7 +5083,7 @@ Protected Module VNSPDFExamplesModule
 		            statusText = statusText + "testpdf.png not found" + EndOfLine
 		          End Try
 		        End If
-
+		        
 		        // Try "testpdf" without extension
 		        If bundledPic = Nil Then
 		          Try
@@ -3854,7 +5098,7 @@ Protected Module VNSPDFExamplesModule
 		            statusText = statusText + "testpdf (no ext) not found" + EndOfLine
 		          End Try
 		        End If
-
+		        
 		        // Try "testpdf.jpg"
 		        If bundledPic = Nil Then
 		          Try
@@ -3869,17 +5113,17 @@ Protected Module VNSPDFExamplesModule
 		            statusText = statusText + "testpdf.jpg not found" + EndOfLine
 		          End Try
 		        End If
-
+		        
 		        If bundledPic = Nil Then
 		          statusText = statusText + "No bundled image found - add 'testpdf' to project with Copy Files build step" + EndOfLine
 		        End If
 		      End If
 		    #EndIf
-
+		    
 		    If jpegFile <> Nil Then
 		      statusText = statusText + "Found JPEG test image: " + jpegFile.NativePath + EndOfLine
 		    End If
-
+		    
 		    If pngFile <> Nil Then
 		      statusText = statusText + "Found PNG test image: " + pngFile.NativePath + EndOfLine
 		    End If
@@ -3903,19 +5147,19 @@ Protected Module VNSPDFExamplesModule
 		        statusText = statusText + "No fallback image available on iOS" + EndOfLine
 		      #EndIf
 		    End If
-
+		    
 		    // Check if we have any images available (file-based or bundled)
 		    #If TargetiOS Then
 		      Dim hasImages As Boolean = (imageFile <> Nil And imageFile.Exists) Or (bundledPic <> Nil)
 		    #Else
 		      Dim hasImages As Boolean = (imageFile <> Nil And imageFile.Exists)
 		    #EndIf
-
+		    
 		    If hasImages Then
 		      pdf.SetFont("helvetica", "B", 14)
 		      pdf.Cell(0, 8, "Image Support Demonstration", 0, 1, "C")
 		      pdf.Ln(5)
-
+		      
 		      // iOS: Handle bundled image using RegisterImageFromBytes
 		      #If TargetiOS Then
 		        If bundledPic <> Nil Then
@@ -3925,21 +5169,21 @@ Protected Module VNSPDFExamplesModule
 		          pdf.SetFont("courier", "", 9)
 		          pdf.Cell(0, 5, "Loaded from app bundle using Picture.Open(""testpdf"")", 0, 1)
 		          pdf.Ln(3)
-
+		          
 		          statusText = statusText + "Original picture: " + Str(bundledPic.Width) + "x" + Str(bundledPic.Height) + EndOfLine
-
+		          
 		          // Use ImageFromPicture directly (handles RGBA conversion internally)
 		          pdf.SetFont("helvetica", "", 10)
 		          pdf.Cell(0, 6, "1. Scaled to width=80mm:", 0, 1)
 		          pdf.Ln(2)
 		          pdf.ImageFromPicture(bundledPic, 20, pdf.GetY(), 80, 0)
 		          pdf.Ln(50)
-
+		          
 		          pdf.Cell(0, 6, "2. Scaled to 50x40mm:", 0, 1)
 		          pdf.Ln(2)
 		          pdf.ImageFromPicture(bundledPic, 20, pdf.GetY(), 50, 40)
 		          pdf.Ln(45)
-
+		          
 		          If pdf.Err() Then
 		            statusText = statusText + "ERROR: " + pdf.GetError() + EndOfLine
 		          Else
@@ -3947,7 +5191,7 @@ Protected Module VNSPDFExamplesModule
 		          End If
 		        End If
 		      #EndIf
-
+		      
 		      // Test JPEG if available
 		      If jpegFile <> Nil Then
 		        pdf.SetFont("helvetica", "B", 12)
@@ -3993,18 +5237,18 @@ Protected Module VNSPDFExamplesModule
 		        
 		        statusText = statusText + "PNG embedded successfully!" + EndOfLine
 		      End If
-
+		      
 		      // Test ImageFromPicture() - Programmatically generated graphics
 		      Call pdf.AddPage()
 		      pdf.SetFont("helvetica", "B", 12)
 		      pdf.SetFillColor(255, 230, 230)
 		      pdf.Cell(0, 8, "Programmatically Generated Graphics (ImageFromPicture)", 1, 1, "L", True)
 		      pdf.Ln(3)
-
+		      
 		      pdf.SetFont("helvetica", "", 10)
 		      pdf.MultiCell(0, 5, "The ImageFromPicture() method allows you to draw graphics using Xojo's Picture/Graphics API, then embed the result as a PNG image in the PDF.", 0, "L")
 		      pdf.Ln(3)
-
+		      
 		      #If TargetDesktop Or TargetWeb Then
 		        // Create a Picture and draw on it (Desktop and Web have Picture/Graphics API)
 		        // Use higher resolution for sharper output when scaled in PDF
@@ -4018,25 +5262,25 @@ Protected Module VNSPDFExamplesModule
 		        Dim picHeight As Integer = 300 * kScale
 		        Dim pic As New Picture(picWidth, picHeight, 32)  // High-res with alpha channel
 		        Dim g As Graphics = pic.Graphics
-
+		        
 		        // White background
 		        g.DrawingColor = Color.White
 		        g.FillRectangle(0, 0, picWidth, picHeight)
-
+		        
 		        // Draw some shapes (all coordinates scaled)
 		        g.DrawingColor = Color.Red
 		        g.PenSize = 3 * kScale
 		        g.DrawOval(50 * kScale, 50 * kScale, 100 * kScale, 100 * kScale)
-
+		        
 		        g.DrawingColor = Color.Green
 		        g.FillRectangle(200 * kScale, 30 * kScale, 80 * kScale, 60 * kScale)
-
+		        
 		        g.DrawingColor = Color.Blue
 		        g.PenSize = 2 * kScale
 		        For i As Integer = 0 To 5
 		          g.DrawLine(250 * kScale, (120 + i * 15) * kScale, 380 * kScale, (120 + i * 15) * kScale)
 		        Next
-
+		        
 		        g.DrawingColor = Color.RGB(255, 128, 0)  // Orange
 		        g.PenSize = 1 * kScale
 		        #If TargetDesktop Then
@@ -4058,39 +5302,39 @@ Protected Module VNSPDFExamplesModule
 		          points.Add(200 * kScale)
 		          g.FillPolygon(points)
 		        #EndIf
-
+		        
 		        // Draw text (font size scaled)
 		        g.DrawingColor = Color.Black
 		        g.Bold = True
 		        g.FontSize = 24 * kScale
 		        g.DrawText("Generated Graphics", 80 * kScale, 180 * kScale)
-
+		        
 		        g.Bold = False
 		        g.FontSize = 14 * kScale
 		        g.DrawText("Created with Xojo Picture/Graphics", 70 * kScale, 210 * kScale)
-
+		        
 		        // Draw rounded rectangle
 		        g.DrawingColor = Color.RGB(128, 0, 128)  // Purple
 		        g.PenSize = 2 * kScale
 		        g.DrawRoundRectangle(30 * kScale, 230 * kScale, 340 * kScale, 50 * kScale, 10 * kScale, 10 * kScale)
-
+		        
 		        g.FontSize = 16 * kScale
 		        g.DrawingColor = Color.RGB(64, 64, 64)
 		        g.DrawText("Embedded as PNG via ImageFromPicture()", 60 * kScale, 260 * kScale)
 		      #EndIf
-
+		      
 		      #If TargetDesktop Or TargetWeb Then
 		        // Embed the Picture in the PDF (Desktop and Web have Picture.Graphics)
 		        pdf.Cell(0, 6, "1. Generated Picture (400x300 pixels) at width=150mm:", 0, 1)
 		        pdf.Ln(2)
 		        pdf.ImageFromPicture(pic, 30, pdf.GetY(), 150, 0)  // 150mm wide, height auto
 		        pdf.Ln(115)
-
+		        
 		        pdf.Cell(0, 6, "2. Same Picture at 80x60mm:", 0, 1)
 		        pdf.Ln(2)
 		        pdf.ImageFromPicture(pic, 30, pdf.GetY(), 80, 60)
 		        pdf.Ln(65)
-
+		        
 		        statusText = statusText + "Generated Picture embedded successfully!" + EndOfLine
 		      #Else
 		        // iOS/Console: Picture/Graphics API not fully available
@@ -4103,25 +5347,25 @@ Protected Module VNSPDFExamplesModule
 		        pdf.Ln(10)
 		        statusText = statusText + "Picture generation skipped (platform limitation)" + EndOfLine
 		      #EndIf
-
+		      
 		      // Test ImageFromPicture() with Chart (Desktop and iOS only)
 		      // Note: WebChart cannot be instantiated programmatically (protected constructor)
 		      #If TargetDesktop Or TargetiOS Then
 		        Call pdf.AddPage()
 		        pdf.SetFont("helvetica", "B", 12)
 		        pdf.SetFillColor(230, 255, 230)
-
+		        
 		        #If TargetDesktop Then
 		          pdf.Cell(0, 8, "DesktopChart Embedding (Desktop)", 1, 1, "L", True)
 		        #ElseIf TargetiOS Then
 		          pdf.Cell(0, 8, "MobileChart Embedding (iOS)", 1, 1, "L", True)
 		        #EndIf
 		        pdf.Ln(3)
-
+		        
 		        pdf.SetFont("helvetica", "", 10)
 		        pdf.MultiCell(0, 5, "Charts can be converted to Picture using ToPicture(), then embedded with ImageFromPicture().", 0, "L")
 		        pdf.Ln(3)
-
+		        
 		        // Create and configure the chart programmatically
 		        #If TargetDesktop Then
 		          Dim chart As New DesktopChart
@@ -4131,7 +5375,7 @@ Protected Module VNSPDFExamplesModule
 		          Dim chart As New MobileChart
 		          // Width and Height are read-only on iOS (controlled by auto-layout)
 		        #EndIf
-
+		        
 		        #If TargetDesktop Then
 		          chart.Mode = DesktopChart.Modes.Bar
 		        #ElseIf TargetiOS Then
@@ -4144,28 +5388,28 @@ Protected Module VNSPDFExamplesModule
 		          chart.TitleFontSize = 16
 		        #EndIf
 		        chart.BackgroundColor = Color.White
-
+		        
 		        // Add datasets with Double arrays
 		        Dim productA() As Double = Array(65.0, 78.0, 82.0, 91.0)
 		        Dim productB() As Double = Array(45.0, 52.0, 68.0, 75.0)
 		        Dim productC() As Double = Array(32.0, 39.0, 44.0, 58.0)
-
+		        
 		        // ChartLinearDataset is the same class on all platforms
 		        Dim dsA As New ChartLinearDataset("Product A", Color.Blue, False, productA)
 		        Dim dsB As New ChartLinearDataset("Product B", Color.Red, False, productB)
 		        Dim dsC As New ChartLinearDataset("Product C", Color.Green, False, productC)
-
+		        
 		        chart.AddDataset(dsA)
 		        chart.AddDataset(dsB)
 		        chart.AddDataset(dsC)
-
+		        
 		        // Add X-axis labels
 		        chart.AddLabels("Q1", "Q2", "Q3", "Q4")
-
+		        
 		        // Convert chart to Picture - ToPicture(width, height)
 		        // Using explicit dimensions for better quality
 		        Dim chartPicRGBA As Picture = chart.ToPicture(800, 600)
-
+		        
 		        #If TargetDesktop Then
 		          // Convert RGBA to RGB (remove alpha channel for PDF compatibility)
 		          // PDF doesn't natively support RGBA images - they need RGB or SMask
@@ -4176,13 +5420,13 @@ Protected Module VNSPDFExamplesModule
 		          // iOS: Use the chart picture directly (no conversion needed)
 		          Dim chartPic As Picture = chartPicRGBA
 		        #EndIf
-
+		        
 		        If chartPic <> Nil Then
 		          pdf.Cell(0, 6, "DesktopChart converted to Picture at width=170mm:", 0, 1)
 		          pdf.Ln(2)
 		          pdf.ImageFromPicture(chartPic, 20, pdf.GetY(), 170, 0)
 		          pdf.Ln(130)
-
+		          
 		          #If TargetDesktop Then
 		            statusText = statusText + "DesktopChart embedded successfully!" + EndOfLine
 		          #ElseIf TargetiOS Then
@@ -4194,26 +5438,26 @@ Protected Module VNSPDFExamplesModule
 		          statusText = statusText + "Chart.ToPicture() returned Nil" + EndOfLine
 		        End If
 		      #EndIf
-
+		      
 		      // If no test images, use fallback (but not on iOS if bundled image exists)
 		      #If TargetiOS Then
 		        Dim shouldUseFallback As Boolean = (jpegFile = Nil And pngFile = Nil And bundledPic = Nil)
 		      #Else
 		        Dim shouldUseFallback As Boolean = (jpegFile = Nil And pngFile = Nil)
 		      #EndIf
-
+		      
 		      If shouldUseFallback And imagePath <> "" Then
 		        pdf.SetFont("helvetica", "B", 12)
 		        pdf.Cell(0, 8, "Using system fallback image:", 0, 1)
 		        pdf.SetFont("courier", "", 9)
 		        pdf.Cell(0, 5, imagePath, 0, 1)
 		        pdf.Ln(3)
-
+		        
 		        pdf.SetFont("helvetica", "", 10)
 		        pdf.Cell(0, 6, "Scaled to width=80mm:", 0, 1)
 		        pdf.Ln(2)
 		        pdf.Image(imagePath, 20, pdf.GetY(), 80, 0)
-
+		        
 		        statusText = statusText + "Fallback image embedded!" + EndOfLine
 		      End If
 		    Else
@@ -4270,6 +5514,30 @@ Protected Module VNSPDFExamplesModule
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h21
+		Private Function HexToString(hex As String) As String
+		  // Convert hex string to binary string
+		  // Example: "2b7e" -> String.ChrByte(&h2b) + String.ChrByte(&h7e)
+		  
+		  Dim result As String = ""
+		  Dim hexLen As Integer = hex.Length
+		  
+		  For i As Integer = 1 To hexLen Step 2
+		    #If TargetiOS Then
+		      Dim hexByte As String = hex.Middle(i - 1, 2) // 0-based
+		      Dim byteValue As Integer = Val("&h" + hexByte)
+		      result = result + String.ChrByte(byteValue)
+		    #Else
+		      Dim hexByte As String = hex.Middle(i, 2)
+		      Dim byteValue As Integer = Val("&h" + hexByte)
+		      result = result + String.ChrByte(byteValue)
+		    #EndIf
+		  Next
+		  
+		  Return result
+		End Function
+	#tag EndMethod
+
 	#tag Method, Flags = &h21, Description = 48656C70657220746F206C6F61642062696E6172792066696C6520696E746F204D656D6F7279426C6F636B2E0A
 		Private Function LoadBinaryFile(f As FolderItem) As MemoryBlock
 		  // Helper to load binary file into MemoryBlock
@@ -4286,1033 +5554,406 @@ Protected Module VNSPDFExamplesModule
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 4578616D706C652031383A20456E6372797074696F6E20506C7567696E204172636869746563747572652054657374696E67
-		Function GenerateExample18() As Dictionary
-		  // Example 18: Encryption Plugin Architecture Testing
-		  // Tests that RC4-40 works (free) and RC4-128 is blocked (premium)
-
-		  Dim result As New Dictionary
-		  Dim statusText As String = ""
-
-		  statusText = statusText + "Example 18: Encryption Plugin Architecture Testing" + EndOfLine
-		  statusText = statusText + "=============================================" + EndOfLine + EndOfLine
-
-		  statusText = statusText + "⚠️  IMPORTANT: Password-Protected PDFs Generated!" + EndOfLine
-		  statusText = statusText + "   User Password: user123" + EndOfLine
-		  statusText = statusText + "   Owner Password: owner456" + EndOfLine
-		  statusText = statusText + "   You will need 'user123' to open the generated PDFs." + EndOfLine + EndOfLine
-
-		  // ===== TEST 1: RC4-40 (Revision 2) - FREE VERSION =====
-		  statusText = statusText + "TEST 1: RC4-40 Encryption (Revision 2 - FREE)" + EndOfLine
-		  statusText = statusText + "----------------------------------------------" + EndOfLine
-
-		  // Create PDF with RC4-40 encryption
-		  Dim pdf1 As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, VNSPDFModule.ePageUnit.Millimeters, VNSPDFModule.ePageFormat.A4)
-		  Call pdf1.SetTitle("Example 18 - RC4-40 Test (Free)")
-		  Call pdf1.SetAuthor("VNS PDF Library")
-		  Call pdf1.SetSubject("Testing free RC4-40 encryption")
-		  Call pdf1.AddPage()
-
-		  // Set RC4-40 encryption (revision 2) - This should work in free version
-		  // Minimal permissions: allow print and copy only
-		  Call pdf1.SetProtection("user123", "owner456", True, False, True, False, False, False, False, False, VNSPDFModule.gkEncryptionRC4_40)
-
-		  If pdf1.Err() Then
-		    statusText = statusText + "✗ FAILED: " + pdf1.GetError() + EndOfLine
-		    result.Value("success") = False
-		    result.Value("status") = statusText
-		    Return result
-		  Else
-		    statusText = statusText + "✓ PASSED: RC4-40 encryption set successfully (free version)" + EndOfLine
-		  End If
-
-		  // Add content
-		  Call pdf1.SetFont("helvetica", "B", 16)
-		  Call pdf1.Cell(0, 10, "RC4-40 Encryption Test", 0, 1, "C")
-		  Call pdf1.Ln(5)
-
-		  Call pdf1.SetFont("helvetica", "", 11)
-		  Call pdf1.MultiCell(0, 6, "This PDF is encrypted with RC4-40 (40-bit) encryption, which is available in the FREE version of VNS PDF Library. You need the password 'user123' to open this document.", 0, "L")
-		  Call pdf1.Ln(3)
-
-		  Call pdf1.SetFont("helvetica", "B", 12)
-		  Call pdf1.Cell(0, 7, "Encryption Details:", 0, 1)
-		  Call pdf1.SetFont("courier", "", 9)
-		  Call pdf1.Cell(0, 5, "- Revision: VNSPDFModule.gkEncryptionRC4_40 (RC4-40)", 0, 1)
-		  Call pdf1.Cell(0, 5, "- User Password: user123", 0, 1)
-		  Call pdf1.Cell(0, 5, "- Owner Password: owner456", 0, 1)
-		  Call pdf1.Cell(0, 5, "- Allow Print (low quality): Yes", 0, 1)
-		  Call pdf1.Cell(0, 5, "- Allow Modify: No", 0, 1)
-		  Call pdf1.Cell(0, 5, "- Allow Copy: Yes", 0, 1)
-		  Call pdf1.Cell(0, 5, "- Allow Annotations: No", 0, 1)
-		  Call pdf1.Cell(0, 5, "- Allow Fill Forms: No", 0, 1)
-		  Call pdf1.Cell(0, 5, "- Allow Extract (accessibility): No", 0, 1)
-		  Call pdf1.Cell(0, 5, "- Allow Assemble (pages): No", 0, 1)
-		  Call pdf1.Cell(0, 5, "- Allow Print High Quality: No", 0, 1)
-		  Call pdf1.Ln(5)
-
-		  Call pdf1.SetFont("helvetica", "", 11)
-		  Call pdf1.MultiCell(0, 6, "This is the basic encryption level suitable for casual document protection. For stronger security, use RC4-128 (gkEncryptionRC4_128) or AES encryption (gkEncryptionAES128, gkEncryptionAES256, gkEncryptionAES256_PDF2) available in the premium Encryption module.", 0, "L")
-
-		  If pdf1.Err() Then
-		    statusText = statusText + "ERROR during PDF generation: " + pdf1.GetError() + EndOfLine
-		    result.Value("success") = False
-		    result.Value("status") = statusText
-		    Return result
-		  End If
-
-		  statusText = statusText + "✓ RC4-40 PDF generated successfully" + EndOfLine + EndOfLine
-
-		  // ===== TEST 2: RC4-128 (Revision 3) - PREMIUM (Should be blocked) =====
-		  statusText = statusText + "TEST 2: RC4-128 Encryption (Revision 3 - PREMIUM)" + EndOfLine
-		  statusText = statusText + "----------------------------------------------" + EndOfLine
-
-		  // Create PDF and try to set RC4-128 encryption (should fail without premium module)
-		  Dim pdf2 As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, VNSPDFModule.ePageUnit.Millimeters, VNSPDFModule.ePageFormat.A4)
-		  Call pdf2.SetTitle("Example 18 - RC4-128 Test (Premium)")
-		  Call pdf2.SetAuthor("VNS PDF Library")
-		  Call pdf2.SetSubject("Testing premium RC4-128 encryption")
-		  Call pdf2.AddPage()
-
-		  // Try to set RC4-128 encryption (revision 3) - This should fail in free version
-		  // Full permissions for testing
-		  Call pdf2.SetProtection("user123", "owner456", True, True, True, True, True, True, True, True, VNSPDFModule.gkEncryptionRC4_128)
-
-		  If pdf2.Err() Then
-		    // Expected: Should fail because hasPremiumEncryptionModule = False
-		    Dim errorMsg As String = pdf2.GetError()
-
-		    // Check if it's the expected error message about premium module
-		    #If TargetiOS Then
-		      Dim isPremiumError As Boolean = (errorMsg.IndexOf("premium Encryption module") >= 0)
-		    #Else
-		      Dim isPremiumError As Boolean = (errorMsg.IndexOf("premium Encryption module") > 0)
-		    #EndIf
-
-		    If isPremiumError Then
-		      statusText = statusText + "✓ PASSED: RC4-128 correctly blocked (premium required)" + EndOfLine
-		      statusText = statusText + "  Error message: " + errorMsg + EndOfLine
-		    Else
-		      statusText = statusText + "✗ FAILED: Unexpected error: " + errorMsg + EndOfLine
-		      result.Value("success") = False
-		      result.Value("status") = statusText
-		      Return result
-		    End If
-		  Else
-		    // This means RC4-128 worked without the premium flag - THIS IS A BUG!
-		    statusText = statusText + "✗ FAILED: RC4-128 should be blocked without premium module!" + EndOfLine
-		    statusText = statusText + "  BUG: Encryption was allowed when it should have been blocked." + EndOfLine
-		    result.Value("success") = False
-		    result.Value("status") = statusText
-		    Return result
-		  End If
-
-		  statusText = statusText + EndOfLine
-
-		  // ===== Instructions for enabling premium module =====
-		  statusText = statusText + "ENABLING PREMIUM ENCRYPTION MODULE:" + EndOfLine
-		  statusText = statusText + "===================================" + EndOfLine
-		  statusText = statusText + "To enable RC4-128 and AES encryption (revisions 3-6):" + EndOfLine + EndOfLine
-		  statusText = statusText + "1. Open: PDF_Library/VNSPDFModule.xojo_code" + EndOfLine
-		  statusText = statusText + "2. Find the constant: hasPremiumEncryptionModule" + EndOfLine
-		  statusText = statusText + "3. Change Default from ""False"" to ""True""" + EndOfLine
-		  statusText = statusText + "4. Rebuild your project" + EndOfLine + EndOfLine
-		  statusText = statusText + "The constant should look like this when enabled:" + EndOfLine
-		  statusText = statusText + "#tag Constant, Name = hasPremiumEncryptionModule, Type = Boolean," + EndOfLine
-		  statusText = statusText + "    Dynamic = False, Default = ""True"", Scope = Public" + EndOfLine + EndOfLine
-		  statusText = statusText + "After enabling, RC4-128 (revision 3) will work, and you can" + EndOfLine
-		  statusText = statusText + "test it by running this example again." + EndOfLine + EndOfLine
-
-		  // ===== Summary =====
-		  statusText = statusText + "TEST SUMMARY:" + EndOfLine
-		  statusText = statusText + "=============" + EndOfLine
-		  statusText = statusText + "✓ Plugin architecture working correctly" + EndOfLine
-		  statusText = statusText + "✓ RC4-40 (revision 2) available in free version" + EndOfLine
-		  statusText = statusText + "✓ RC4-128 (revision 3) properly gated by premium flag" + EndOfLine
-		  statusText = statusText + "✓ Clear error messages guide users to premium features" + EndOfLine + EndOfLine
-
-		  result.Value("success") = True
-		  result.Value("status") = statusText
-		  result.Value("pdf") = pdf1.Output()  // Return the working RC4-40 PDF data
-		  result.Value("filename") = "example18_plugin_architecture.pdf"
-
+	#tag Method, Flags = &h21
+		Private Function StringToHex(s As String) As String
+		  // Convert binary string to hex string (for debugging)
+		  // Example: String.ChrByte(&h2b) + String.ChrByte(&h7e) -> "2b7e"
+		  
+		  Dim result As String = ""
+		  
+		  Dim sLen As Integer = s.Bytes
+		  For i As Integer = 0 To sLen - 1
+		    Dim byteValue As Integer = s.MiddleBytes(i, 1).AscByte
+		    Dim hexByte As String = Hex(byteValue)
+		    If hexByte.Length = 1 Then hexByte = "0" + hexByte
+		    result = result + hexByte
+		  Next
+		  
 		  Return result
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0
-		Function GenerateExample19() As Dictionary
-		  #If VNSPDFModule.hasPremiumTableModule Then
-		    // Example 19: Table Generation (Premium Feature)
-		    // Demonstrates SimpleTable, ImprovedTable, and FancyTable with optional grand footers
-
+	#tag Method, Flags = &h21
+		Private Function TestAdler32() As Dictionary
+		  // Test ADLER-32 checksum with known test vectors
 		  Dim result As New Dictionary
-		  Dim statusText As String = ""
-
-		  statusText = statusText + "Example 19: Table Generation with Footers (Premium)" + EndOfLine
-		  statusText = statusText + "========================================" + EndOfLine + EndOfLine
-
-		  // Check if table module is available
-		  #If Not VNSPDFModule.hasPremiumTableModule Then
-		    statusText = statusText + "✗ SKIPPED: Table generation requires premium Table module" + EndOfLine
-		    statusText = statusText + "Set VNSPDFModule.hasPremiumTableModule = True to enable" + EndOfLine + EndOfLine
-		    result.Value("success") = False
-		    result.Value("status") = statusText
-		    result.Value("filename") = ""
-		    Return result
-		  #EndIf
-
-		  statusText = statusText + "✓ Table module is enabled" + EndOfLine + EndOfLine
-
-		  // Create PDF
-		  Dim pdf As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, VNSPDFModule.ePageUnit.Millimeters, VNSPDFModule.ePageFormat.A4)
-
-		  Call pdf.SetTitle("Example 19 - Table Generation with Footers")
-		  Call pdf.SetAuthor("VNS PDF Library")
-		  Call pdf.SetSubject("Demonstrating table generation features with optional grand footers")
-
-		  Call pdf.AddPage()
-
-		  // Title
-		  Call pdf.SetFont("helvetica", "B", 16)
-		  Call pdf.Cell(0, 10, "Table Generation Examples with Footers", 0, 1, "C")
-		  Call pdf.Ln(5)
-
-		  // ===== Example 1: Simple Table =====
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "1. Simple Table (Equal Width Columns)", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Basic table with equal-width columns and simple borders.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  // Create in-memory database for table 1
-		  Dim db1 As New SQLiteDatabase
-		  db1.DatabaseFile = Nil  // In-memory database
-
-		  Try
-		    db1.Connect()
-		    db1.ExecuteSQL("CREATE TABLE countries (country TEXT, capital TEXT, area TEXT, population TEXT)")
-		    db1.ExecuteSQL("INSERT INTO countries VALUES ('Austria', 'Vienna', '83,871', '8,859,000')")
-		    db1.ExecuteSQL("INSERT INTO countries VALUES ('Belgium', 'Brussels', '30,528', '11,515,000')")
-		    db1.ExecuteSQL("INSERT INTO countries VALUES ('France', 'Paris', '551,695', '67,750,000')")
-		    db1.ExecuteSQL("INSERT INTO countries VALUES ('Germany', 'Berlin', '357,022', '83,240,000')")
-		    db1.ExecuteSQL("INSERT INTO countries VALUES ('Italy', 'Rome', '301,340', '60,360,000')")
-
-		    Dim rs1 As RowSet = db1.SelectSQL("SELECT country AS Country, capital AS Capital, area AS ""Area (sq km)"", population AS Population FROM countries")
-
-		    Call pdf.SetFont("helvetica", "", 9)
-		    Call VNSPDFTablePremium.SimpleTable(pdf, rs1, 40.0, 6.0)
-		    Call pdf.Ln(8)
-		    rs1.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 1: " + e.Message + EndOfLine
-		  End Try
-		  db1.Close
-
-		  statusText = statusText + "✓ Simple table generated" + EndOfLine
-
-		  // ===== Example 1b: Simple Table with Footer =====
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "1b. Simple Table with Grand Footer", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Simple table with grand footer showing total population.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  // Create footer configuration
-		  Dim footerConfig1b As New VNSPDFTableFooterConfig
-		  footerConfig1b.Type = "grand"  // Only grand footer
-		  footerConfig1b.LabelColumnIndex = 0  // Put label in first column
-		  footerConfig1b.GrandLabel = "Total Population:"
-
-		  // Configure grand footer style
-		  footerConfig1b.GrandStyle = New VNSPDFTableFooterStyle  // Use default styling
-
-		  // Configure calculations for population column
-		  Redim footerConfig1b.ColumnCalculations(-1)
-
-		  // Column 3 (Population): Sum only
-		  Dim popCalc1b As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "{sum}")
-		  popCalc1b.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
-		  footerConfig1b.ColumnCalculations.Add(popCalc1b)
-
-		  // Create in-memory database for table 1b
-		  Dim db1b As New SQLiteDatabase
-		  db1b.DatabaseFile = Nil  // In-memory database
-
-		  Try
-		    db1b.Connect()
-		    db1b.ExecuteSQL("CREATE TABLE countries (country TEXT, capital TEXT, area TEXT, population REAL)")
-		    db1b.ExecuteSQL("INSERT INTO countries VALUES ('Austria', 'Vienna', '83,871', 8859000)")
-		    db1b.ExecuteSQL("INSERT INTO countries VALUES ('Belgium', 'Brussels', '30,528', 11515000)")
-		    db1b.ExecuteSQL("INSERT INTO countries VALUES ('France', 'Paris', '551,695', 67750000)")
-		    db1b.ExecuteSQL("INSERT INTO countries VALUES ('Germany', 'Berlin', '357,022', 83240000)")
-		    db1b.ExecuteSQL("INSERT INTO countries VALUES ('Italy', 'Rome', '301,340', 60360000)")
-
-		    Dim rs1b As RowSet = db1b.SelectSQL("SELECT country AS Country, capital AS Capital, area AS ""Area (sq km)"", population AS Population FROM countries")
-
-		    Call pdf.SetFont("helvetica", "", 9)
-		    Call VNSPDFTablePremium.SimpleTable(pdf, rs1b, 40.0, 6.0, True, footerConfig1b)
-		    Call pdf.Ln(8)
-		    rs1b.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 1b: " + e.Message + EndOfLine
-		  End Try
-		  db1b.Close
-
-		  statusText = statusText + "✓ Simple table with footer generated" + EndOfLine
-
-		  // ===== Example 1c: Simple Table with Intermediate Footer =====
-		  Call pdf.AddPage()
-
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "1c. Simple Table with Intermediate Footer (Grouped)", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Simple table with intermediate footers showing subtotals per region. Data is grouped by the Region column.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  // Create footer configuration with intermediate footers
-		  Dim footerConfig1c As New VNSPDFTableFooterConfig
-		  footerConfig1c.Type = "both"  // Both intermediate and grand footers
-		  footerConfig1c.GroupByColumn = 0  // Group by Region column (column index 0)
-		  footerConfig1c.LabelColumnIndex = 1  // Put labels in Product column
-		  footerConfig1c.IntermediateLabelFormat = "Subtotal for {group}"
-		  footerConfig1c.GrandLabel = "GRAND TOTAL"
-
-		  // Configure intermediate footer style (default)
-		  footerConfig1c.IntermediateStyle = New VNSPDFTableFooterStyle
-
-		  // Configure grand footer style (default)
-		  footerConfig1c.GrandStyle = New VNSPDFTableFooterStyle
-
-		  // Configure calculations for columns
-		  Redim footerConfig1c.ColumnCalculations(-1)
-
-		  // Column 2 (Sales): Sum only
-		  Dim salesCalc1c As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
-		  salesCalc1c.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
-		  footerConfig1c.ColumnCalculations.Add(salesCalc1c)
-
-		  // Create in-memory database with regional sales data
-		  Dim db1c As New SQLiteDatabase
-		  db1c.DatabaseFile = Nil
-
-		  Try
-		    db1c.Connect()
-		    db1c.ExecuteSQL("CREATE TABLE sales (region TEXT, product TEXT, sales REAL)")
-		    db1c.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Widget A', 12500)")
-		    db1c.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Widget B', 8900)")
-		    db1c.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Widget C', 15200)")
-		    db1c.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Widget A', 9800)")
-		    db1c.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Widget B', 11200)")
-		    db1c.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Widget C', 13500)")
-		    db1c.ExecuteSQL("INSERT INTO sales VALUES ('South', 'Widget A', 7600)")
-		    db1c.ExecuteSQL("INSERT INTO sales VALUES ('South', 'Widget B', 9100)")
-
-		    Dim rs1c As RowSet = db1c.SelectSQL("SELECT region AS Region, product AS Product, sales AS Sales FROM sales ORDER BY region, product")
-
-		    Call pdf.SetFont("helvetica", "", 9)
-		    Call VNSPDFTablePremium.SimpleTable(pdf, rs1c, 60.0, 6.0, True, footerConfig1c)
-		    Call pdf.Ln(8)
-		    rs1c.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 1c: " + e.Message + EndOfLine
-		  End Try
-		  db1c.Close
-
-		  statusText = statusText + "✓ Simple table with intermediate footer generated" + EndOfLine
-
-		  // ===== Example 2: Improved Table =====
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "2. Improved Table (Custom Column Widths)", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Table with custom column widths and automatic number alignment.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  // Custom widths for each column
-		  Dim widths2() As Double = Array(45.0, 35.0, 30.0, 40.0)
-
-		  // Reuse the same database query
-		  Dim db2 As New SQLiteDatabase
-		  db2.DatabaseFile = Nil
-		  Try
-		    db2.Connect()
-		    db2.ExecuteSQL("CREATE TABLE countries (country TEXT, capital TEXT, area TEXT, population TEXT)")
-		    db2.ExecuteSQL("INSERT INTO countries VALUES ('Austria', 'Vienna', '83,871', '8,859,000')")
-		    db2.ExecuteSQL("INSERT INTO countries VALUES ('Belgium', 'Brussels', '30,528', '11,515,000')")
-		    db2.ExecuteSQL("INSERT INTO countries VALUES ('France', 'Paris', '551,695', '67,750,000')")
-		    db2.ExecuteSQL("INSERT INTO countries VALUES ('Germany', 'Berlin', '357,022', '83,240,000')")
-		    db2.ExecuteSQL("INSERT INTO countries VALUES ('Italy', 'Rome', '301,340', '60,360,000')")
-
-		    Dim rs2 As RowSet = db2.SelectSQL("SELECT country AS Country, capital AS Capital, area AS ""Area (sq km)"", population AS Population FROM countries")
-
-		    Call pdf.SetFont("helvetica", "", 9)
-		    Call VNSPDFTablePremium.ImprovedTable(pdf, rs2, widths2, 6.0)
-		    Call pdf.Ln(8)
-		    rs2.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 2: " + e.Message + EndOfLine
-		  End Try
-		  db2.Close
-
-		  statusText = statusText + "✓ Improved table generated" + EndOfLine
-
-		  // ===== Example 2b: Improved Table with Footer =====
-		  Call pdf.AddPage()
-
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "2b. Improved Table with Grand Footer", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Improved table with grand footer showing total area and population.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  // Create footer configuration
-		  Dim footerConfig2b As New VNSPDFTableFooterConfig
-		  footerConfig2b.Type = "grand"  // Only grand footer
-		  footerConfig2b.LabelColumnIndex = 0  // Put label in first column
-		  footerConfig2b.GrandLabel = "TOTALS:"
-
-		  // Configure grand footer style
-		  footerConfig2b.GrandStyle = New VNSPDFTableFooterStyle  // Use default styling
-
-		  // Configure calculations for columns
-		  Redim footerConfig2b.ColumnCalculations(-1)
-
-		  // Column 2 (Area): Sum only
-		  Dim areaCalc2b As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum), "{sum}")
-		  areaCalc2b.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
-		  footerConfig2b.ColumnCalculations.Add(areaCalc2b)
-
-		  // Column 3 (Population): Sum only
-		  Dim popCalc2b As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "{sum}")
-		  popCalc2b.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
-		  footerConfig2b.ColumnCalculations.Add(popCalc2b)
-
-		  // Create in-memory database for table 2b
-		  Dim db2b As New SQLiteDatabase
-		  db2b.DatabaseFile = Nil
-
-		  Try
-		    db2b.Connect()
-		    db2b.ExecuteSQL("CREATE TABLE countries (country TEXT, capital TEXT, area REAL, population REAL)")
-		    db2b.ExecuteSQL("INSERT INTO countries VALUES ('Austria', 'Vienna', 83871, 8859000)")
-		    db2b.ExecuteSQL("INSERT INTO countries VALUES ('Belgium', 'Brussels', 30528, 11515000)")
-		    db2b.ExecuteSQL("INSERT INTO countries VALUES ('France', 'Paris', 551695, 67750000)")
-		    db2b.ExecuteSQL("INSERT INTO countries VALUES ('Germany', 'Berlin', 357022, 83240000)")
-		    db2b.ExecuteSQL("INSERT INTO countries VALUES ('Italy', 'Rome', 301340, 60360000)")
-
-		    Dim rs2b As RowSet = db2b.SelectSQL("SELECT country AS Country, capital AS Capital, area AS ""Area (sq km)"", population AS Population FROM countries")
-
-		    Call pdf.SetFont("helvetica", "", 9)
-		    Call VNSPDFTablePremium.ImprovedTable(pdf, rs2b, widths2, 6.0, True, footerConfig2b)
-		    Call pdf.Ln(8)
-		    rs2b.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 2b: " + e.Message + EndOfLine
-		  End Try
-		  db2b.Close
-
-		  statusText = statusText + "✓ Improved table with footer generated" + EndOfLine
-
-		  // ===== Example 2c: Improved Table with Intermediate Footer =====
-		  Call pdf.AddPage()
-
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "2c. Improved Table with Intermediate Footer (Grouped)", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Improved table with custom column widths, intermediate footers showing subtotals per category, and grand total.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  // Create footer configuration with intermediate footers
-		  Dim footerConfig2c As New VNSPDFTableFooterConfig
-		  footerConfig2c.Type = "both"  // Both intermediate and grand footers
-		  footerConfig2c.GroupByColumn = 0  // Group by Category column (column index 0)
-		  footerConfig2c.LabelColumnIndex = 1  // Put labels in Item column
-		  footerConfig2c.IntermediateLabelFormat = "Subtotal for {group}"
-		  footerConfig2c.GrandLabel = "GRAND TOTAL"
-
-		  // Configure intermediate footer style (default)
-		  footerConfig2c.IntermediateStyle = New VNSPDFTableFooterStyle
-
-		  // Configure grand footer style (default)
-		  footerConfig2c.GrandStyle = New VNSPDFTableFooterStyle
-
-		  // Configure calculations for columns
-		  Redim footerConfig2c.ColumnCalculations(-1)
-
-		  // Column 3 (Amount): Sum only
-		  Dim amountCalc2c As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
-		  amountCalc2c.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.2f"
-		  footerConfig2c.ColumnCalculations.Add(amountCalc2c)
-
-		  // Custom widths for columns: Category, Item, Qty, Amount
-		  Dim widths2c() As Double = Array(40.0, 60.0, 20.0, 30.0)
-
-		  // Create in-memory database with expense data
-		  Dim db2c As New SQLiteDatabase
-		  db2c.DatabaseFile = Nil
-
-		  Try
-		    db2c.Connect()
-		    db2c.ExecuteSQL("CREATE TABLE expenses (category TEXT, item TEXT, qty INTEGER, amount REAL)")
-		    db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Office', 'Paper Reams', 5, 45.50)")
-		    db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Office', 'Pens Box', 3, 18.75)")
-		    db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Office', 'Staplers', 2, 24.00)")
-		    db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Travel', 'Flight', 1, 450.00)")
-		    db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Travel', 'Hotel', 2, 280.00)")
-		    db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Travel', 'Meals', 4, 96.50)")
-		    db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Equipment', 'Laptop', 1, 1299.99)")
-		    db2c.ExecuteSQL("INSERT INTO expenses VALUES ('Equipment', 'Monitor', 2, 398.00)")
-
-		    Dim rs2c As RowSet = db2c.SelectSQL("SELECT category AS Category, item AS Item, qty AS Qty, amount AS Amount FROM expenses ORDER BY category, item")
-
-		    Call pdf.SetFont("helvetica", "", 9)
-		    Call VNSPDFTablePremium.ImprovedTable(pdf, rs2c, widths2c, 6.0, True, footerConfig2c)
-		    Call pdf.Ln(8)
-		    rs2c.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 2c: " + e.Message + EndOfLine
-		  End Try
-		  db2c.Close
-
-		  statusText = statusText + "✓ Improved table with intermediate footer generated" + EndOfLine
-
-		  // ===== Example 3: Fancy Table =====
-
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "3. Fancy Table (With Colors)", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Styled table with colored header and alternating row colors.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  // Create in-memory database for table 3
-		  Dim db3 As New SQLiteDatabase
-		  db3.DatabaseFile = Nil
-		  Try
-		    db3.Connect()
-		    db3.ExecuteSQL("CREATE TABLE countries (country TEXT, capital TEXT, area TEXT, population TEXT)")
-		    db3.ExecuteSQL("INSERT INTO countries VALUES ('Austria', 'Vienna', '83,871', '8,859,000')")
-		    db3.ExecuteSQL("INSERT INTO countries VALUES ('Belgium', 'Brussels', '30,528', '11,515,000')")
-		    db3.ExecuteSQL("INSERT INTO countries VALUES ('France', 'Paris', '551,695', '67,750,000')")
-		    db3.ExecuteSQL("INSERT INTO countries VALUES ('Germany', 'Berlin', '357,022', '83,240,000')")
-		    db3.ExecuteSQL("INSERT INTO countries VALUES ('Italy', 'Rome', '301,340', '60,360,000')")
-
-		    Dim rs3 As RowSet = db3.SelectSQL("SELECT country AS Country, capital AS Capital, area AS ""Area (sq km)"", population AS Population FROM countries")
-
-		    Call pdf.SetFont("helvetica", "", 9)
-		    Call VNSPDFTablePremium.FancyTable(pdf, rs3, widths2, 6.0)
-		    Call pdf.Ln(10)
-		    rs3.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 3: " + e.Message + EndOfLine
-		  End Try
-		  db3.Close
-
-		  statusText = statusText + "✓ Fancy table generated" + EndOfLine + EndOfLine
-
-		  // ===== Example 4: Sales Data Table =====
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "4. Sales Report Table", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Professional sales report with numeric data formatting.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  Dim widths4() As Double = Array(70.0, 25.0, 20.0, 35.0)
-
-		  // Create in-memory database for table 4
-		  Dim db4 As New SQLiteDatabase
-		  db4.DatabaseFile = Nil
-		  Try
-		    db4.Connect()
-		    db4.ExecuteSQL("CREATE TABLE sales (product TEXT, price TEXT, qty TEXT, total TEXT)")
-		    db4.ExecuteSQL("INSERT INTO sales VALUES ('Professional Services', '150.00', '8', '1200.00')")
-		    db4.ExecuteSQL("INSERT INTO sales VALUES ('Software License', '599.99', '3', '1799.97')")
-		    db4.ExecuteSQL("INSERT INTO sales VALUES ('Hardware Bundle', '1299.50', '2', '2599.00')")
-		    db4.ExecuteSQL("INSERT INTO sales VALUES ('Training Session', '450.00', '4', '1800.00')")
-		    db4.ExecuteSQL("INSERT INTO sales VALUES ('Support Contract', '2500.00', '1', '2500.00')")
-
-		    Dim rs4 As RowSet = db4.SelectSQL("SELECT product AS Product, price AS Price, qty AS Qty, total AS Total FROM sales")
-
-		    Call pdf.SetFont("helvetica", "", 9)
-		    Call VNSPDFTablePremium.FancyTable(pdf, rs4, widths4, 6.0)
-		    rs4.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 4: " + e.Message + EndOfLine
-		  End Try
-		  db4.Close
-
-		  statusText = statusText + "✓ Sales report table generated" + EndOfLine + EndOfLine
-
-		  // ===== Example 5: Multi-Page Table =====
-		  Call pdf.AddPage()
-
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "5. Multi-Page Table (Pagination)", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Large dataset demonstrating automatic page breaks. Table spans multiple pages with 100 rows of employee data. Headers automatically repeat on each new page.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  Dim widths5() As Double = Array(60.0, 40.0, 30.0, 40.0)
-
-		  // Create in-memory database with 100 employee records
-		  Dim db5 As New SQLiteDatabase
-		  db5.DatabaseFile = Nil
-		  Try
-		    db5.Connect()
-		    db5.ExecuteSQL("CREATE TABLE employees (name TEXT, department TEXT, employee_id TEXT, salary TEXT)")
-
-		    // Generate 100 employee records with more variety
-		    Dim departments() As String = Array("Engineering", "Sales", "Marketing", "HR", "Finance", "Operations", "IT", "Legal", "R&D", "Support")
-		    Dim firstNames() As String = Array("John", "Jane", "Michael", "Sarah", "David", "Emma", "James", "Lisa", "Robert", "Maria", "William", "Emily", "Daniel", "Sophia", "Matthew")
-		    Dim lastNames() As String = Array("Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Taylor", "Anderson", "Wilson", "Moore", "Jackson")
-
-		    For i As Integer = 1 To 99
-		      Dim firstName As String = firstNames((i - 1) Mod firstNames.Count)
-		      Dim lastName As String = lastNames((i - 1) Mod lastNames.Count)
-		      Dim name As String = firstName + " " + lastName
-		      Dim dept As String = departments((i - 1) Mod departments.Count)
-		      Dim empId As String = "EMP" + FormatHelper(i, "000")
-		      Dim salary As String = FormatHelper(45000 + (i * 500), "#,##0")
-
-		      db5.ExecuteSQL("INSERT INTO employees VALUES ('" + name + "', '" + dept + "', '" + empId + "', '" + salary + "')")
-		    Next
-
-		    Dim rs5 As RowSet = db5.SelectSQL("SELECT name AS ""Employee Name"", department AS Department, employee_id AS ""ID"", salary AS ""Salary ($)"" FROM employees")
-
-		    Call pdf.SetFont("helvetica", "", 8)
-		    // Use repeatHeaders=True (default) to show headers on each page
-		    Call VNSPDFTablePremium.FancyTable(pdf, rs5, widths5, 5.0, True)
-		    rs5.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 5: " + e.Message + EndOfLine
-		  End Try
-		  db5.Close
-
-		  statusText = statusText + "✓ Multi-page table generated (99 rows with repeated headers)" + EndOfLine + EndOfLine
-
-		  // ===== Example 6: Table with Grand Footer =====
-		  Call pdf.AddPage()
-
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "6. Table with Grand Footer (Totals)", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Demonstrates grand footer with sum and count calculations.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  // SQL Query for this example:
-		  Call pdf.SetFont("courier", "", 8)
-		  Call pdf.SetTextColor(0, 100, 0)
-		  Call pdf.MultiCell(0, 3, "SELECT product AS Product, price AS Price, qty AS Qty, total AS Total FROM sales", 0, "L")
-		  Call pdf.SetTextColor(0, 0, 0)
-		  Call pdf.Ln(2)
-
-		  // Create sales data with numbers for totaling
-		  Dim db6 As New SQLiteDatabase
-		  db6.DatabaseFile = Nil
-		  Try
-		    db6.Connect()
-		    db6.ExecuteSQL("CREATE TABLE sales (product TEXT, price REAL, qty INTEGER, total REAL)")
-		    db6.ExecuteSQL("INSERT INTO sales VALUES ('Professional Services', 150.00, 8, 1200.00)")
-		    db6.ExecuteSQL("INSERT INTO sales VALUES ('Software License', 599.99, 3, 1799.97)")
-		    db6.ExecuteSQL("INSERT INTO sales VALUES ('Hardware Bundle', 1299.50, 2, 2599.00)")
-		    db6.ExecuteSQL("INSERT INTO sales VALUES ('Training Session', 450.00, 4, 1800.00)")
-		    db6.ExecuteSQL("INSERT INTO sales VALUES ('Support Contract', 2500.00, 1, 2500.00)")
-
-		    Dim rs6 As RowSet = db6.SelectSQL("SELECT product AS Product, price AS Price, qty AS Qty, total AS Total FROM sales")
-
-		    // Configure grand footer
-		    Dim footerConfig As New VNSPDFTableFooterConfig
-		    footerConfig.Type = "grand"
-		    footerConfig.LabelColumnIndex = 0
-		    footerConfig.GrandLabel = "TOTAL"
-
-		    // Configure grand footer style
-		    footerConfig.GrandStyle = New VNSPDFTableFooterStyle
-		    // iOS uses Color.RGB() method, Desktop/Web/Console use RGB() function
-		    #If TargetiOS Then
-		      footerConfig.GrandStyle.BackgroundColor = Color.RGB(52, 73, 94)  // Dark blue
-		      footerConfig.GrandStyle.TextColor = Color.RGB(255, 255, 255)  // White
-		      footerConfig.GrandStyle.BorderColor = Color.RGB(0, 0, 0)
-		    #Else
-		      footerConfig.GrandStyle.BackgroundColor = RGB(52, 73, 94)  // Dark blue
-		      footerConfig.GrandStyle.TextColor = RGB(255, 255, 255)  // White
-		      footerConfig.GrandStyle.BorderColor = RGB(0, 0, 0)
-		    #EndIf
-		    footerConfig.GrandStyle.FontStyle = "B"
-		    footerConfig.GrandStyle.CellHeight = 7.0
-
-		    // Configure calculations for columns
-		    Redim footerConfig.ColumnCalculations(-1)
-
-		    // Column 2 (Qty): Sum and Count
-		    Dim qtyCalc As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum, VNSPDFTablePremium.kCalcTypeCount), "{sum} ({count})")
-		    qtyCalc.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
-		    qtyCalc.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeCount) = "%d"
-		    footerConfig.ColumnCalculations.Add(qtyCalc)
-
-		    // Column 3 (Total): Sum only
-		    Dim totalCalc As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
-		    totalCalc.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.2f"
-		    footerConfig.ColumnCalculations.Add(totalCalc)
-
-		    Call pdf.SetFont("helvetica", "", 9)
-		    Call VNSPDFTablePremium.FancyTable(pdf, rs6, widths4, 6.0, True, footerConfig)
-		    rs6.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 6: " + e.Message + EndOfLine
-		  End Try
-		  db6.Close
-
-		  statusText = statusText + "✓ Table with grand footer generated" + EndOfLine + EndOfLine
-
-		  // ===== Example 7: Multi-Page Table with Grand Footer =====
-		  Call pdf.AddPage()
-
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "7. Multi-Page Table with Grand Footer", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Large dataset demonstrating grand footer at the end of a multi-page table. Table spans multiple pages with 50 sales records, but the grand total only appears once at the very end.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  // SQL Query for this example:
-		  Call pdf.SetFont("courier", "", 8)
-		  Call pdf.SetTextColor(0, 100, 0)
-		  Call pdf.MultiCell(0, 3, "SELECT product AS Product, price AS Price, qty AS Qty, total AS Total FROM sales", 0, "L")
-		  Call pdf.SetTextColor(0, 0, 0)
-		  Call pdf.Ln(2)
-
-		  // Create in-memory database with 50 sales records
-		  Dim db7 As New SQLiteDatabase
-		  db7.DatabaseFile = Nil
-		  Try
-		    db7.Connect()
-		    db7.ExecuteSQL("CREATE TABLE sales (product TEXT, price REAL, qty INTEGER, total REAL)")
-
-		    Dim products() As String = Array("Professional Services", "Software License", "Hardware Bundle", "Training Session", "Support Contract", "Consulting Hours", "Cloud Subscription", "Premium Support")
-
-		    For i As Integer = 1 To 50
-		      Dim product As String = products((i - 1) Mod products.Count)
-		      Dim price As Double = 100.0 + (i * 27.50)
-		      Dim qty As Integer = 1 + ((i - 1) Mod 5)
-		      Dim total As Double = price * qty
-
-		      db7.ExecuteSQL("INSERT INTO sales VALUES ('" + product + "', " + Str(price) + ", " + Str(qty) + ", " + Str(total) + ")")
-		    Next
-
-		    Dim rs7 As RowSet = db7.SelectSQL("SELECT product AS Product, price AS Price, qty AS Qty, total AS Total FROM sales")
-
-		    // Configure grand footer
-		    Dim footerConfig7 As New VNSPDFTableFooterConfig
-		    footerConfig7.Type = "grand"
-		    footerConfig7.LabelColumnIndex = 0
-		    footerConfig7.GrandLabel = "GRAND TOTAL"
-
-		    // Configure grand footer style
-		    footerConfig7.GrandStyle = New VNSPDFTableFooterStyle
-		    #If TargetiOS Then
-		      footerConfig7.GrandStyle.BackgroundColor = Color.RGB(44, 62, 80)  // Dark gray
-		      footerConfig7.GrandStyle.TextColor = Color.RGB(255, 255, 255)  // White
-		      footerConfig7.GrandStyle.BorderColor = Color.RGB(0, 0, 0)
-		    #Else
-		      footerConfig7.GrandStyle.BackgroundColor = RGB(44, 62, 80)  // Dark gray
-		      footerConfig7.GrandStyle.TextColor = RGB(255, 255, 255)  // White
-		      footerConfig7.GrandStyle.BorderColor = RGB(0, 0, 0)
-		    #EndIf
-		    footerConfig7.GrandStyle.FontStyle = "B"
-		    footerConfig7.GrandStyle.CellHeight = 8.0
-
-		    // Configure calculations for columns
-		    Redim footerConfig7.ColumnCalculations(-1)
-
-		    // Column 2 (Qty): Sum and Count
-		    Dim qtyCalc7 As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum, VNSPDFTablePremium.kCalcTypeCount), "{sum} items ({count} rows)")
-		    qtyCalc7.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
-		    qtyCalc7.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeCount) = "%d"
-		    footerConfig7.ColumnCalculations.Add(qtyCalc7)
-
-		    // Column 3 (Total): Sum, Avg, Min, Max
-		    Dim totalCalc7 As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
-		    totalCalc7.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.2f"
-		    footerConfig7.ColumnCalculations.Add(totalCalc7)
-
-		    Call pdf.SetFont("helvetica", "", 8)
-		    Call VNSPDFTablePremium.FancyTable(pdf, rs7, widths4, 5.0, True, footerConfig7)
-		    rs7.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 7: " + e.Message + EndOfLine
-		  End Try
-		  db7.Close
-
-		  statusText = statusText + "✓ Multi-page table with grand footer generated (50 rows)" + EndOfLine + EndOfLine
-
-		  // ===== Example 8: Table with Intermediate Footers (Subtotals) =====
-		  Call pdf.AddPage()
-
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "8. Table with Intermediate Footers (Subtotals by Region)", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Demonstrates intermediate footers showing subtotals when the Region column changes. Each region gets its own subtotal before moving to the next region.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  // SQL Query for this example:
-		  Call pdf.SetFont("courier", "", 8)
-		  Call pdf.SetTextColor(0, 100, 0)
-		  Call pdf.MultiCell(0, 3, "SELECT region AS Region, product AS Product, qty AS Qty, total AS Total FROM sales ORDER BY region", 0, "L")
-		  Call pdf.SetTextColor(0, 0, 0)
-		  Call pdf.Ln(2)
-
-		  // Create sales data grouped by region
-		  Dim db8 As New SQLiteDatabase
-		  db8.DatabaseFile = Nil
-		  Try
-		    db8.Connect()
-		    db8.ExecuteSQL("CREATE TABLE sales (region TEXT, product TEXT, qty INTEGER, total REAL)")
-
-		    // East region sales
-		    db8.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Professional Services', 5, 750.00)")
-		    db8.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Software License', 3, 1799.97)")
-		    db8.ExecuteSQL("INSERT INTO sales VALUES ('East', 'Training Session', 2, 900.00)")
-
-		    // West region sales
-		    db8.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Hardware Bundle', 4, 5198.00)")
-		    db8.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Support Contract', 2, 5000.00)")
-		    db8.ExecuteSQL("INSERT INTO sales VALUES ('West', 'Professional Services', 3, 450.00)")
-
-		    // South region sales
-		    db8.ExecuteSQL("INSERT INTO sales VALUES ('South', 'Software License', 6, 3599.94)")
-		    db8.ExecuteSQL("INSERT INTO sales VALUES ('South', 'Training Session', 8, 3600.00)")
-		    db8.ExecuteSQL("INSERT INTO sales VALUES ('South', 'Hardware Bundle', 1, 1299.50)")
-
-		    Dim rs8 As RowSet = db8.SelectSQL("SELECT region AS Region, product AS Product, qty AS Qty, total AS Total FROM sales ORDER BY region")
-
-		    // Configure intermediate and grand footers
-		    Dim footerConfig8 As New VNSPDFTableFooterConfig
-		    footerConfig8.Type = "both"  // Both intermediate and grand
-		    footerConfig8.GroupByColumn = 0  // Group by Region column
-		    footerConfig8.LabelColumnIndex = 1  // Put labels in Product column
-		    footerConfig8.IntermediateLabelFormat = "Subtotal for {group}"
-		    footerConfig8.GrandLabel = "GRAND TOTAL"
-
-		    // Configure intermediate footer style (lighter)
-		    footerConfig8.IntermediateStyle = New VNSPDFTableFooterStyle
-		    #If TargetiOS Then
-		      footerConfig8.IntermediateStyle.BackgroundColor = Color.RGB(149, 165, 166)  // Medium gray
-		      footerConfig8.IntermediateStyle.TextColor = Color.RGB(255, 255, 255)  // White
-		      footerConfig8.IntermediateStyle.BorderColor = Color.RGB(0, 0, 0)
-		    #Else
-		      footerConfig8.IntermediateStyle.BackgroundColor = RGB(149, 165, 166)  // Medium gray
-		      footerConfig8.IntermediateStyle.TextColor = RGB(255, 255, 255)  // White
-		      footerConfig8.IntermediateStyle.BorderColor = RGB(0, 0, 0)
-		    #EndIf
-		    footerConfig8.IntermediateStyle.FontStyle = "B"
-		    footerConfig8.IntermediateStyle.CellHeight = 6.5
-
-		    // Configure grand footer style (darker)
-		    footerConfig8.GrandStyle = New VNSPDFTableFooterStyle
-		    #If TargetiOS Then
-		      footerConfig8.GrandStyle.BackgroundColor = Color.RGB(44, 62, 80)  // Dark gray
-		      footerConfig8.GrandStyle.TextColor = Color.RGB(255, 255, 255)  // White
-		      footerConfig8.GrandStyle.BorderColor = Color.RGB(0, 0, 0)
-		    #Else
-		      footerConfig8.GrandStyle.BackgroundColor = RGB(44, 62, 80)  // Dark gray
-		      footerConfig8.GrandStyle.TextColor = RGB(255, 255, 255)  // White
-		      footerConfig8.GrandStyle.BorderColor = RGB(0, 0, 0)
-		    #EndIf
-		    footerConfig8.GrandStyle.FontStyle = "B"
-		    footerConfig8.GrandStyle.CellHeight = 8.0
-
-		    // Configure calculations for columns
-		    Redim footerConfig8.ColumnCalculations(-1)
-
-		    // Column 2 (Qty): Sum
-		    Dim qtyCalc8 As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum), "{sum}")
-		    qtyCalc8.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
-		    footerConfig8.ColumnCalculations.Add(qtyCalc8)
-
-		    // Column 3 (Total): Sum
-		    Dim totalCalc8 As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
-		    totalCalc8.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.2f"
-		    footerConfig8.ColumnCalculations.Add(totalCalc8)
-
-		    Dim widths8() As Double = Array(30.0, 70.0, 20.0, 40.0)
-
-		    Call pdf.SetFont("helvetica", "", 9)
-		    Call VNSPDFTablePremium.FancyTable(pdf, rs8, widths8, 6.0, True, footerConfig8)
-		    rs8.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 8: " + e.Message + EndOfLine
-		  End Try
-		  db8.Close
-
-		  statusText = statusText + "✓ Table with intermediate footers generated (3 regions with subtotals)" + EndOfLine + EndOfLine
-
-		  // ===== Example 9: Multi-Page Table with Intermediate and Grand Footers =====
-		  Call pdf.AddPage()
-
-		  Call pdf.SetFont("helvetica", "B", 14)
-		  Call pdf.Cell(0, 8, "9. Multi-Page Table with Subtotals and Grand Total", 0, 1)
-		  Call pdf.Ln(2)
-
-		  Call pdf.SetFont("helvetica", "", 10)
-		  Call pdf.MultiCell(0, 5, "Demonstrates a multi-page table (90 rows across 3 regions) with intermediate footers showing regional subtotals and a grand total at the end. Each region has 30 sales records.", 0, "L")
-		  Call pdf.Ln(3)
-
-		  // SQL Query for this example:
-		  Call pdf.SetFont("courier", "", 8)
-		  Call pdf.SetTextColor(0, 100, 0)
-		  Call pdf.MultiCell(0, 3, "SELECT region AS Region, product AS Product, qty AS Qty, total AS Total FROM sales ORDER BY region", 0, "L")
-		  Call pdf.SetTextColor(0, 0, 0)
-		  Call pdf.Ln(2)
-
-		  // Create large dataset with 90 sales records (30 per region)
-		  Dim db9 As New SQLiteDatabase
-		  db9.DatabaseFile = Nil
-		  Try
-		    db9.Connect()
-		    db9.ExecuteSQL("CREATE TABLE sales (region TEXT, product TEXT, qty INTEGER, total REAL)")
-
-		    Dim products9() As String = Array("Professional Services", "Software License", "Hardware Bundle", "Training Session", "Support Contract", "Consulting Hours", "Cloud Subscription", "Premium Support", "Implementation", "Maintenance")
-
-		    // East region - 30 records
-		    For i As Integer = 1 To 30
-		      Dim product9 As String = products9((i - 1) Mod products9.Count)
-		      Dim qty9 As Integer = 1 + ((i - 1) Mod 8)
-		      Dim price9 As Double = 50.0 + (i * 13.75)
-		      Dim total9 As Double = price9 * qty9
-		      db9.ExecuteSQL("INSERT INTO sales VALUES ('East', '" + product9 + "', " + Str(qty9) + ", " + Str(total9) + ")")
-		    Next
-
-		    // South region - 30 records
-		    For i As Integer = 31 To 60
-		      Dim product9 As String = products9((i - 1) Mod products9.Count)
-		      Dim qty9 As Integer = 1 + ((i - 1) Mod 6)
-		      Dim price9 As Double = 75.0 + (i * 11.50)
-		      Dim total9 As Double = price9 * qty9
-		      db9.ExecuteSQL("INSERT INTO sales VALUES ('South', '" + product9 + "', " + Str(qty9) + ", " + Str(total9) + ")")
-		    Next
-
-		    // West region - 30 records
-		    For i As Integer = 61 To 90
-		      Dim product9 As String = products9((i - 1) Mod products9.Count)
-		      Dim qty9 As Integer = 1 + ((i - 1) Mod 7)
-		      Dim price9 As Double = 100.0 + (i * 9.25)
-		      Dim total9 As Double = price9 * qty9
-		      db9.ExecuteSQL("INSERT INTO sales VALUES ('West', '" + product9 + "', " + Str(qty9) + ", " + Str(total9) + ")")
-		    Next
-
-		    Dim rs9 As RowSet = db9.SelectSQL("SELECT region AS Region, product AS Product, qty AS Qty, total AS Total FROM sales ORDER BY region")
-
-		    // Configure intermediate and grand footers
-		    Dim footerConfig9 As New VNSPDFTableFooterConfig
-		    footerConfig9.Type = "both"  // Both intermediate and grand
-		    footerConfig9.GroupByColumn = 0  // Group by Region column
-		    footerConfig9.LabelColumnIndex = 1  // Put labels in Product column
-		    footerConfig9.IntermediateLabelFormat = "Subtotal for {group}"
-		    footerConfig9.GrandLabel = "GRAND TOTAL (All Regions)"
-
-		    // Configure intermediate footer style (lighter blue-gray)
-		    footerConfig9.IntermediateStyle = New VNSPDFTableFooterStyle
-		    #If TargetiOS Then
-		      footerConfig9.IntermediateStyle.BackgroundColor = Color.RGB(149, 165, 166)  // Medium gray
-		      footerConfig9.IntermediateStyle.TextColor = Color.RGB(255, 255, 255)  // White
-		      footerConfig9.IntermediateStyle.BorderColor = Color.RGB(0, 0, 0)
-		    #Else
-		      footerConfig9.IntermediateStyle.BackgroundColor = RGB(149, 165, 166)  // Medium gray
-		      footerConfig9.IntermediateStyle.TextColor = RGB(255, 255, 255)  // White
-		      footerConfig9.IntermediateStyle.BorderColor = RGB(0, 0, 0)
-		    #EndIf
-		    footerConfig9.IntermediateStyle.FontStyle = "B"
-		    footerConfig9.IntermediateStyle.CellHeight = 6.5
-
-		    // Configure grand footer style (dark blue-gray)
-		    footerConfig9.GrandStyle = New VNSPDFTableFooterStyle
-		    #If TargetiOS Then
-		      footerConfig9.GrandStyle.BackgroundColor = Color.RGB(44, 62, 80)  // Dark gray
-		      footerConfig9.GrandStyle.TextColor = Color.RGB(255, 255, 255)  // White
-		      footerConfig9.GrandStyle.BorderColor = Color.RGB(0, 0, 0)
-		    #Else
-		      footerConfig9.GrandStyle.BackgroundColor = RGB(44, 62, 80)  // Dark gray
-		      footerConfig9.GrandStyle.TextColor = RGB(255, 255, 255)  // White
-		      footerConfig9.GrandStyle.BorderColor = RGB(0, 0, 0)
-		    #EndIf
-		    footerConfig9.GrandStyle.FontStyle = "B"
-		    footerConfig9.GrandStyle.CellHeight = 8.0
-
-		    // Configure calculations for columns
-		    Redim footerConfig9.ColumnCalculations(-1)
-
-		    // Column 2 (Qty): Sum and Count
-		    Dim qtyCalc9 As New VNSPDFTableColumnCalc(2, Array(VNSPDFTablePremium.kCalcTypeSum, VNSPDFTablePremium.kCalcTypeCount), "{sum} items ({count} rows)")
-		    qtyCalc9.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.0f"
-		    qtyCalc9.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeCount) = "%d"
-		    footerConfig9.ColumnCalculations.Add(qtyCalc9)
-
-		    // Column 3 (Total): Sum
-		    Dim totalCalc9 As New VNSPDFTableColumnCalc(3, Array(VNSPDFTablePremium.kCalcTypeSum), "${sum}")
-		    totalCalc9.NumberFormats.Value(VNSPDFTablePremium.kCalcTypeSum) = "%.2f"
-		    footerConfig9.ColumnCalculations.Add(totalCalc9)
-
-		    Dim widths9() As Double = Array(30.0, 70.0, 30.0, 40.0)
-
-		    Call pdf.SetFont("helvetica", "", 9)
-		    Call VNSPDFTablePremium.FancyTable(pdf, rs9, widths9, 5.5, True, footerConfig9)
-		    rs9.Close
-		  Catch e As DatabaseException
-		    statusText = statusText + "ERROR creating table 9: " + e.Message + EndOfLine
-		  End Try
-		  db9.Close
-
-		  statusText = statusText + "✓ Multi-page table with intermediate and grand footers generated (90 rows, 3 regions)" + EndOfLine + EndOfLine
-
-		  // Check for errors
-		  If pdf.Err() Then
-		    statusText = statusText + "ERROR: " + pdf.GetError() + EndOfLine
-		    result.Value("success") = False
-		    result.Value("status") = statusText
-		    result.Value("filename") = ""
-		    Return result
-		  End If
-
-		  // Generate PDF
-		  Dim pdfData As String = pdf.Output()
-
-		    result.Value("success") = True
-		    result.Value("status") = statusText
-		    result.Value("pdf") = pdfData
-		    result.Value("filename") = "example19_tables.pdf"
-
-		    Return result
+		  Dim output As String = ""
+		  
+		  #If VNSPDFModule.hasPremiumZlibModule Then
+		    // RFC 1950 specifies: adler32("Wikipedia") = 0x11E60398
+		    Dim input As String = "Wikipedia"
+		    Dim expected As UInt32 = &h11E60398
+		    
+		    Dim adler As UInt32 = VNSZlibPremiumAdler32.Init()
+		    adler = VNSZlibPremiumAdler32.CalculateString(adler, input)
+		    
+		    output = output + "  Input: '" + input + "'" + EndOfLine
+		    output = output + "  Expected: 0x" + Hex(expected) + EndOfLine
+		    output = output + "  Got:      0x" + Hex(adler) + EndOfLine
+		    
+		    If adler = expected Then
+		      result.Value("passed") = True
+		    Else
+		      output = output + "  Error: ADLER-32 mismatch!" + EndOfLine
+		      result.Value("passed") = False
+		    End If
 		  #Else
-		    // Table module not available in free version
-		    Dim result As New Dictionary
-		    result.Value("success") = False
-		    result.Value("status") = "Example 19 requires Premium Table Module"
-		    result.Value("message") = "Table generation features are available in the premium version only."
-		    Return result
+		    output = "  (Skipped - hasPremiumZlibModule = False)" + EndOfLine
+		    result.Value("passed") = True
 		  #EndIf
+		  
+		  result.Value("output") = output
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0, Description = 54657374207075726520586F6A6F20414553206D706C656D656E6174696F6E2077697468204E495354207465737420766563746F72732E
+		Function TestAES() As Dictionary
+		  // Test pure Xojo AES implementation with NIST test vectors
+		  // Returns a Dictionary with test results for display
+		  
+		  Dim result As New Dictionary
+		  Dim output As String = "=== Testing Pure Xojo AES Implementation ===" + EndOfLine
+		  output = output + "Running NIST SP 800-38A test vectors..." + EndOfLine + EndOfLine
+		  
+		  Dim allPassed As Boolean = True
+		  
+		  // Test ECB-AES128
+		  output = output + "Testing ECB-AES128..." + EndOfLine
+		  Dim test1Result As Dictionary = TestECB_AES128()
+		  Dim testOutput As String = test1Result.Value("output")
+		  If testOutput <> "" Then output = output + testOutput
+		  If test1Result.Value("passed") Then
+		    output = output + "  ECB-AES128: PASSED" + EndOfLine
+		  Else
+		    output = output + "  ECB-AES128: FAILED" + EndOfLine
+		    allPassed = False
+		  End If
+		  output = output + EndOfLine
+		  
+		  // Test CBC-AES128
+		  output = output + "Testing CBC-AES128..." + EndOfLine
+		  Dim test2Result As Dictionary = TestCBC_AES128()
+		  testOutput = test2Result.Value("output")
+		  If testOutput <> "" Then output = output + testOutput
+		  If test2Result.Value("passed") Then
+		    output = output + "  CBC-AES128: PASSED" + EndOfLine
+		  Else
+		    output = output + "  CBC-AES128: FAILED" + EndOfLine
+		    allPassed = False
+		  End If
+		  output = output + EndOfLine
+		  
+		  // Test ECB-AES256
+		  output = output + "Testing ECB-AES256..." + EndOfLine
+		  Dim test3Result As Dictionary = TestECB_AES256()
+		  testOutput = test3Result.Value("output")
+		  If testOutput <> "" Then output = output + testOutput
+		  If test3Result.Value("passed") Then
+		    output = output + "  ECB-AES256: PASSED" + EndOfLine
+		  Else
+		    output = output + "  ECB-AES256: FAILED" + EndOfLine
+		    allPassed = False
+		  End If
+		  output = output + EndOfLine
+		  
+		  // Test CBC-AES256
+		  output = output + "Testing CBC-AES256..." + EndOfLine
+		  Dim test4Result As Dictionary = TestCBC_AES256()
+		  testOutput = test4Result.Value("output")
+		  If testOutput <> "" Then output = output + testOutput
+		  If test4Result.Value("passed") Then
+		    output = output + "  CBC-AES256: PASSED" + EndOfLine
+		  Else
+		    output = output + "  CBC-AES256: FAILED" + EndOfLine
+		    allPassed = False
+		  End If
+		  output = output + EndOfLine
+		  
+		  // Test SHA-384 (needed for PDF Revision 6)
+		  #If VNSPDFModule.hasPremiumEncryptionModule Then
+		    output = output + "Testing SHA-384..." + EndOfLine
+		    Dim testSHA384 As Boolean = VNSPDFEncryptionPremium.TestSHA384()
+		    If testSHA384 Then
+		      output = output + "  SHA-384: PASSED" + EndOfLine
+		      // allPassed remains unchanged
+		    Else
+		      output = output + "  SHA-384: FAILED" + EndOfLine
+		      allPassed = False
+		    End If
+		    output = output + EndOfLine
+		  #EndIf
+		  
+		  // Summary
+		  If allPassed Then
+		    output = output + "=== ALL TESTS PASSED ===" + EndOfLine
+		    output = output + "Pure Xojo AES implementation is working correctly!" + EndOfLine
+		    output = output + "AES-128 (ECB + CBC) - Ready for PDF Revision 4" + EndOfLine
+		    output = output + "AES-256 (ECB + CBC) - Ready for PDF Revisions 5-6" + EndOfLine
+		    #If VNSPDFModule.hasPremiumEncryptionModule Then
+		      output = output + "SHA-384 - Ready for PDF Revision 6" + EndOfLine
+		    #EndIf
+		  Else
+		    output = output + "=== SOME TESTS FAILED ===" + EndOfLine
+		    output = output + "Review the output above for details." + EndOfLine
+		  End If
+		  output = output + EndOfLine
+		  
+		  result.Value("passed") = allPassed
+		  result.Value("output") = output
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function TestCBC_AES128() As Dictionary
+		  Dim result As New Dictionary
+		  Dim output As String = ""
+		  
+		  #If VNSPDFModule.hasPremiumEncryptionModule Then
+		    // Test CBC-AES128 encryption with NIST test vectors
+		    // From NIST SP 800-38A Section F.2.1
+		    
+		    Try
+		      // Test key (128-bit)
+		      Dim key As String = HexToString("2b7e151628aed2a6abf7158809cf4f3c")
+		      
+		      // Initialization vector (128-bit)
+		      Dim iv As String = HexToString("000102030405060708090a0b0c0d0e0f")
+		      
+		      // Test plaintext (4 blocks = 64 bytes)
+		      Dim plaintext As String = HexToString( _
+		      "6bc1bee22e409f96e93d7e117393172a" + _
+		      "ae2d8a571e03ac9c9eb76fac45af8e51" + _
+		      "30c81c46a35ce411e5fbc1191a0a52ef" + _
+		      "f69f2445df4f9b17ad2b417be66c3710")
+		      
+		      // Expected ciphertext (from NIST)
+		      Dim expectedCiphertext As String = HexToString( _
+		      "7649abac8119b246cee98e9b12e9197d" + _
+		      "5086cb9b507219ee95db113a917678b2" + _
+		      "73bed6b8e3c1743b7116e69e22229516" + _
+		      "3ff1caa1681fac09120eca307586e1a7")
+		      
+		      // Perform encryption
+		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
+		      aes.SetKey(key)
+		      Dim ciphertext As String = aes.EncryptCBC(plaintext, iv)
+		      
+		      // Display results
+		      output = output + "  Key: 2b7e1516..." + EndOfLine
+		      output = output + "  IV:  00010203..." + EndOfLine
+		      output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
+		      output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
+		      output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
+		      
+		      // Compare result
+		      If ciphertext = expectedCiphertext Then
+		        result.Value("passed") = True
+		      Else
+		        output = output + "  ERROR: Ciphertext mismatch!" + EndOfLine
+		        result.Value("passed") = False
+		      End If
+		      
+		    Catch e As RuntimeException
+		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
+		      result.Value("passed") = False
+		    End Try
+		  #Else
+		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
+		    result.Value("passed") = False
+		  #EndIf
+		  
+		  result.Value("output") = output
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function TestCBC_AES256() As Dictionary
+		  Dim result As New Dictionary
+		  Dim output As String = ""
+		  
+		  #If VNSPDFModule.hasPremiumEncryptionModule Then
+		    // Test CBC-AES256 encryption with NIST test vectors
+		    // From NIST SP 800-38A Section F.2.5
+		    
+		    Try
+		      // Test key (256-bit)
+		      Dim key As String = HexToString( _
+		      "603deb1015ca71be2b73aef0857d7781" + _
+		      "1f352c073b6108d72d9810a30914dff4")
+		      
+		      // Initialization vector (128-bit)
+		      Dim iv As String = HexToString("000102030405060708090a0b0c0d0e0f")
+		      
+		      // Test plaintext (4 blocks = 64 bytes)
+		      Dim plaintext As String = HexToString( _
+		      "6bc1bee22e409f96e93d7e117393172a" + _
+		      "ae2d8a571e03ac9c9eb76fac45af8e51" + _
+		      "30c81c46a35ce411e5fbc1191a0a52ef" + _
+		      "f69f2445df4f9b17ad2b417be66c3710")
+		      
+		      // Expected ciphertext (from NIST)
+		      Dim expectedCiphertext As String = HexToString( _
+		      "f58c4c04d6e5f1ba779eabfb5f7bfbd6" + _
+		      "9cfc4e967edb808d679f777bc6702c7d" + _
+		      "39f23369a9d9bacfa530e26304231461" + _
+		      "b2eb05e2c39be9fcda6c19078c6a9d1b")
+		      
+		      // Perform encryption
+		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength256)
+		      aes.SetKey(key)
+		      Dim ciphertext As String = aes.EncryptCBC(plaintext, iv)
+		      
+		      // Display results
+		      output = output + "  Key: 603deb10... (256-bit)" + EndOfLine
+		      output = output + "  IV:  00010203..." + EndOfLine
+		      output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
+		      output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
+		      output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
+		      
+		      // Compare result
+		      If ciphertext = expectedCiphertext Then
+		        result.Value("passed") = True
+		      Else
+		        output = output + "  ERROR: Ciphertext mismatch!" + EndOfLine
+		        result.Value("passed") = False
+		      End If
+		      
+		    Catch e As RuntimeException
+		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
+		      result.Value("passed") = False
+		    End Try
+		  #Else
+		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
+		    result.Value("passed") = False
+		  #EndIf
+		  
+		  result.Value("output") = output
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function TestECB_AES128() As Dictionary
+		  Dim result As New Dictionary
+		  Dim output As String = ""
+		  
+		  #If VNSPDFModule.hasPremiumEncryptionModule Then
+		    // Test ECB-AES128 encryption with NIST test vectors
+		    // From NIST SP 800-38A Section F.1.1
+		    
+		    Try
+		      // Test key (128-bit)
+		      Dim key As String = HexToString("2b7e151628aed2a6abf7158809cf4f3c")
+		      
+		      // Test plaintext (4 blocks = 64 bytes)
+		      Dim plaintext As String = HexToString( _
+		      "6bc1bee22e409f96e93d7e117393172a" + _
+		      "ae2d8a571e03ac9c9eb76fac45af8e51" + _
+		      "30c81c46a35ce411e5fbc1191a0a52ef" + _
+		      "f69f2445df4f9b17ad2b417be66c3710")
+		      
+		      // Expected ciphertext (from NIST)
+		      Dim expectedCiphertext As String = HexToString( _
+		      "3ad77bb40d7a3660a89ecaf32466ef97" + _
+		      "f5d3d58503b9699de785895a96fdbaaf" + _
+		      "43b1cd7f598ece23881b00e3ed030688" + _
+		      "7b0c785e27e8ad3f8223207104725dd4")
+		      
+		      // Perform encryption
+		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
+		      aes.SetKey(key)
+		      Dim ciphertext As String = aes.EncryptECB(plaintext)
+		      
+		      // Display results
+		      output = output + "  Key: 2b7e1516..." + EndOfLine
+		      output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
+		      output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
+		      output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
+		      
+		      // Compare result
+		      If ciphertext = expectedCiphertext Then
+		        result.Value("passed") = True
+		      Else
+		        output = output + "  ERROR: Ciphertext mismatch!" + EndOfLine
+		        result.Value("passed") = False
+		      End If
+		      
+		    Catch e As RuntimeException
+		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
+		      result.Value("passed") = False
+		    End Try
+		  #Else
+		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
+		    result.Value("passed") = False
+		  #EndIf
+		  
+		  result.Value("output") = output
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function TestECB_AES256() As Dictionary
+		  Dim result As New Dictionary
+		  Dim output As String = ""
+		  
+		  #If VNSPDFModule.hasPremiumEncryptionModule Then
+		    // Test ECB-AES256 encryption with NIST test vectors
+		    // From NIST SP 800-38A Section F.1.5
+		    
+		    Try
+		      // Test key (256-bit)
+		      Dim key As String = HexToString( _
+		      "603deb1015ca71be2b73aef0857d7781" + _
+		      "1f352c073b6108d72d9810a30914dff4")
+		      
+		      // Test plaintext (4 blocks = 64 bytes)
+		      Dim plaintext As String = HexToString( _
+		      "6bc1bee22e409f96e93d7e117393172a" + _
+		      "ae2d8a571e03ac9c9eb76fac45af8e51" + _
+		      "30c81c46a35ce411e5fbc1191a0a52ef" + _
+		      "f69f2445df4f9b17ad2b417be66c3710")
+		      
+		      // Expected ciphertext (from NIST)
+		      Dim expectedCiphertext As String = HexToString( _
+		      "f3eed1bdb5d2a03c064b5a7e3db181f8" + _
+		      "591ccb10d410ed26dc5ba74a31362870" + _
+		      "b6ed21b99ca6f4f9f153e7b1beafed1d" + _
+		      "23304b7a39f9f3ff067d8d8f9e24ecc7")
+		      
+		      // Perform encryption
+		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength256)
+		      aes.SetKey(key)
+		      Dim ciphertext As String = aes.EncryptECB(plaintext)
+		      
+		      // Display results
+		      output = output + "  Key: 603deb10... (256-bit)" + EndOfLine
+		      output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
+		      output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
+		      output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
+		      
+		      // Compare result
+		      If ciphertext = expectedCiphertext Then
+		        result.Value("passed") = True
+		      Else
+		        output = output + "  ERROR: Ciphertext mismatch!" + EndOfLine
+		        result.Value("passed") = False
+		      End If
+		      
+		    Catch e As RuntimeException
+		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
+		      result.Value("passed") = False
+		    End Try
+		  #Else
+		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
+		    result.Value("passed") = False
+		  #EndIf
+		  
+		  result.Value("output") = output
+		  Return result
 		End Function
 	#tag EndMethod
 
@@ -5320,14 +5961,14 @@ Protected Module VNSPDFExamplesModule
 		Function TestZlib() As Dictionary
 		  // Test pure Xojo zlib implementation with known test vectors
 		  // Returns a Dictionary with test results for display
-
+		  
 		  Dim result As New Dictionary
 		  Dim output As String = "=== Testing Pure Xojo Zlib Implementation ===" + EndOfLine
 		  output = output + "Running compression test vectors..." + EndOfLine + EndOfLine
-
+		  
 		  Dim allPassed As Boolean = True
 		  Dim testOutput As String = ""
-
+		  
 		  // Test 1: Empty string
 		  output = output + "Test 1: Empty string..." + EndOfLine
 		  Dim test1Result As Dictionary = TestZlibEmptyString()
@@ -5339,7 +5980,7 @@ Protected Module VNSPDFExamplesModule
 		    output = output + "  FAILED" + EndOfLine
 		    allPassed = False
 		  End If
-
+		  
 		  // Test 2: Short string "Hello"
 		  output = output + "Test 2: Short string 'Hello'..." + EndOfLine
 		  Dim test2Result As Dictionary = TestZlibShortString()
@@ -5351,7 +5992,7 @@ Protected Module VNSPDFExamplesModule
 		    output = output + "  FAILED" + EndOfLine
 		    allPassed = False
 		  End If
-
+		  
 		  // Test 3: Known zlib test vector - RFC 1950 example
 		  output = output + "Test 3: RFC 1950 style compression..." + EndOfLine
 		  Dim test3Result As Dictionary = TestZlibRFC1950()
@@ -5363,7 +6004,7 @@ Protected Module VNSPDFExamplesModule
 		    output = output + "  FAILED" + EndOfLine
 		    allPassed = False
 		  End If
-
+		  
 		  // Test 4: Repeated pattern (should compress well)
 		  output = output + "Test 4: Repeated pattern compression..." + EndOfLine
 		  Dim test4Result As Dictionary = TestZlibRepeatedPattern()
@@ -5375,7 +6016,7 @@ Protected Module VNSPDFExamplesModule
 		    output = output + "  FAILED" + EndOfLine
 		    allPassed = False
 		  End If
-
+		  
 		  // Test 5: ADLER-32 checksum verification
 		  output = output + "Test 5: ADLER-32 checksum..." + EndOfLine
 		  Dim test5Result As Dictionary = TestAdler32()
@@ -5387,7 +6028,7 @@ Protected Module VNSPDFExamplesModule
 		    output = output + "  FAILED" + EndOfLine
 		    allPassed = False
 		  End If
-
+		  
 		  // Test 6: Round-trip with system zlib (if available)
 		  output = output + "Test 6: Round-trip verification..." + EndOfLine
 		  Dim test6Result As Dictionary = TestZlibRoundTrip()
@@ -5399,7 +6040,7 @@ Protected Module VNSPDFExamplesModule
 		    output = output + "  FAILED" + EndOfLine
 		    allPassed = False
 		  End If
-
+		  
 		  output = output + EndOfLine
 		  If allPassed Then
 		    output = output + "=== ALL ZLIB TESTS PASSED ===" + EndOfLine
@@ -5409,7 +6050,7 @@ Protected Module VNSPDFExamplesModule
 		    output = output + "Review the output above for details." + EndOfLine
 		  End If
 		  output = output + EndOfLine
-
+		  
 		  result.Value("passed") = allPassed
 		  result.Value("output") = output
 		  Return result
@@ -5421,7 +6062,7 @@ Protected Module VNSPDFExamplesModule
 		  // Test compressing an empty string - should return Nil
 		  Dim result As New Dictionary
 		  result.Value("output") = ""
-
+		  
 		  #If VNSPDFModule.hasPremiumZlibModule Then
 		    Dim deflater As New VNSZlibPremiumDeflate
 		    Dim compressedResult As MemoryBlock = deflater.CompressString("")
@@ -5431,44 +6072,58 @@ Protected Module VNSPDFExamplesModule
 		    result.Value("output") = "  (Skipped - hasPremiumZlibModule = False)" + EndOfLine
 		    result.Value("passed") = True
 		  #EndIf
-
+		  
 		  Return result
 		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
-		Private Function TestZlibShortString() As Dictionary
-		  // Test compressing a short string
+		Private Function TestZlibRepeatedPattern() As Dictionary
+		  // Test compression of repeated data (should compress well)
 		  Dim result As New Dictionary
 		  Dim output As String = ""
-
+		  
 		  #If VNSPDFModule.hasPremiumZlibModule Then
 		    Dim deflater As New VNSZlibPremiumDeflate
-		    Dim input As String = "Hello"
+		    
+		    // Create a string with repeated pattern
+		    Dim pattern As String = "ABCDEFGHIJ"
+		    Dim input As String = ""
+		    For i As Integer = 1 To 100
+		      input = input + pattern
+		    Next
+		    
 		    Dim compressedResult As MemoryBlock = deflater.CompressString(input)
-
+		    
 		    If compressedResult = Nil Or compressedResult.Size = 0 Then
 		      output = output + "  Error: Compression returned empty result" + EndOfLine
 		      result.Value("passed") = False
 		    Else
-		      // Check zlib header (first byte should be 0x78 for deflate with 32K window)
-		      If compressedResult.Byte(0) <> &h78 Then
-		        output = output + "  Error: Invalid zlib header byte: " + Hex(compressedResult.Byte(0)) + EndOfLine
-		        result.Value("passed") = False
-		      Else
-		        #If TargetiOS Then
-		          output = output + "  Input: " + Str(input.Length) + " bytes, Output: " + Str(compressedResult.Size) + " bytes" + EndOfLine
-		        #Else
-		          output = output + "  Input: " + Str(input.Bytes) + " bytes, Output: " + Str(compressedResult.Size) + " bytes" + EndOfLine
-		        #EndIf
-		        result.Value("passed") = True
+		      #If TargetiOS Then
+		        Dim inputLen As Integer = input.Length
+		      #Else
+		        Dim inputLen As Integer = input.Bytes
+		      #EndIf
+		      Dim ratio As Double = 100.0 * compressedResult.Size / inputLen
+		      output = output + "  Input: " + Str(inputLen) + " bytes, Output: " + Str(compressedResult.Size) + " bytes" + EndOfLine
+		      #If TargetiOS Then
+		        output = output + "  Compression ratio: " + FormatHelper(ratio, "0.0") + "%" + EndOfLine
+		      #Else
+		        output = output + "  Compression ratio: " + Format(ratio, "0.0") + "%" + EndOfLine
+		      #EndIf
+		      
+		      // Repeated data should compress significantly (at least 50% reduction)
+		      If ratio > 50 Then
+		        output = output + "  Warning: Poor compression for repeated data" + EndOfLine
 		      End If
+		      
+		      result.Value("passed") = True
 		    End If
 		  #Else
 		    output = "  (Skipped - hasPremiumZlibModule = False)" + EndOfLine
 		    result.Value("passed") = True
 		  #EndIf
-
+		  
 		  result.Value("output") = output
 		  Return result
 		End Function
@@ -5479,12 +6134,12 @@ Protected Module VNSPDFExamplesModule
 		  // Test with a standard test string
 		  Dim result As New Dictionary
 		  Dim output As String = ""
-
+		  
 		  #If VNSPDFModule.hasPremiumZlibModule Then
 		    Dim deflater As New VNSZlibPremiumDeflate
 		    Dim input As String = "The quick brown fox jumps over the lazy dog"
 		    Dim compressedResult As MemoryBlock = deflater.CompressString(input)
-
+		    
 		    If compressedResult = Nil Or compressedResult.Size = 0 Then
 		      output = output + "  Error: Compression returned empty result" + EndOfLine
 		      result.Value("passed") = False
@@ -5492,12 +6147,12 @@ Protected Module VNSPDFExamplesModule
 		      // Verify zlib header
 		      Dim cmf As Integer = compressedResult.Byte(0)
 		      Dim flg As Integer = compressedResult.Byte(1)
-
+		      
 		      // Check CMF: CM=8 (deflate), CINFO=7 (32K window) = 0x78
 		      If cmf <> &h78 Then
 		        output = output + "  Warning: CMF byte is " + Hex(cmf) + " (expected 0x78)" + EndOfLine
 		      End If
-
+		      
 		      // Check FCHECK: (CMF * 256 + FLG) should be divisible by 31
 		      If (cmf * 256 + flg) Mod 31 <> 0 Then
 		        output = output + "  Error: Invalid FCHECK in header" + EndOfLine
@@ -5517,93 +6172,7 @@ Protected Module VNSPDFExamplesModule
 		    output = "  (Skipped - hasPremiumZlibModule = False)" + EndOfLine
 		    result.Value("passed") = True
 		  #EndIf
-
-		  result.Value("output") = output
-		  Return result
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Function TestZlibRepeatedPattern() As Dictionary
-		  // Test compression of repeated data (should compress well)
-		  Dim result As New Dictionary
-		  Dim output As String = ""
-
-		  #If VNSPDFModule.hasPremiumZlibModule Then
-		    Dim deflater As New VNSZlibPremiumDeflate
-
-		    // Create a string with repeated pattern
-		    Dim pattern As String = "ABCDEFGHIJ"
-		    Dim input As String = ""
-		    For i As Integer = 1 To 100
-		      input = input + pattern
-		    Next
-
-		    Dim compressedResult As MemoryBlock = deflater.CompressString(input)
-
-		    If compressedResult = Nil Or compressedResult.Size = 0 Then
-		      output = output + "  Error: Compression returned empty result" + EndOfLine
-		      result.Value("passed") = False
-		    Else
-		      #If TargetiOS Then
-		        Dim inputLen As Integer = input.Length
-		      #Else
-		        Dim inputLen As Integer = input.Bytes
-		      #EndIf
-		      Dim ratio As Double = 100.0 * compressedResult.Size / inputLen
-		      output = output + "  Input: " + Str(inputLen) + " bytes, Output: " + Str(compressedResult.Size) + " bytes" + EndOfLine
-		      #If TargetiOS Then
-		        output = output + "  Compression ratio: " + FormatHelper(ratio, "0.0") + "%" + EndOfLine
-		      #Else
-		        output = output + "  Compression ratio: " + Format(ratio, "0.0") + "%" + EndOfLine
-		      #EndIf
-
-		      // Repeated data should compress significantly (at least 50% reduction)
-		      If ratio > 50 Then
-		        output = output + "  Warning: Poor compression for repeated data" + EndOfLine
-		      End If
-
-		      result.Value("passed") = True
-		    End If
-		  #Else
-		    output = "  (Skipped - hasPremiumZlibModule = False)" + EndOfLine
-		    result.Value("passed") = True
-		  #EndIf
-
-		  result.Value("output") = output
-		  Return result
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Function TestAdler32() As Dictionary
-		  // Test ADLER-32 checksum with known test vectors
-		  Dim result As New Dictionary
-		  Dim output As String = ""
-
-		  #If VNSPDFModule.hasPremiumZlibModule Then
-		    // RFC 1950 specifies: adler32("Wikipedia") = 0x11E60398
-		    Dim input As String = "Wikipedia"
-		    Dim expected As UInt32 = &h11E60398
-
-		    Dim adler As UInt32 = VNSZlibPremiumAdler32.Init()
-		    adler = VNSZlibPremiumAdler32.CalculateString(adler, input)
-
-		    output = output + "  Input: '" + input + "'" + EndOfLine
-		    output = output + "  Expected: 0x" + Hex(expected) + EndOfLine
-		    output = output + "  Got:      0x" + Hex(adler) + EndOfLine
-
-		    If adler = expected Then
-		      result.Value("passed") = True
-		    Else
-		      output = output + "  Error: ADLER-32 mismatch!" + EndOfLine
-		      result.Value("passed") = False
-		    End If
-		  #Else
-		    output = "  (Skipped - hasPremiumZlibModule = False)" + EndOfLine
-		    result.Value("passed") = True
-		  #EndIf
-
+		  
 		  result.Value("output") = output
 		  Return result
 		End Function
@@ -5615,11 +6184,11 @@ Protected Module VNSPDFExamplesModule
 		  // Now uses pure Xojo inflate on all platforms when hasPremiumZlibModule = True
 		  Dim result As New Dictionary
 		  Dim output As String = ""
-
+		  
 		  #If VNSPDFModule.hasPremiumZlibModule Then
 		    Dim deflater As New VNSZlibPremiumDeflate
 		    Dim input As String = "This is a test of the pure Xojo zlib compression implementation. It should compress and decompress correctly!"
-
+		    
 		    // Compress with our implementation
 		    Dim compressed As MemoryBlock = deflater.CompressString(input)
 		    If compressed = Nil Or compressed.Size = 0 Then
@@ -5631,19 +6200,19 @@ Protected Module VNSPDFExamplesModule
 		      #Else
 		        output = output + "  Compressed " + Str(input.Bytes) + " -> " + Str(compressed.Size) + " bytes" + EndOfLine
 		      #EndIf
-
+		      
 		      // Try to decompress using VNSZlibModule.Uncompress
 		      // This uses pure Xojo inflate on all platforms when hasPremiumZlibModule = True
 		      Dim compressedStr As String = compressed.StringValue(0, compressed.Size)
-
+		      
 		      #If TargetiOS Then
 		        Dim inputLen As Integer = input.Length
 		      #Else
 		        Dim inputLen As Integer = input.Bytes
 		      #EndIf
-
+		      
 		      Dim decompressed As String = VNSZlibModule.Uncompress(compressedStr, inputLen * 2)
-
+		      
 		      If VNSZlibModule.LastErrorCode <> 0 Then
 		        output = output + "  Decompression error code: " + Str(VNSZlibModule.LastErrorCode) + EndOfLine
 		        output = output + "  (This may indicate a decompression issue)" + EndOfLine
@@ -5672,680 +6241,46 @@ Protected Module VNSPDFExamplesModule
 		    output = "  (Skipped - hasPremiumZlibModule = False)" + EndOfLine
 		    result.Value("passed") = True
 		  #EndIf
-
+		  
 		  result.Value("output") = output
 		  Return result
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 54657374207075726520586F6A6F20414553206D706C656D656E6174696F6E2077697468204E495354207465737420766563746F72732E
-		Function TestAES() As Dictionary
-		  // Test pure Xojo AES implementation with NIST test vectors
-		  // Returns a Dictionary with test results for display
-
+	#tag Method, Flags = &h21
+		Private Function TestZlibShortString() As Dictionary
+		  // Test compressing a short string
 		  Dim result As New Dictionary
-		  Dim output As String = "=== Testing Pure Xojo AES Implementation ===" + EndOfLine
-		  output = output + "Running NIST SP 800-38A test vectors..." + EndOfLine + EndOfLine
-
-		  Dim allPassed As Boolean = True
-
-		  // Test ECB-AES128
-		  output = output + "Testing ECB-AES128..." + EndOfLine
-		  Dim test1Result As Dictionary = TestECB_AES128()
-		  Dim testOutput As String = test1Result.Value("output")
-		  If testOutput <> "" Then output = output + testOutput
-		  If test1Result.Value("passed") Then
-		    output = output + "  ECB-AES128: PASSED" + EndOfLine
-		  Else
-		    output = output + "  ECB-AES128: FAILED" + EndOfLine
-		    allPassed = False
-		  End If
-		  output = output + EndOfLine
-
-		  // Test CBC-AES128
-		  output = output + "Testing CBC-AES128..." + EndOfLine
-		  Dim test2Result As Dictionary = TestCBC_AES128()
-		  testOutput = test2Result.Value("output")
-		  If testOutput <> "" Then output = output + testOutput
-		  If test2Result.Value("passed") Then
-		    output = output + "  CBC-AES128: PASSED" + EndOfLine
-		  Else
-		    output = output + "  CBC-AES128: FAILED" + EndOfLine
-		    allPassed = False
-		  End If
-		  output = output + EndOfLine
-
-		  // Test ECB-AES256
-		  output = output + "Testing ECB-AES256..." + EndOfLine
-		  Dim test3Result As Dictionary = TestECB_AES256()
-		  testOutput = test3Result.Value("output")
-		  If testOutput <> "" Then output = output + testOutput
-		  If test3Result.Value("passed") Then
-		    output = output + "  ECB-AES256: PASSED" + EndOfLine
-		  Else
-		    output = output + "  ECB-AES256: FAILED" + EndOfLine
-		    allPassed = False
-		  End If
-		  output = output + EndOfLine
-
-		  // Test CBC-AES256
-		  output = output + "Testing CBC-AES256..." + EndOfLine
-		  Dim test4Result As Dictionary = TestCBC_AES256()
-		  testOutput = test4Result.Value("output")
-		  If testOutput <> "" Then output = output + testOutput
-		  If test4Result.Value("passed") Then
-		    output = output + "  CBC-AES256: PASSED" + EndOfLine
-		  Else
-		    output = output + "  CBC-AES256: FAILED" + EndOfLine
-		    allPassed = False
-		  End If
-		  output = output + EndOfLine
-
-		  // Test SHA-384 (needed for PDF Revision 6)
-		  #If VNSPDFModule.hasPremiumEncryptionModule Then
-		    output = output + "Testing SHA-384..." + EndOfLine
-		    Dim testSHA384 As Boolean = VNSPDFEncryptionPremium.TestSHA384()
-		    If testSHA384 Then
-		      output = output + "  SHA-384: PASSED" + EndOfLine
-		      // allPassed remains unchanged
+		  Dim output As String = ""
+		  
+		  #If VNSPDFModule.hasPremiumZlibModule Then
+		    Dim deflater As New VNSZlibPremiumDeflate
+		    Dim input As String = "Hello"
+		    Dim compressedResult As MemoryBlock = deflater.CompressString(input)
+		    
+		    If compressedResult = Nil Or compressedResult.Size = 0 Then
+		      output = output + "  Error: Compression returned empty result" + EndOfLine
+		      result.Value("passed") = False
 		    Else
-		      output = output + "  SHA-384: FAILED" + EndOfLine
-		      allPassed = False
+		      // Check zlib header (first byte should be 0x78 for deflate with 32K window)
+		      If compressedResult.Byte(0) <> &h78 Then
+		        output = output + "  Error: Invalid zlib header byte: " + Hex(compressedResult.Byte(0)) + EndOfLine
+		        result.Value("passed") = False
+		      Else
+		        #If TargetiOS Then
+		          output = output + "  Input: " + Str(input.Length) + " bytes, Output: " + Str(compressedResult.Size) + " bytes" + EndOfLine
+		        #Else
+		          output = output + "  Input: " + Str(input.Bytes) + " bytes, Output: " + Str(compressedResult.Size) + " bytes" + EndOfLine
+		        #EndIf
+		        result.Value("passed") = True
+		      End If
 		    End If
-		    output = output + EndOfLine
+		  #Else
+		    output = "  (Skipped - hasPremiumZlibModule = False)" + EndOfLine
+		    result.Value("passed") = True
 		  #EndIf
-
-		  // Summary
-		  If allPassed Then
-		    output = output + "=== ALL TESTS PASSED ===" + EndOfLine
-		    output = output + "Pure Xojo AES implementation is working correctly!" + EndOfLine
-		    output = output + "AES-128 (ECB + CBC) - Ready for PDF Revision 4" + EndOfLine
-		    output = output + "AES-256 (ECB + CBC) - Ready for PDF Revisions 5-6" + EndOfLine
-		    #If VNSPDFModule.hasPremiumEncryptionModule Then
-		      output = output + "SHA-384 - Ready for PDF Revision 6" + EndOfLine
-		    #EndIf
-		  Else
-		    output = output + "=== SOME TESTS FAILED ===" + EndOfLine
-		    output = output + "Review the output above for details." + EndOfLine
-		  End If
-		  output = output + EndOfLine
-
-		  result.Value("passed") = allPassed
+		  
 		  result.Value("output") = output
-		  Return result
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Function TestECB_AES128() As Dictionary
-		  Dim result As New Dictionary
-		  Dim output As String = ""
-
-		  #If VNSPDFModule.hasPremiumEncryptionModule Then
-		    // Test ECB-AES128 encryption with NIST test vectors
-		    // From NIST SP 800-38A Section F.1.1
-
-		    Try
-		      // Test key (128-bit)
-		      Dim key As String = HexToString("2b7e151628aed2a6abf7158809cf4f3c")
-
-		      // Test plaintext (4 blocks = 64 bytes)
-		      Dim plaintext As String = HexToString( _
-		      "6bc1bee22e409f96e93d7e117393172a" + _
-		      "ae2d8a571e03ac9c9eb76fac45af8e51" + _
-		      "30c81c46a35ce411e5fbc1191a0a52ef" + _
-		      "f69f2445df4f9b17ad2b417be66c3710")
-
-		      // Expected ciphertext (from NIST)
-		      Dim expectedCiphertext As String = HexToString( _
-		      "3ad77bb40d7a3660a89ecaf32466ef97" + _
-		      "f5d3d58503b9699de785895a96fdbaaf" + _
-		      "43b1cd7f598ece23881b00e3ed030688" + _
-		      "7b0c785e27e8ad3f8223207104725dd4")
-
-		      // Perform encryption
-		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
-		      aes.SetKey(key)
-		      Dim ciphertext As String = aes.EncryptECB(plaintext)
-
-		      // Display results
-		      output = output + "  Key: 2b7e1516..." + EndOfLine
-		      #If TargetiOS Then
-		        output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
-		        output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
-		        output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
-		      #Else
-		        output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
-		        output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
-		        output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
-		      #EndIf
-
-		      // Compare result
-		      If ciphertext = expectedCiphertext Then
-		        result.Value("passed") = True
-		      Else
-		        output = output + "  ERROR: Ciphertext mismatch!" + EndOfLine
-		        result.Value("passed") = False
-		      End If
-
-		    Catch e As RuntimeException
-		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
-		      result.Value("passed") = False
-		    End Try
-		  #Else
-		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
-		    result.Value("passed") = False
-		  #EndIf
-
-		  result.Value("output") = output
-		  Return result
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Function TestCBC_AES128() As Dictionary
-		  Dim result As New Dictionary
-		  Dim output As String = ""
-
-		  #If VNSPDFModule.hasPremiumEncryptionModule Then
-		    // Test CBC-AES128 encryption with NIST test vectors
-		    // From NIST SP 800-38A Section F.2.1
-
-		    Try
-		      // Test key (128-bit)
-		      Dim key As String = HexToString("2b7e151628aed2a6abf7158809cf4f3c")
-
-		      // Initialization vector (128-bit)
-		      Dim iv As String = HexToString("000102030405060708090a0b0c0d0e0f")
-
-		      // Test plaintext (4 blocks = 64 bytes)
-		      Dim plaintext As String = HexToString( _
-		      "6bc1bee22e409f96e93d7e117393172a" + _
-		      "ae2d8a571e03ac9c9eb76fac45af8e51" + _
-		      "30c81c46a35ce411e5fbc1191a0a52ef" + _
-		      "f69f2445df4f9b17ad2b417be66c3710")
-
-		      // Expected ciphertext (from NIST)
-		      Dim expectedCiphertext As String = HexToString( _
-		      "7649abac8119b246cee98e9b12e9197d" + _
-		      "5086cb9b507219ee95db113a917678b2" + _
-		      "73bed6b8e3c1743b7116e69e22229516" + _
-		      "3ff1caa1681fac09120eca307586e1a7")
-
-		      // Perform encryption
-		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
-		      aes.SetKey(key)
-		      Dim ciphertext As String = aes.EncryptCBC(plaintext, iv)
-
-		      // Display results
-		      output = output + "  Key: 2b7e1516..." + EndOfLine
-		      output = output + "  IV:  00010203..." + EndOfLine
-		      #If TargetiOS Then
-		        output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
-		        output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
-		        output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
-		      #Else
-		        output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
-		        output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
-		        output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
-		      #EndIf
-
-		      // Compare result
-		      If ciphertext = expectedCiphertext Then
-		        result.Value("passed") = True
-		      Else
-		        output = output + "  ERROR: Ciphertext mismatch!" + EndOfLine
-		        result.Value("passed") = False
-		      End If
-
-		    Catch e As RuntimeException
-		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
-		      result.Value("passed") = False
-		    End Try
-		  #Else
-		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
-		    result.Value("passed") = False
-		  #EndIf
-
-		  result.Value("output") = output
-		  Return result
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Function TestECB_AES256() As Dictionary
-		  Dim result As New Dictionary
-		  Dim output As String = ""
-
-		  #If VNSPDFModule.hasPremiumEncryptionModule Then
-		    // Test ECB-AES256 encryption with NIST test vectors
-		    // From NIST SP 800-38A Section F.1.5
-
-		    Try
-		      // Test key (256-bit)
-		      Dim key As String = HexToString( _
-		      "603deb1015ca71be2b73aef0857d7781" + _
-		      "1f352c073b6108d72d9810a30914dff4")
-
-		      // Test plaintext (4 blocks = 64 bytes)
-		      Dim plaintext As String = HexToString( _
-		      "6bc1bee22e409f96e93d7e117393172a" + _
-		      "ae2d8a571e03ac9c9eb76fac45af8e51" + _
-		      "30c81c46a35ce411e5fbc1191a0a52ef" + _
-		      "f69f2445df4f9b17ad2b417be66c3710")
-
-		      // Expected ciphertext (from NIST)
-		      Dim expectedCiphertext As String = HexToString( _
-		      "f3eed1bdb5d2a03c064b5a7e3db181f8" + _
-		      "591ccb10d410ed26dc5ba74a31362870" + _
-		      "b6ed21b99ca6f4f9f153e7b1beafed1d" + _
-		      "23304b7a39f9f3ff067d8d8f9e24ecc7")
-
-		      // Perform encryption
-		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength256)
-		      aes.SetKey(key)
-		      Dim ciphertext As String = aes.EncryptECB(plaintext)
-
-		      // Display results
-		      output = output + "  Key: 603deb10... (256-bit)" + EndOfLine
-		      #If TargetiOS Then
-		        output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
-		        output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
-		        output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
-		      #Else
-		        output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
-		        output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
-		        output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
-		      #EndIf
-
-		      // Compare result
-		      If ciphertext = expectedCiphertext Then
-		        result.Value("passed") = True
-		      Else
-		        output = output + "  ERROR: Ciphertext mismatch!" + EndOfLine
-		        result.Value("passed") = False
-		      End If
-
-		    Catch e As RuntimeException
-		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
-		      result.Value("passed") = False
-		    End Try
-		  #Else
-		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
-		    result.Value("passed") = False
-		  #EndIf
-
-		  result.Value("output") = output
-		  Return result
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Function TestCBC_AES256() As Dictionary
-		  Dim result As New Dictionary
-		  Dim output As String = ""
-
-		  #If VNSPDFModule.hasPremiumEncryptionModule Then
-		    // Test CBC-AES256 encryption with NIST test vectors
-		    // From NIST SP 800-38A Section F.2.5
-
-		    Try
-		      // Test key (256-bit)
-		      Dim key As String = HexToString( _
-		      "603deb1015ca71be2b73aef0857d7781" + _
-		      "1f352c073b6108d72d9810a30914dff4")
-
-		      // Initialization vector (128-bit)
-		      Dim iv As String = HexToString("000102030405060708090a0b0c0d0e0f")
-
-		      // Test plaintext (4 blocks = 64 bytes)
-		      Dim plaintext As String = HexToString( _
-		      "6bc1bee22e409f96e93d7e117393172a" + _
-		      "ae2d8a571e03ac9c9eb76fac45af8e51" + _
-		      "30c81c46a35ce411e5fbc1191a0a52ef" + _
-		      "f69f2445df4f9b17ad2b417be66c3710")
-
-		      // Expected ciphertext (from NIST)
-		      Dim expectedCiphertext As String = HexToString( _
-		      "f58c4c04d6e5f1ba779eabfb5f7bfbd6" + _
-		      "9cfc4e967edb808d679f777bc6702c7d" + _
-		      "39f23369a9d9bacfa530e26304231461" + _
-		      "b2eb05e2c39be9fcda6c19078c6a9d1b")
-
-		      // Perform encryption
-		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength256)
-		      aes.SetKey(key)
-		      Dim ciphertext As String = aes.EncryptCBC(plaintext, iv)
-
-		      // Display results
-		      output = output + "  Key: 603deb10... (256-bit)" + EndOfLine
-		      output = output + "  IV:  00010203..." + EndOfLine
-		      #If TargetiOS Then
-		        output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
-		        output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
-		        output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
-		      #Else
-		        output = output + "  Input:    " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
-		        output = output + "  Expected: " + StringToHex(expectedCiphertext).Left(32) + "..." + EndOfLine
-		        output = output + "  Got:      " + StringToHex(ciphertext).Left(32) + "..." + EndOfLine
-		      #EndIf
-
-		      // Compare result
-		      If ciphertext = expectedCiphertext Then
-		        result.Value("passed") = True
-		      Else
-		        output = output + "  ERROR: Ciphertext mismatch!" + EndOfLine
-		        result.Value("passed") = False
-		      End If
-
-		    Catch e As RuntimeException
-		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
-		      result.Value("passed") = False
-		    End Try
-		  #Else
-		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
-		    result.Value("passed") = False
-		  #EndIf
-
-		  result.Value("output") = output
-		  Return result
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Function HexToString(hex As String) As String
-		  // Convert hex string to binary string
-		  // Example: "2b7e" -> String.ChrByte(&h2b) + String.ChrByte(&h7e)
-
-		  Dim result As String = ""
-		  Dim hexLen As Integer = hex.Length
-
-		  For i As Integer = 1 To hexLen Step 2
-		    #If TargetiOS Then
-		      Dim hexByte As String = hex.Middle(i - 1, 2) // 0-based
-		      Dim byteValue As Integer = Val("&h" + hexByte)
-		      result = result + String.ChrByte(byteValue)
-		    #Else
-		      Dim hexByte As String = hex.Middle(i, 2)
-		      Dim byteValue As Integer = Val("&h" + hexByte)
-		      result = result + String.ChrByte(byteValue)
-		    #EndIf
-		  Next
-
-		  Return result
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Function StringToHex(s As String) As String
-		  // Convert binary string to hex string (for debugging)
-		  // Example: String.ChrByte(&h2b) + String.ChrByte(&h7e) -> "2b7e"
-
-		  Dim result As String = ""
-		  #If TargetiOS Then
-		    Dim sLen As Integer = s.Bytes
-		    For i As Integer = 0 To sLen - 1
-		      Dim byteValue As Integer = s.MiddleBytes(i, 1).AscByte
-		      Dim hexByte As String = Hex(byteValue)
-		      If hexByte.Length = 1 Then hexByte = "0" + hexByte
-		      result = result + hexByte
-		    Next
-		  #Else
-		    Dim sLen As Integer = s.Bytes
-		    For i As Integer = 0 To sLen - 1
-		      Dim byteValue As Integer = s.MiddleBytes(i, 1).AscByte
-		      Dim hexByte As String = Hex(byteValue)
-		      If hexByte.Length = 1 Then hexByte = "0" + hexByte
-		      result = result + hexByte
-		    Next
-		  #EndIf
-
-		  Return result
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Function GenerateExample20(sourcePath As String = "") As Dictionary
-		  // Example 20: PDF Import - Import pages from existing PDFs
-		  // Demonstrates SetSourceFile(), ImportPage(), and UseTemplate()
-
-		  Dim result As New Dictionary
-		  Dim statusText As String = ""
-
-		  statusText = statusText + "Example 20: PDF Import (Pages as Templates)" + EndOfLine
-		  statusText = statusText + "========================================" + EndOfLine + EndOfLine
-
-		  // If no source path provided, use default example
-		  If sourcePath = "" Then
-		    #If TargetDesktop Or TargetConsole Then
-		      // Desktop/Console: Find pdf_examples folder relative to app location
-		      Dim pdfExamplesFolder As FolderItem
-		      Dim sourceFile As FolderItem
-
-		      // Try multiple locations to find pdf_examples folder
-		      // 1. CurrentWorkingDirectory/pdf_examples
-		      pdfExamplesFolder = SpecialFolder.CurrentWorkingDirectory.Child("pdf_examples")
-		      If pdfExamplesFolder.Exists Then
-		        sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
-		        If sourceFile.Exists Then
-		          sourcePath = sourceFile.NativePath
-		        End If
-		      End If
-
-		      // 2. App location/pdf_examples (for debug builds)
-		      If sourcePath = "" Then
-		        pdfExamplesFolder = App.ExecutableFile.Parent.Child("pdf_examples")
-		        If pdfExamplesFolder.Exists Then
-		          sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
-		          If sourceFile.Exists Then
-		            sourcePath = sourceFile.NativePath
-		          End If
-		        End If
-		      End If
-
-		      // 3. App location/../pdf_examples (for builds in subfolder)
-		      If sourcePath = "" And App.ExecutableFile.Parent.Parent <> Nil Then
-		        pdfExamplesFolder = App.ExecutableFile.Parent.Parent.Child("pdf_examples")
-		        If pdfExamplesFolder.Exists Then
-		          sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
-		          If sourceFile.Exists Then
-		            sourcePath = sourceFile.NativePath
-		          End If
-		        End If
-		      End If
-
-		      // 4. App location/../../pdf_examples (for deeper build folders)
-		      If sourcePath = "" And App.ExecutableFile.Parent.Parent <> Nil And App.ExecutableFile.Parent.Parent.Parent <> Nil Then
-		        pdfExamplesFolder = App.ExecutableFile.Parent.Parent.Parent.Child("pdf_examples")
-		        If pdfExamplesFolder.Exists Then
-		          sourceFile = pdfExamplesFolder.Child("example19_tables.pdf")
-		          If sourceFile.Exists Then
-		            sourcePath = sourceFile.NativePath
-		          End If
-		        End If
-		      End If
-
-		      // If still not found, show error
-		      If sourcePath = "" Then
-		        statusText = statusText + "✗ ERROR: Cannot find pdf_examples/example19_tables.pdf" + EndOfLine
-		        statusText = statusText + "   Searched from: " + App.ExecutableFile.Parent.NativePath + EndOfLine
-		        result.Value("success") = False
-		        result.Value("status") = statusText
-		        result.Value("filename") = ""
-		        Return result
-		      End If
-		    #ElseIf TargetiOS Then
-		      // iOS: Requires user to select a source PDF file
-		      // Note: iOS apps need file picker UI to let user choose PDF from Documents folder
-		      statusText = statusText + "✗ ERROR: No source PDF path provided" + EndOfLine
-		      statusText = statusText + "   iOS requires a source PDF file to be selected by the user" + EndOfLine
-		      statusText = statusText + "   Implement file picker UI to pass source file path to GenerateExample20()" + EndOfLine
-		      result.Value("success") = False
-		      result.Value("status") = statusText
-		      result.Value("filename") = ""
-		      Return result
-		    #Else
-		      // Web: No file system access, requires user to upload PDF via WebDialogPDFUpload
-		      statusText = statusText + "✗ ERROR: No source PDF path provided" + EndOfLine
-		      result.Value("success") = False
-		      result.Value("status") = statusText
-		      result.Value("filename") = ""
-		      Return result
-		    #EndIf
-		  End If
-
-		  // Create PDF
-		  Dim pdf As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, VNSPDFModule.ePageUnit.Millimeters, VNSPDFModule.ePageFormat.A4)
-
-		  Call pdf.SetTitle("Example 20 - PDF Import")
-		  Call pdf.SetAuthor("VNS PDF Library")
-		  Call pdf.SetSubject("Importing pages from existing PDFs")
-
-		  statusText = statusText + "Source PDF: " + sourcePath + EndOfLine + EndOfLine
-
-		  // Open source PDF
-		  Dim pageCount As Integer = pdf.SetSourceFile(sourcePath)
-
-		  If pdf.Err() Then
-		    statusText = statusText + "✗ ERROR: " + pdf.GetError() + EndOfLine
-		    result.Value("success") = False
-		    result.Value("status") = statusText
-		    result.Value("filename") = ""
-		    Return result
-		  End If
-
-		  statusText = statusText + "✓ Opened PDF successfully" + EndOfLine
-		  statusText = statusText + "  Pages found: " + Str(pageCount) + EndOfLine + EndOfLine
-
-		  // Create title page
-		  Call pdf.AddPage()
-		  Call pdf.SetFont("helvetica", "B", 20)
-		  Call pdf.Cell(0, 10, "PDF Import Example", 0, 1, "C")
-		  Call pdf.Ln(5)
-
-		  Call pdf.SetFont("helvetica", "", 12)
-		  Call pdf.MultiCell(0, 5, "This example demonstrates importing pages from an existing PDF file and placing them as templates in a new document using UseTemplate().", 0, "L")
-		  Call pdf.Ln(10)
-
-		  // Import ALL pages from source PDF
-		  Dim templateIDs() As Integer
-
-		  statusText = statusText + "Importing all " + Str(pageCount) + " pages..." + EndOfLine + EndOfLine
-
-		  For i As Integer = 1 To pageCount
-		    Dim templateID As Integer = pdf.ImportPage(i)
-
-		    If pdf.Err() Then
-		      statusText = statusText + "  ✗ ERROR importing page " + Str(i) + ": " + pdf.GetError() + EndOfLine
-		      pdf.ClearError()
-		      Continue
-		    End If
-
-		    templateIDs.Add(templateID)
-		  Next
-
-		  statusText = statusText + "✓ Successfully imported " + Str(templateIDs.Count) + " pages" + EndOfLine + EndOfLine
-
-		  // Display all pages as thumbnails - 4 pages per output page (2x2 grid)
-		  Dim thumbWidth As Double = 85  // Width for each thumbnail
-		  Dim thumbSpacing As Double = 5  // Space between thumbnails
-		  Dim pageMargin As Double = 15
-
-		  // Calculate positions for 2x2 grid
-		  Dim col1X As Double = pageMargin
-		  Dim col2X As Double = pageMargin + thumbWidth + thumbSpacing
-		  Dim row1Y As Double = 45
-		  Dim row2Y As Double = row1Y + 120  // Approximate height for A4 aspect ratio thumbnails
-
-		  Dim pageIndex As Integer = 0
-		  Dim outputPageNum As Integer = 0
-
-		  While pageIndex < templateIDs.Count
-		    // Add new output page for this set of 4 thumbnails
-		    Call pdf.AddPage()
-		    outputPageNum = outputPageNum + 1
-
-		    // Title
-		    Call pdf.SetFont("helvetica", "B", 14)
-		    Call pdf.Cell(0, 8, "Source PDF Pages (Sheet " + Str(outputPageNum) + " of " + Str((templateIDs.Count + 3) \ 4) + ")", 0, 1, "C")
-		    Call pdf.Ln(5)
-
-		    // Display up to 4 thumbnails in 2x2 grid
-		    For gridPos As Integer = 0 To 3
-		      If pageIndex >= templateIDs.Count Then Exit For
-
-		      // Calculate position for this thumbnail
-		      Dim thumbX As Double
-		      Dim thumbY As Double
-
-		      Select Case gridPos
-		      Case 0  // Top-left
-		        thumbX = col1X
-		        thumbY = row1Y
-		      Case 1  // Top-right
-		        thumbX = col2X
-		        thumbY = row1Y
-		      Case 2  // Bottom-left
-		        thumbX = col1X
-		        thumbY = row2Y
-		      Case 3  // Bottom-right
-		        thumbX = col2X
-		        thumbY = row2Y
-		      End Select
-
-		      // Draw label above thumbnail
-		      Call pdf.SetFont("helvetica", "B", 10)
-		      Dim debugInfo As String = "Source Page " + Str(pageIndex + 1) + " (ID:" + Str(templateIDs(pageIndex)) + ", Arr:" + Str(pageIndex) + ")"
-		      Call pdf.Text(thumbX, thumbY - 3, debugInfo)
-
-		      // Place the thumbnail
-		      Call pdf.UseTemplate(templateIDs(pageIndex), thumbX, thumbY, thumbWidth, 0)
-
-		      pageIndex = pageIndex + 1
-		    Next
-		  Wend
-
-		  statusText = statusText + "✓ Created " + Str(outputPageNum) + " thumbnail overview pages" + EndOfLine
-
-		  statusText = statusText + EndOfLine + "✓ Example 20 completed" + EndOfLine
-
-		  // Generate PDF
-		  Dim pdfBytes As String = pdf.Output()
-
-		  If pdf.Err() Then
-		    statusText = statusText + "✗ ERROR generating PDF: " + pdf.GetError() + EndOfLine
-		    result.Value("success") = False
-		    result.Value("status") = statusText
-		    result.Value("filename") = ""
-		    Return result
-		  End If
-
-		  // Save to file
-		  #If TargetDesktop Or TargetConsole Then
-		    Dim outputFile As FolderItem = SpecialFolder.Desktop.Child("example20_pdf_import.pdf")
-		    Try
-		      Dim bos As BinaryStream = BinaryStream.Create(outputFile, True)
-		      bos.Write(pdfBytes)
-		      bos.Close()
-
-		      statusText = statusText + "✓ PDF saved to: " + outputFile.NativePath + EndOfLine
-		      result.Value("success") = True
-		      result.Value("filename") = "example20_pdf_import.pdf"
-		    Catch e As IOException
-		      statusText = statusText + "✗ ERROR saving file: " + e.Message + EndOfLine
-		      result.Value("success") = False
-		      result.Value("filename") = ""
-		    End Try
-		  #Else
-		    // iOS/Web: Return PDF data for UI layer to handle
-		    result.Value("success") = True
-		    result.Value("filename") = "example20_pdf_import.pdf"
-		  #EndIf
-
-
-		  // Return PDF data for all platforms (iOS/Web need this for display)
-		  result.Value("pdf") = pdfBytes
-		  result.Value("status") = statusText
 		  Return result
 		End Function
 	#tag EndMethod
