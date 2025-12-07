@@ -14,7 +14,7 @@ Protected Module VNSPDFModule
 		Delegate Sub FooterDelegateLpi(doc As VNSPDFDocument, lastPage As Boolean)
 	#tag EndDelegateDeclaration
 
-	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D20666F726D6174206865C6C7065722
+	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D20666F726D6174206865EFBFBD065722
 		Function FormatHelper(value As Double, format As String) As String
 		  // Cross-platform format helper
 		  // iOS: Use Str() with manual formatting (API2 doesn't have Format)
@@ -176,17 +176,12 @@ Protected Module VNSPDFModule
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D206D696372F73656F6E6473206865C6C7065722E
+	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D206D696372EFBFBD3656EFBFBDEFBFBD3206EFBFBD5C6C7065722E
 		Function GetMicroseconds() As Int64
 		  // Cross-platform microseconds helper
-		  // iOS: Use System.Microseconds (API2)
-		  // Desktop: Use Microseconds function (API1)
+		  // Use System.Microseconds (API2)
 		  
-		  #If TargetiOS Then
-		    Return System.Microseconds
-		  #Else
-		    Return System.Microseconds
-		  #EndIf
+		  Return System.Microseconds
 		End Function
 	#tag EndMethod
 
@@ -833,7 +828,7 @@ Protected Module VNSPDFModule
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D20696E746567657220746F206279746520737472696E67206865C6C7065722
+	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D20696E746567657220746F206279746520737472696E67206865EFBFBD065722
 		Function StringChrB(byteValue As Integer) As String
 		  // Cross-platform integer to byte string helper
 		  // iOS: Use MemoryBlock (ChrB doesn't exist in API2)
@@ -849,49 +844,34 @@ Protected Module VNSPDFModule
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D206C656674206279746573206865C6C7065722
+	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D206C656674206279746573206865EFBFBD065722
 		Function StringLeftB(s As String, numBytes As Integer) As String
 		  // Cross-platform left bytes helper
-		  // iOS: Use .LeftBytes() (API2)
-		  // Desktop: Use LeftB() function (API1)
+		  // Use .LeftBytes() (API2)
 		  
-		  #If TargetiOS Then
-		    Return s.LeftBytes(numBytes)
-		  #Else
-		    Return s.LeftBytes(numBytes)
-		  #EndIf
+		  Return s.LeftBytes(numBytes)
 		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D2073626769676E67206C656E6774682068656C7065722E
 		Function StringLen(s As String) As Integer
 		  // Cross-platform string length helper
-		  // iOS: Use .Length property (API2)
-		  // Desktop: Use Len() function (API1)
+		  // Use .Length property (API2)
 		  
-		  #If TargetiOS Then
-		    Return s.Length
-		  #Else
-		    Return s.Length
-		  #EndIf
+		  Return s.Length
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D206279746520C6C656E677468206865C6C706572
+	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D206279746520EFBFBD56EFBFBD46EFBFBD06EFBFBD5C6C706572
 		Function StringLenB(s As String) As Integer
 		  // Cross-platform byte length helper
-		  // iOS: Use .Bytes property (API2)
-		  // Desktop: Use LenB() function (API1)
+		  // Use .Bytes property (API2)
 		  
-		  #If TargetiOS Then
-		    Return s.Bytes
-		  #Else
-		    Return s.Bytes
-		  #EndIf
+		  Return s.Bytes
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D206D6964206279746573206865C6C7065722
+	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D206D6964206279746573206865EFBFBD065722
 		Function StringMidB(s As String, start As Integer, length As Integer) As String
 		  // Cross-platform middle bytes helper
 		  // iOS: Use .MiddleBytes() with 0-based index (API2)
@@ -905,17 +885,12 @@ Protected Module VNSPDFModule
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D207269676874206279746573206865C6C7065722
+	#tag Method, Flags = &h0, Description = 43726F73732D706C6174666F726D207269676874206279746573206865EFBFBD065722
 		Function StringRightB(s As String, numBytes As Integer) As String
 		  // Cross-platform right bytes helper
-		  // iOS: Use .RightBytes() (API2)
-		  // Desktop: Use RightB() function (API1)
+		  // Use .RightBytes() (API2)
 		  
-		  #If TargetiOS Then
-		    Return s.RightBytes(numBytes)
-		  #Else
-		    Return s.RightBytes(numBytes)
-		  #EndIf
+		  Return s.RightBytes(numBytes)
 		End Function
 	#tag EndMethod
 
