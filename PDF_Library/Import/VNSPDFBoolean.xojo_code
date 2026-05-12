@@ -1,11 +1,11 @@
 #tag Class
 Protected Class VNSPDFBoolean
 Inherits VNSPDFType
-	#tag Method, Flags = &h1
-		Shared Function Create(val As Boolean) As VNSPDFBoolean
+	#tag Method, Flags = &h0
+		Shared Function Create(aValue As Boolean) As VNSPDFBoolean
 		  // Create boolean object
 		  Dim obj As New VNSPDFBoolean
-		  obj.value = val
+		  obj.value = aValue
 		  Return obj
 		End Function
 	#tag EndMethod

@@ -1,30 +1,22 @@
 #tag Class
 Protected Class VNSPDFImage
 	#tag Method, Flags = &h0
-		Sub Constructor(imageFilePath As String)
-		  // Load image from file path
-		  mFilePath = imageFilePath
-
-		  Dim f As FolderItem = New FolderItem(imageFilePath, FolderItem.PathModes.Native)
-
-		  If Not f.Exists Then
-		    mError = "Image file not found: " + imageFilePath
+		Sub Constructor(imageData As MemoryBlock)
+		  // Load image from MemoryBlock (e.g., from Picture.ToData())
+		  // This constructor is used for programmatically generated images
+		  mFilePath = "" // No file path for memory-based images
+		  
+		  If imageData = Nil Or imageData.Size = 0 Then
+		    mError = "Image data is empty"
 		    Return
 		  End If
-
-		  // Read image data
-		  Try
-		    Dim stream As BinaryStream = BinaryStream.Open(f)
-		    mImageData = stream.Read(stream.Length)
-		    stream.Close()
-		  Catch e As IOException
-		    mError = "Error reading image file: " + e.Message
-		    Return
-		  End Try
-
-		  // Detect image type from file signature
+		  
+		  // Convert MemoryBlock to String for internal storage
+		  mImageData = imageData.StringValue(0, imageData.Size)
+		  
+		  // Detect image type from data signature
 		  DetectImageType()
-
+		  
 		  // Parse image based on type
 		  If mImageType = "jpeg" Then
 		    ParseJPEG()
@@ -40,22 +32,30 @@ Protected Class VNSPDFImage
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Sub Constructor(imageData As MemoryBlock)
-		  // Load image from MemoryBlock (e.g., from Picture.ToData())
-		  // This constructor is used for programmatically generated images
-		  mFilePath = "" // No file path for memory-based images
-
-		  If imageData = Nil Or imageData.Size = 0 Then
-		    mError = "Image data is empty"
+		Sub Constructor(imageFilePath As String)
+		  // Load image from file path
+		  mFilePath = imageFilePath
+		  
+		  Dim f As FolderItem = New FolderItem(imageFilePath, FolderItem.PathModes.Native)
+		  
+		  If Not f.Exists Then
+		    mError = "Image file not found: " + imageFilePath
 		    Return
 		  End If
-
-		  // Convert MemoryBlock to String for internal storage
-		  mImageData = imageData.StringValue(0, imageData.Size)
-
-		  // Detect image type from data signature
+		  
+		  // Read image data
+		  Try
+		    Dim stream As BinaryStream = BinaryStream.Open(f)
+		    mImageData = stream.Read(stream.Length)
+		    stream.Close()
+		  Catch e As IOException
+		    mError = "Error reading image file: " + e.Message
+		    Return
+		  End Try
+		  
+		  // Detect image type from file signature
 		  DetectImageType()
-
+		  
 		  // Parse image based on type
 		  If mImageType = "jpeg" Then
 		    ParseJPEG()
@@ -371,7 +371,7 @@ Protected Class VNSPDFImage
 		    mError = "Unsupported PNG color type: " + Str(colorType)
 		    Return
 		  End Select
-
+		  
 		  // Compression method (1 byte, must be 0)
 		  Dim compression As Integer = mImageData.MiddleBytes(pos, 1).AscByte
 		  pos = pos + 1

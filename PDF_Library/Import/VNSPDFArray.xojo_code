@@ -1,25 +1,25 @@
 #tag Class
 Protected Class VNSPDFArray
 Inherits VNSPDFType
-	#tag Method, Flags = &h1
+	#tag Method, Flags = &h0
 		Shared Function Parse(tokenizer As VNSPDFTokenizer) As VNSPDFArray
 		  // Parse array from stream: [1 2 3] or [/Type /Page]
 		  // Array elements can be any PDF type
-
+		  
 		  Dim elements() As VNSPDFType
 		  Dim loopCount As Integer = 0
 		  Dim maxLoops As Integer = 1000
-
+		  
 		  While loopCount < maxLoops
 		    loopCount = loopCount + 1
-
+		    
 		    Dim token As String = tokenizer.GetNextToken()
-
+		    
 		    If token = "" Or token = "]" Then
-
+		      
 		      Exit While
 		    End If
-
+		    
 		    // Parse element based on token type
 		    If token = "[" Then
 		      // Nested array
@@ -38,7 +38,7 @@ Inherits VNSPDFType
 		    ElseIf token = "/" Then
 		      // Name - read the name token
 		      Dim nameToken As String = tokenizer.GetNextToken()
-
+		      
 		      If nameToken = "" Or nameToken = "]" Then
 		        // Unexpected end
 		        tokenizer.PushBack(nameToken)
@@ -71,11 +71,11 @@ Inherits VNSPDFType
 		        elements.Add(VNSPDFNumeric.Create(Val(token)))
 		      End If
 		    End If
-
+		    
 		  Wend
-
-
-
+		  
+		  
+		  
 		  Dim obj As New VNSPDFArray
 		  obj.value = elements
 		  Return obj

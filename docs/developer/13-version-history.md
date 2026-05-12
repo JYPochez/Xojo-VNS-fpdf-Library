@@ -1,6 +1,17 @@
 # Xojo FPDF - Version History
 
-## Version 1.3 (March 2026) - Current Release
+## Version 1.4 (March 2026) - Current Release
+
+**Xojo 2025r3.1 API2**
+
+- Table border customization: `mBorderColor` (default black), `mBorderWidth` (default 0.2mm), per-column `mBorderStyle`, per-row `SetRowBorder()`, per-cell `SetCellBorder()` with cascade priority: cell > row > column > table
+- Cell vertical alignment (v1.3 Geoff Bridges): `eVerticalAlignment.Top/Middle/Bottom/Baseline` in Cell() method
+- Border.IsNumeric fix (v1.3): Cell/MultiCell border parameter accepts both numeric and string values
+- Empty MultiCell borders (v1.3): Single empty-text MultiCell now draws correct borders
+- Write() linebreaks (v1.3): Explicit chr(10) linebreaks now work inside Write() calls
+- Preview save folder (v1.3 Geoff Bridges): `ShowPreview(doc, initialFolder)` parameter for default save location
+
+## Version 1.3 (March 2026)
 
 **Xojo 2025r3.1 API2**
 

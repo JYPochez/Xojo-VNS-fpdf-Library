@@ -848,7 +848,9 @@ End
 	#tag Method, Flags = &h21
 		Private Sub GenerateExample30()
 		  // Call shared module function - E-Invoice (Factur-X/ZUGFeRD)
-		  Dim result As Dictionary = VNSPDFExamplesModule.GenerateExample30()
+		  // TODO: Add WebDialog for country code selection
+		  Dim countryCode As String = "FR"
+		  Dim result As Dictionary = VNSPDFExamplesModule.GenerateExample30(countryCode)
 
 		  // Display message
 		  If result.HasKey("message") Then
@@ -870,6 +872,19 @@ End
 		    Call PDFFile.Download
 		  End If
 
+		  // Download credit note if generated
+		  If result.HasKey("pdf2") Then
+		    Dim pdfData2 As String = result.Value("pdf2").StringValue
+		    Dim filename2 As String = result.Value("filename2").StringValue
+		    Dim creditFile As New WebFile
+		    creditFile.Data = pdfData2
+		    creditFile.MIMEType = "application/pdf"
+		    creditFile.ForceDownload = False
+		    creditFile.Filename = filename2
+		    txtOutput.Text = txtOutput.Text + "Credit note will be downloaded." + EndOfLine
+		    Call creditFile.Download
+		  End If
+
 		  txtOutput.Text = txtOutput.Text + EndOfLine
 		End Sub
 	#tag EndMethod
@@ -877,7 +892,9 @@ End
 	#tag Method, Flags = &h21
 		Private Sub GenerateExample32_Web()
 		  // Call shared module function - Digital Signatures (PAdES + XAdES)
-		  Dim result As Dictionary = VNSPDFExamplesModule.GenerateExample32()
+		  // TODO: Add WebDialog for country code selection
+		  Dim countryCode As String = "FR"
+		  Dim result As Dictionary = VNSPDFExamplesModule.GenerateExample32(countryCode)
 
 		  // Display message
 		  If result.HasKey("message") Then

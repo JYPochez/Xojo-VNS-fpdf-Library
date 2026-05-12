@@ -1,7 +1,7 @@
 #tag Class
 Protected Class VNSPDFXrefEntry
 	#tag Property, Flags = &h0
-		offset As Int64
+		compressedInStream As Integer = -1
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -13,7 +13,7 @@ Protected Class VNSPDFXrefEntry
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
-		compressedInStream As Integer = -1
+		offset As Int64
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -84,6 +84,22 @@ Protected Class VNSPDFXrefEntry
 			Group="Behavior"
 			InitialValue=""
 			Type="Boolean"
+			EditorType=""
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="compressedInStream"
+			Visible=false
+			Group="Behavior"
+			InitialValue="-1"
+			Type="Integer"
+			EditorType=""
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="streamIndex"
+			Visible=false
+			Group="Behavior"
+			InitialValue="0"
+			Type="Integer"
 			EditorType=""
 		#tag EndViewProperty
 	#tag EndViewBehavior

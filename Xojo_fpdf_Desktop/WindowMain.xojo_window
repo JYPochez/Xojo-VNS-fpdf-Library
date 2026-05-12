@@ -151,7 +151,7 @@ Begin DesktopWindow WindowMain
       HasBorder       =   True
       HasHorizontalScrollbar=   False
       HasVerticalScrollbar=   True
-      Height          =   174
+      Height          =   156
       HideSelection   =   True
       Index           =   -2147483648
       Italic          =   False
@@ -174,11 +174,36 @@ Begin DesktopWindow WindowMain
       TextAlignment   =   0
       TextColor       =   &c000000
       Tooltip         =   ""
-      Top             =   506
+      Top             =   518
       Transparent     =   False
       Underline       =   False
       UnicodeMode     =   1
       ValidationMask  =   ""
+      Visible         =   True
+      Width           =   860
+   End
+   Begin DesktopCanvas SplitterHandle
+      AllowAutoDeactivate=   True
+      AllowFocus      =   False
+      AllowFocusRing  =   False
+      AllowTabs       =   False
+      Backdrop        =   0
+      Enabled         =   True
+      Height          =   8
+      Index           =   -2147483648
+      Left            =   20
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   True
+      LockTop         =   True
+      Scope           =   0
+      TabIndex        =   4
+      TabPanelIndex   =   0
+      TabStop         =   False
+      Tooltip         =   "Drag to resize"
+      Top             =   499
+      Transparent     =   False
       Visible         =   True
       Width           =   860
    End
@@ -294,10 +319,10 @@ End
 		  
 		  lstExamples.AddRow("Example 32", "Digital Signatures: PAdES-B-B PDF signing + XAdES-BES XML signing (Premium)")
 		  lstExamples.CellTagAt(lstExamples.LastAddedRowIndex, 0) = VNSPDFExamplesModule.kExample32
-
+		  
 		  lstExamples.AddRow("Example 33", "Barcodes: QR Code, Code 128, EAN-13, Code 39, ITF, Codabar, PDF417, DataMatrix")
 		  lstExamples.CellTagAt(lstExamples.LastAddedRowIndex, 0) = VNSPDFExamplesModule.kExample33
-
+		  
 		  lstExamples.AddRow("Test Zlib", "Premium pure Xojo compression tests")
 		  lstExamples.CellTagAt(lstExamples.LastAddedRowIndex, 0) = VNSPDFExamplesModule.kTestZlib
 		  
@@ -1030,8 +1055,14 @@ End
 
 	#tag Method, Flags = &h21
 		Private Sub GenerateExample30()
+		  // Show country selection dialog
+		  Dim dlg As New VNSCountryDialog
+		  dlg.ShowModal(Self)
+		  If dlg.Cancelled Then Return
+		  Dim countryCode As String = dlg.SelectedCountryCode
+		  
 		  // Call shared module function - E-Invoice (Factur-X/ZUGFeRD)
-		  Dim result As Dictionary = VNSPDFExamplesModule.GenerateExample30()
+		  Dim result As Dictionary = VNSPDFExamplesModule.GenerateExample30(countryCode)
 		  
 		  // Display status
 		  If result.HasKey("message") Then
@@ -1055,6 +1086,38 @@ End
 		    End Try
 		  End If
 		  
+		  // Save second PDF (credit note) if generated
+		  If result.HasKey("pdf2") Then
+		    Dim pdfData2 As String = result.Value("pdf2").StringValue
+		    Dim filename2 As String = result.Value("filename2").StringValue
+		    Dim desktop2 As FolderItem = SpecialFolder.Desktop
+		    Dim pdfFile2 As FolderItem = desktop2.Child(filename2)
+		    Try
+		      Dim stream2 As BinaryStream = BinaryStream.Create(pdfFile2, True)
+		      stream2.Write(pdfData2)
+		      stream2.Close()
+		      txtOutput.Text = txtOutput.Text + "Credit note saved to Desktop: " + pdfFile2.NativePath + EndOfLine
+		    Catch e As IOException
+		      txtOutput.Text = txtOutput.Text + "Error saving credit note: " + e.Message + EndOfLine
+		    End Try
+		  End If
+
+		  // Save third PDF (precision test) if generated
+		  If result.HasKey("pdf3") Then
+		    Dim pdfData3 As String = result.Value("pdf3").StringValue
+		    Dim filename3 As String = result.Value("filename3").StringValue
+		    Dim desktop3 As FolderItem = SpecialFolder.Desktop
+		    Dim pdfFile3 As FolderItem = desktop3.Child(filename3)
+		    Try
+		      Dim stream3 As BinaryStream = BinaryStream.Create(pdfFile3, True)
+		      stream3.Write(pdfData3)
+		      stream3.Close()
+		      txtOutput.Text = txtOutput.Text + "Precision test saved to Desktop: " + pdfFile3.NativePath + EndOfLine
+		    Catch e As IOException
+		      txtOutput.Text = txtOutput.Text + "Error saving precision test: " + e.Message + EndOfLine
+		    End Try
+		  End If
+
 		  txtOutput.Text = txtOutput.Text + EndOfLine
 		End Sub
 	#tag EndMethod
@@ -1096,22 +1159,28 @@ End
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
-		Private Sub GenerateExample33_Desktop()
-		  // Call shared module function - Barcodes
-		  Dim result As Dictionary = VNSPDFExamplesModule.GenerateExample33_Barcodes()
-
+		Private Sub GenerateExample32_Desktop()
+		  // Show country selection dialog
+		  Dim dlg As New VNSCountryDialog
+		  dlg.ShowModal(Self)
+		  If dlg.Cancelled Then Return
+		  Dim countryCode As String = dlg.SelectedCountryCode
+		  
+		  // Call shared module function - Digital Signatures (PAdES + XAdES)
+		  Dim result As Dictionary = VNSPDFExamplesModule.GenerateExample32(countryCode)
+		  
 		  // Display status
 		  If result.HasKey("message") Then
 		    txtOutput.Text = txtOutput.Text + result.Value("message").StringValue
 		  End If
-
+		  
 		  // Save PDF to desktop if generated successfully
 		  If result.HasKey("pdf") Then
 		    Dim pdfData As String = result.Value("pdf").StringValue
 		    Dim filename As String = result.Value("filename").StringValue
 		    Dim desktop As FolderItem = SpecialFolder.Desktop
 		    Dim pdfFile As FolderItem = desktop.Child(filename)
-
+		    
 		    Try
 		      Dim stream As BinaryStream = BinaryStream.Create(pdfFile, True)
 		      stream.Write(pdfData)
@@ -1121,15 +1190,15 @@ End
 		      txtOutput.Text = txtOutput.Text + "Error saving PDF to desktop: " + e.Message + EndOfLine
 		    End Try
 		  End If
-
+		  
 		  txtOutput.Text = txtOutput.Text + EndOfLine
 		End Sub
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
-		Private Sub GenerateExample32_Desktop()
-		  // Call shared module function - Digital Signatures (PAdES + XAdES)
-		  Dim result As Dictionary = VNSPDFExamplesModule.GenerateExample32()
+		Private Sub GenerateExample33_Desktop()
+		  // Call shared module function - Barcodes
+		  Dim result As Dictionary = VNSPDFExamplesModule.GenerateExample33_Barcodes()
 		  
 		  // Display status
 		  If result.HasKey("message") Then
@@ -1567,21 +1636,29 @@ End
 		    ShowPreviewForResult(result)
 		    
 		  Case VNSPDFExamplesModule.kExample30
-		    result = VNSPDFExamplesModule.GenerateExample30()
-		    ShowPreviewForResult(result)
+		    Dim dlg30 As New VNSCountryDialog
+		    dlg30.ShowModal(Self)
+		    If Not dlg30.Cancelled Then
+		      result = VNSPDFExamplesModule.GenerateExample30(dlg30.SelectedCountryCode)
+		      ShowPreviewForResult(result)
+		    End If
 		    
 		  Case VNSPDFExamplesModule.kExample31
 		    GenerateExample31()
 		    Return  // No PDF to preview - this example just checks an existing PDF
 		    
 		  Case VNSPDFExamplesModule.kExample32
-		    result = VNSPDFExamplesModule.GenerateExample32()
-		    ShowPreviewForResult(result)
-
+		    Dim dlg32 As New VNSCountryDialog
+		    dlg32.ShowModal(Self)
+		    If Not dlg32.Cancelled Then
+		      result = VNSPDFExamplesModule.GenerateExample32(dlg32.SelectedCountryCode)
+		      ShowPreviewForResult(result)
+		    End If
+		    
 		  Case VNSPDFExamplesModule.kExample33
 		    result = VNSPDFExamplesModule.GenerateExample33_Barcodes()
 		    ShowPreviewForResult(result)
-
+		    
 		  Case VNSPDFExamplesModule.kTestZlib
 		    RunTestZlib()
 		    txtOutput.Text = txtOutput.Text + "(Tests have no PDF to preview)" + EndOfLine + EndOfLine
@@ -1668,6 +1745,15 @@ End
 		  txtOutput.Text = txtOutput.Text + EndOfLine
 		End Sub
 	#tag EndMethod
+
+
+	#tag Property, Flags = &h21
+		Private mSplitterDragging As Boolean
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mSplitterDragStartY As Integer
+	#tag EndProperty
 
 
 #tag EndWindowCode
@@ -1771,6 +1857,86 @@ End
 	#tag Event
 		Sub Pressed()
 		  PreviewExample()
+		End Sub
+	#tag EndEvent
+#tag EndEvents
+#tag Events SplitterHandle
+	#tag Event
+		Sub Paint(g As Graphics, areas() As Rect)
+		  #Pragma Unused areas
+		  // Draw a subtle splitter bar with grip lines
+		  g.DrawingColor = Color.RGB(200, 200, 200)
+		  g.FillRectangle(0, 0, g.Width, g.Height)
+		  // Draw 3 grip dots in center
+		  g.DrawingColor = Color.RGB(140, 140, 140)
+		  Dim cx As Integer = g.Width / 2
+		  Dim cy As Integer = (g.Height - 4) / 2
+		  g.FillOval(cx - 20, cy, 4, 4)
+		  g.FillOval(cx - 4, cy, 4, 4)
+		  g.FillOval(cx + 12, cy, 4, 4)
+		End Sub
+	#tag EndEvent
+	#tag Event
+		Function MouseDown(x As Integer, y As Integer) As Boolean
+		  #Pragma Unused x
+		  #Pragma Unused y
+		  mSplitterDragging = True
+		  mSplitterDragStartY = System.MouseY
+		  Me.MouseCursor = System.Cursors.SplitterNorthSouth
+		  Return True
+		End Function
+	#tag EndEvent
+	#tag Event
+		Sub MouseDrag(x As Integer, y As Integer)
+		  #Pragma Unused x
+		  #Pragma Unused y
+		  If Not mSplitterDragging Then Return
+		  
+		  Dim currentY As Integer = System.MouseY
+		  Dim delta As Integer = currentY - mSplitterDragStartY
+		  If delta = 0 Then Return
+		  
+		  // Calculate new positions
+		  Dim newListHeight As Integer = lstExamples.Height + delta
+		  Dim newOutputTop As Integer = txtOutput.Top + delta
+		  
+		  // Enforce minimums
+		  If newListHeight < 100 Then Return
+		  If Self.Height - newOutputTop - 20 < 60 Then Return
+		  
+		  // Resize list
+		  lstExamples.Height = newListHeight
+		  
+		  // Move buttons
+		  btnRunExample.Top = btnRunExample.Top + delta
+		  btnPreviewExample.Top = btnPreviewExample.Top + delta
+		  
+		  // Move splitter
+		  SplitterHandle.Top = SplitterHandle.Top + delta
+		  
+		  // Resize output
+		  txtOutput.Top = newOutputTop
+		  txtOutput.Height = txtOutput.Height - delta
+		  
+		  mSplitterDragStartY = currentY
+		End Sub
+	#tag EndEvent
+	#tag Event
+		Sub MouseUp(x As Integer, y As Integer)
+		  #Pragma Unused x
+		  #Pragma Unused y
+		  mSplitterDragging = False
+		  Me.MouseCursor = System.Cursors.SplitterNorthSouth
+		End Sub
+	#tag EndEvent
+	#tag Event
+		Sub MouseEnter()
+		  Me.MouseCursor = System.Cursors.SplitterNorthSouth
+		End Sub
+	#tag EndEvent
+	#tag Event
+		Sub MouseExit()
+		  Me.MouseCursor = Nil
 		End Sub
 	#tag EndEvent
 #tag EndEvents

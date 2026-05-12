@@ -292,9 +292,15 @@ Inherits ConsoleApplication
 		  Case kExample29
 		    result = VNSPDFExamplesModule.GenerateExample29()
 		  Case kExample30
-		    result = VNSPDFExamplesModule.GenerateExample30()
+		    Print(VNSPDFExamplesModule.kEInvoiceCountryPrompt)
+		    Dim cc30 As String = Input.Trim.Uppercase
+		    If cc30 = "" Then cc30 = "FR"
+		    result = VNSPDFExamplesModule.GenerateExample30(cc30)
 		  Case kExample32
-		    result = VNSPDFExamplesModule.GenerateExample32()
+		    Print(VNSPDFExamplesModule.kEInvoiceCountryPrompt)
+		    Dim cc32 As String = Input.Trim.Uppercase
+		    If cc32 = "" Then cc32 = "FR"
+		    result = VNSPDFExamplesModule.GenerateExample32(cc32)
 		  Case kExample33
 		    result = VNSPDFExamplesModule.GenerateExample33_Barcodes()
 		  Case kExample31
@@ -342,6 +348,22 @@ Inherits ConsoleApplication
 
 		    Catch e As IOException
 		      Print("Error saving file: " + e.Message)
+		    End Try
+		  End If
+
+		  // Save credit note if generated
+		  If result.HasKey("pdf2") Then
+		    Dim pdfData2 As String = result.Value("pdf2").StringValue
+		    Dim filename2 As String = result.Value("filename2").StringValue
+		    Try
+		      Dim desktop2 As FolderItem = SpecialFolder.Desktop
+		      Dim f2 As FolderItem = desktop2.Child(filename2)
+		      Dim stream2 As BinaryStream = BinaryStream.Create(f2, True)
+		      stream2.Write(pdfData2)
+		      stream2.Close()
+		      Print("Credit note saved: " + f2.NativePath)
+		    Catch e As IOException
+		      Print("Error saving credit note: " + e.Message)
 		    End Try
 		  End If
 

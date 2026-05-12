@@ -5,6 +5,7 @@ OrigIDEVersion=20250201
 DesktopWindow=WindowMain;WindowMain.xojo_window;&h000000003AEA47FF;&h0000000000000000;false
 DesktopWindow=SecurityDialog;SecurityDialog.xojo_window;&h00000000545C4FFF;&h0000000000000000;false
 DesktopWindow=VNSPDFPreviewWindow;VNSPDFPreviewWindow.xojo_window;&hFFFFFFFFCAFE2001;&h0000000000000000;false
+DesktopWindow=VNSCountryDialog;VNSCountryDialog.xojo_window;&hFFFFFFFF00000060;&h0000000000000000;false
 Class=VNSPDFPageRenderer;VNSPDFPageRenderer.xojo_code;&hFFFFFFFFCAFE2002;&h0000000000000000;false
 MenuBar=MainMenuBar;MainMenuBar.xojo_menu;&h000000005F911FFF;&h0000000000000000;false
 Module=Xojo_fpdf_free_Premium_Constants;Xojo_fpdf_free_Premium_Constants.xojo_code;&hFFFFFFFFDD010001;&h0000000000000000;false

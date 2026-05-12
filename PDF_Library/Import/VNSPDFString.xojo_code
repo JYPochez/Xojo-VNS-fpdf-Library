@@ -1,21 +1,21 @@
 #tag Class
 Protected Class VNSPDFString
 Inherits VNSPDFType
-	#tag Method, Flags = &h1
+	#tag Method, Flags = &h0
 		Shared Function Parse(reader As VNSPDFStreamReader) As VNSPDFString
 		  // Parse literal string from stream: (Hello World) or (nested \(parens\))
 		  // Handles escape sequences: \n, \r, \t, \(, \), \\, \ddd (octal)
-
+		  
 		  Dim result As String = ""
 		  Dim parentheses As Integer = 1  // Track nested parentheses
 		  Dim escaped As Boolean = False
-
+		  
 		  While True
 		    Dim b As Integer = reader.ReadByte()
 		    If b = -1 Then Exit While
-
+		    
 		    Dim ch As String = Chr(b)
-
+		    
 		    If escaped Then
 		      // Handle escape sequences
 		      Select Case ch
@@ -47,7 +47,7 @@ Inherits VNSPDFType
 		            Exit For i
 		          End If
 		        Next
-
+		        
 		        // Convert octal to decimal
 		        Dim decimal As Integer = 0
 		        For i As Integer = 0 To octal.Length - 1
@@ -75,7 +75,7 @@ Inherits VNSPDFType
 		      End Select
 		    End If
 		  Wend
-
+		  
 		  Dim obj As New VNSPDFString
 		  obj.value = result
 		  Return obj

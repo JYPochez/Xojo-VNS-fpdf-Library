@@ -19,19 +19,19 @@ Protected Class VNSPDFTokenizer
 		Function GetNextToken() As String
 		  // Get next token from stream
 		  // Returns empty string if EOF
-
+		  
 		  // Check stack first (pushed-back tokens)
 		  If mStack.Count > 0 Then
 		    Dim token As String = mStack(mStack.LastIndex)
 		    mStack.RemoveAt(mStack.LastIndex)
 		    Return token
 		  End If
-
+		  
 		  Dim b As Integer = mStreamReader.ReadByte()
 		  If b = -1 Then Return ""
-
+		  
 		  Dim ch As String = Chr(b)
-
+		  
 		  // Skip whitespace
 		  If IsWhitespace(ch) Then
 		    If Not LeapWhiteSpaces() Then Return ""
@@ -39,7 +39,7 @@ Protected Class VNSPDFTokenizer
 		    If b = -1 Then Return ""
 		    ch = Chr(b)
 		  End If
-
+		  
 		  // Check for two-character delimiters: << and >>
 		  If ch = "<" Or ch = ">" Then
 		    Dim offset As Integer = mStreamReader.GetOffset()
@@ -54,35 +54,35 @@ Protected Class VNSPDFTokenizer
 		    End If
 		    Return ch  // Single < or >
 		  End If
-
+		  
 		  // Single-character delimiters
 		  Select Case ch
 		  Case "/", "[", "]", "(", ")", "{", "}"
 		    Return ch
-
+		    
 		  Case "%"
 		    // Comment - skip to end of line
 		    Dim line As String = mStreamReader.ReadLine()
 		    Return GetNextToken()  // Recurse for next real token
 		  End Select
-
+		  
 		  // Multi-character token (keyword, number, name)
 		  Dim token As String = ch
 		  While True
 		    Dim offset As Integer = mStreamReader.GetOffset()
 		    b = mStreamReader.ReadByte()
 		    If b = -1 Then Exit
-
+		    
 		    ch = Chr(b)
 		    If IsDelimiter(ch) Or IsWhitespace(ch) Then
 		      // Push back delimiter/whitespace
 		      mStreamReader.SetOffset(offset)
 		      Exit
 		    End If
-
+		    
 		    token = token + ch
 		  Wend
-
+		  
 		  Return token
 		End Function
 	#tag EndMethod
@@ -101,44 +101,6 @@ Protected Class VNSPDFTokenizer
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0
-		Function LeapWhiteSpaces() As Boolean
-		  // Skip over whitespace characters
-		  // Returns False if EOF, True if content found
-
-		  Dim b As Integer
-		  While True
-		    b = mStreamReader.ReadByte()
-		    If b = -1 Then Return False
-
-		    If Not IsWhitespace(Chr(b)) Then
-		      // Found non-whitespace, push back
-		      Dim offset As Integer = mStreamReader.GetOffset()
-		      If offset > 0 Then
-		        mStreamReader.SetOffset(offset - 1)
-		      End If
-		      Return True
-		    End If
-		  Wend
-
-		  Return False
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Sub PushBack(token As String)
-		  // Push token back onto stack for re-reading (alias for PushStack)
-		  mStack.Add(token)
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Sub PushStack(token As String)
-		  // Push token back onto stack for re-reading
-		  mStack.Add(token)
-		End Sub
-	#tag EndMethod
-
 	#tag Method, Flags = &h21
 		Private Function IsDelimiter(ch As String) As Boolean
 		  // Check if character/string is a PDF delimiter
@@ -155,7 +117,7 @@ Protected Class VNSPDFTokenizer
 		Private Function IsWhitespace(ch As String) As Boolean
 		  // Check if character is PDF whitespace
 		  // PDF whitespace: NULL (0), HT (9), LF (10), FF (12), CR (13), SPACE (32)
-
+		  
 		  Dim code As Integer = Asc(ch)
 		  Select Case code
 		  Case 0, 9, 10, 12, 13, 32
@@ -164,6 +126,44 @@ Protected Class VNSPDFTokenizer
 		    Return False
 		  End Select
 		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function LeapWhiteSpaces() As Boolean
+		  // Skip over whitespace characters
+		  // Returns False if EOF, True if content found
+		  
+		  Dim b As Integer
+		  While True
+		    b = mStreamReader.ReadByte()
+		    If b = -1 Then Return False
+		    
+		    If Not IsWhitespace(Chr(b)) Then
+		      // Found non-whitespace, push back
+		      Dim offset As Integer = mStreamReader.GetOffset()
+		      If offset > 0 Then
+		        mStreamReader.SetOffset(offset - 1)
+		      End If
+		      Return True
+		    End If
+		  Wend
+		  
+		  Return False
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub PushBack(token As String)
+		  // Push token back onto stack for re-reading (alias for PushStack)
+		  mStack.Add(token)
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub PushStack(token As String)
+		  // Push token back onto stack for re-reading
+		  mStack.Add(token)
+		End Sub
 	#tag EndMethod
 
 

@@ -95,14 +95,21 @@ pdf.Cell(0, 10, "This is a PDF/A compliant document.")
 // Add ICC profile for PDF/A compliance
 Dim iccPath As String = FindSRGBProfile()
 If iccPath <> "" Then
+  // Read the ICC profile file into a MemoryBlock
+  Dim iccFile As FolderItem = New FolderItem(iccPath, FolderItem.PathModes.Native)
+  Dim bs As BinaryStream = BinaryStream.Open(iccFile)
+  Dim iccProfile As MemoryBlock = bs.Read(bs.Length)
+  bs.Close
+
   pdf.AddOutputIntent( _
     VNSPDFModule.gkOutputIntentPDFA1, _  // Subtype
     "sRGB IEC61966-2.1", _                // Output condition
     "sRGB", _                             // Info
-    iccPath)                              // ICC profile path
+    iccProfile)                           // ICC profile data (MemoryBlock)
 End If
 
-pdf.Save("archival_document.pdf")
+Dim outFile As FolderItem = SpecialFolder.Desktop.Child("archival_document.pdf")
+pdf.Save(outFile)
 ```
 
 ### Finding sRGB Profile on macOS
@@ -153,29 +160,14 @@ End If
 Sub AddOutputIntent(subtype As String, _
                     outputCondition As String, _
                     info As String, _
-                    iccProfilePath As String)
+                    iccProfile As MemoryBlock)
 ```
 
 **Parameters**:
-- `subtype` - Output intent type (use gkOutputIntent* constants)
-- `outputCondition` - Name of the output condition (e.g., "sRGB IEC61966-2.1")
+- `subtype` - Output intent type (use `gkOutputIntent*` constants)
+- `outputCondition` - Name of the output condition (e.g., `"sRGB IEC61966-2.1"`)
 - `info` - Additional information string
-- `iccProfilePath` - Full path to ICC profile file
-
-### AddOutputIntentFromBytes
-
-```xojo
-Sub AddOutputIntentFromBytes(subtype As String, _
-                             outputCondition As String, _
-                             info As String, _
-                             iccData As MemoryBlock)
-```
-
-**Parameters**:
-- `subtype` - Output intent type
-- `outputCondition` - Output condition name
-- `info` - Additional information
-- `iccData` - ICC profile data as MemoryBlock
+- `iccProfile` - ICC profile binary data as `MemoryBlock` (load from disk with `BinaryStream.Open(file).Read(bs.Length)`)
 
 ---
 
@@ -298,11 +290,16 @@ Sub GenerateExample13_PDFA(pdf As VNSPDFDocument)
   // Find and embed ICC profile
   Dim iccPath As String = FindSRGBProfile()
   If iccPath <> "" Then
+    Dim iccFile As FolderItem = New FolderItem(iccPath, FolderItem.PathModes.Native)
+    Dim bs As BinaryStream = BinaryStream.Open(iccFile)
+    Dim iccProfile As MemoryBlock = bs.Read(bs.Length)
+    bs.Close
+
     pdf.AddOutputIntent( _
       VNSPDFModule.gkOutputIntentPDFA1, _
       "sRGB IEC61966-2.1", _
       "sRGB", _
-      iccPath)
+      iccProfile)
 
     pdf.Ln(10)
     pdf.SetTextColor(0, 128, 0)

@@ -1,47 +1,47 @@
 #tag Class
 Protected Class VNSPDFDictionary
 Inherits VNSPDFType
-	#tag Method, Flags = &h1
+	#tag Method, Flags = &h0
 		Shared Function Parse(tokenizer As VNSPDFTokenizer) As VNSPDFDictionary
 		  // Parse dictionary from stream: << /Key /Value /Key2 123 >>
 		  // Dictionary is key-value pairs where keys are names
-
+		  
 		  Dim dict As New Dictionary
 		  Dim loopCount As Integer = 0
 		  Dim maxLoops As Integer = 100  // Safety limit - reduced from 1000
 		  Dim reader As VNSPDFStreamReader = tokenizer.GetReader()
-
+		  
 		  While loopCount < maxLoops
 		    loopCount = loopCount + 1
-
+		    
 		    Dim token As String = tokenizer.GetNextToken()
-
-
+		    
+		    
 		    If token = "" Or token = ">>" Then
-
+		      
 		      Exit While
 		    End If
-
+		    
 		    // Key must be a name (starts with /)
 		    If token <> "/" Then
-
+		      
 		      // Not a name, might be end of dict
 		      tokenizer.PushBack(token)
 		      Exit While  // Changed from Continue to Exit While to prevent infinite loop
 		    End If
-
+		    
 		    // Read the key name (next token after "/")
 		    Dim key As String = tokenizer.GetNextToken()
-
+		    
 		    If key = "" Then Exit While
-
+		    
 		    // Read the value
 		    Dim valueToken As String = tokenizer.GetNextToken()
-
+		    
 		    If valueToken = "" Then Exit While
-
+		    
 		    Dim valueObj As VNSPDFType
-
+		    
 		    // Parse value based on token type
 		    If valueToken = "[" Then
 		      // Array
@@ -90,20 +90,20 @@ Inherits VNSPDFType
 		        valueObj = VNSPDFNumeric.Create(Val(valueToken))
 		      End If
 		    End If
-
+		    
 		    // Only add to dictionary if we successfully parsed a value
 		    If valueObj <> Nil Then
 		      dict.Value(key) = valueObj
-
+		      
 		    Else
-
+		      
 		      // Failed to parse value, exit to prevent infinite loop
 		      Exit While
 		    End If
 		  Wend
-
-
-
+		  
+		  
+		  
 		  Dim obj As New VNSPDFDictionary
 		  obj.value = dict
 		  Return obj

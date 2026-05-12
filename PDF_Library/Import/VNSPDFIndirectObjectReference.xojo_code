@@ -2,11 +2,11 @@
 Protected Class VNSPDFIndirectObjectReference
 Inherits VNSPDFType
 	#tag Property, Flags = &h0
-		objectNumber As Integer
+		generation As Integer
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
-		generation As Integer
+		objectNumber As Integer
 	#tag EndProperty
 
 

@@ -294,7 +294,8 @@ End
 		  Case VNSPDFExamplesModule.kExample29
 		    result = VNSPDFExamplesModule.GenerateExample29()
 		  Case VNSPDFExamplesModule.kExample30
-		    result = VNSPDFExamplesModule.GenerateExample30()
+		    // TODO: Add iOS dialog for country code selection
+		    result = VNSPDFExamplesModule.GenerateExample30("FR")
 		  Case VNSPDFExamplesModule.kExample31
 		    // Try to read example30 PDF from documents folder
 		    Dim docsFolder As FolderItem = SpecialFolder.Documents
@@ -307,7 +308,8 @@ End
 		    End If
 		    result = VNSPDFExamplesModule.GenerateExample31_CheckEInvoice(pdfData)
 		  Case VNSPDFExamplesModule.kExample32
-		    result = VNSPDFExamplesModule.GenerateExample32()
+		    // TODO: Add iOS dialog for country code selection
+		    result = VNSPDFExamplesModule.GenerateExample32("FR")
 		  Case VNSPDFExamplesModule.kExample33
 		    result = VNSPDFExamplesModule.GenerateExample33_Barcodes()
 		  Case VNSPDFExamplesModule.kTestZlib
@@ -396,7 +398,23 @@ End
 		      msg = msg + "Error saving file: " + e.Message + EndOfLine
 		    End Try
 		  End If
-		  
+
+		  // Save credit note if generated
+		  If result <> Nil And result.HasKey("pdf2") Then
+		    Dim pdfData2 As String = result.Value("pdf2")
+		    Dim filename2 As String = result.Value("filename2")
+		    Try
+		      Dim docsFolder2 As FolderItem = SpecialFolder.Documents
+		      Dim f2 As FolderItem = docsFolder2.Child(filename2)
+		      Dim stream2 As BinaryStream = BinaryStream.Create(f2, True)
+		      stream2.Write(pdfData2)
+		      stream2.Close()
+		      msg = msg + "Credit note saved: " + f2.NativePath + EndOfLine
+		    Catch e As IOException
+		      msg = msg + "Error saving credit note: " + e.Message + EndOfLine
+		    End Try
+		  End If
+
 		  msg = msg + EndOfLine
 
 		  // MobileTextArea.Text accepts String directly

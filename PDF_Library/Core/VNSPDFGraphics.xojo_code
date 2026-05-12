@@ -331,9 +331,9 @@ Protected Class VNSPDFGraphics
 		  // Clips drawing to the specified VNSPDFGraphicsPath.
 		  // Supports curves, arcs, rectangles - not just polygons.
 		  // Call ClipEnd() to restore unclipped drawing.
-
+		  
 		  If path.IsEmpty Then Return
-
+		  
 		  Dim cmds As String = path.ToPDFCommands(mPDF)
 		  mPDF.ClipPath(cmds, False)
 		End Sub
@@ -734,7 +734,7 @@ Protected Class VNSPDFGraphics
 		  // Draw outlined path using PDF path commands
 		  // autoClose: If True, appends close-subpath operator before stroking
 		  If path.IsEmpty Then Return
-
+		  
 		  Dim cmds As String = path.ToPDFCommands(mPDF)
 		  If autoClose Then cmds = cmds + "h" + EndOfLine.UNIX
 		  mPDF.RenderPath(cmds, "D")
@@ -1336,7 +1336,7 @@ Protected Class VNSPDFGraphics
 		  // Fill path using PDF path commands
 		  // autoClose: If True, appends close-subpath operator before filling
 		  If path.IsEmpty Then Return
-
+		  
 		  Dim cmds As String = path.ToPDFCommands(mPDF)
 		  If autoClose Then cmds = cmds + "h" + EndOfLine.UNIX
 		  mPDF.RenderPath(cmds, "F")
@@ -1533,10 +1533,10 @@ Protected Class VNSPDFGraphics
 		    // Restore state
 		    mFontName = state.Value("fontName")
 		    mFontSize = state.Value("fontSize")
-		    mBold = state.Value("bold")
-		    mItalic = state.Value("italic")
-		    mUnderline = state.Value("underline")
-		    mOutline = state.Value("outline")
+		    If state.Value("bold") = True Then mBold = True Else mBold = False
+		    If state.Value("italic") = True Then mItalic = True Else mItalic = False
+		    If state.Value("underline") = True Then mUnderline = True Else mUnderline = False
+		    If state.Value("outline") = True Then mOutline = True Else mOutline = False
 		    mDrawingColorR = state.Value("colorR")
 		    mDrawingColorG = state.Value("colorG")
 		    mDrawingColorB = state.Value("colorB")

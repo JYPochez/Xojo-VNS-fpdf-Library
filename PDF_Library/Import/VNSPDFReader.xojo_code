@@ -1,99 +1,150 @@
 #tag Class
 Protected Class VNSPDFReader
-	#tag Method, Flags = &h0
-		Function OpenFile(filePath As String) As Boolean
-		  // Open a PDF file for reading
-		  mError = ""
-
-		  Dim file As FolderItem = New FolderItem(filePath, FolderItem.PathModes.Native)
-		  If Not file.Exists Then
-		    mError = "File does not exist: " + filePath
-		    Return False
+	#tag Method, Flags = &h21
+		Private Sub BuildPageList(pagesDict As VNSPDFDictionary, inheritedMediaBox As VNSPDFArray = Nil)
+		  // Build a complete list of all pages in visual (tree) order
+		  // This is called once during OpenFile() to build mPageList()
+		  
+		  Dim dict As Dictionary = pagesDict.value
+		  
+		  // Check if this Pages/Page node has its own MediaBox
+		  Dim currentMediaBox As VNSPDFArray = inheritedMediaBox
+		  If dict.HasKey("MediaBox") Then
+		    Dim mediaBoxObj As VNSPDFType = dict.Value("MediaBox")
+		    If mediaBoxObj IsA VNSPDFArray Then
+		      currentMediaBox = VNSPDFArray(mediaBoxObj)
+		    End If
 		  End If
-
-		  mReader = New VNSPDFStreamReader(file)
-
-		  // Parse cross-reference table
-		  Dim xrefReader As New VNSPDFXrefReader
-		  mXref = xrefReader.Parse(mReader)
-		  If mXref = Nil Then
-		    mError = "Failed to parse cross-reference table"
-		    Return False
+		  
+		  // Check if this is a Page leaf node
+		  If dict.HasKey("Type") Then
+		    Dim typeObj As VNSPDFType = dict.Value("Type")
+		    If typeObj IsA VNSPDFName Then
+		      Dim typeName As String = VNSPDFName(typeObj).value
+		      If typeName = "Page" Then
+		        // This is a page leaf - add it to our list
+		        // If this page doesn't have MediaBox, inherit from parent
+		        If Not dict.HasKey("MediaBox") And currentMediaBox <> Nil Then
+		          dict.Value("MediaBox") = currentMediaBox
+		        End If
+		        Dim pageIndex As Integer = mPageList.Count + 1
+		        
+		        // DEBUG: Try to extract first text content to identify this page
+		        Dim pageID As String = "Page " + Str(pageIndex)
+		        Try
+		          If dict.HasKey("Contents") Then
+		            Dim contentsObj As VNSPDFType = dict.Value("Contents")
+		            If contentsObj IsA VNSPDFIndirectObjectReference Then
+		              Dim ref As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(contentsObj)
+		              pageID = pageID + " (Contents Obj #" + Str(ref.objectNumber) + ")"
+		            End If
+		          End If
+		        Catch
+		        End Try
+		        
+		        mPageList.Add(pagesDict)
+		        Return
+		      End If
+		    End If
 		  End If
-
-		  // Get catalog from trailer
-		  If mXref.trailer = Nil Then
-		    mError = "Cross-reference table has no trailer"
-		    Return False
+		  
+		  // This is a Pages intermediate node - traverse Kids
+		  If Not dict.HasKey("Kids") Then
+		    Return
 		  End If
-
-		  Dim trailerDict As Dictionary = mXref.trailer.value
-
-		  // Debug: List all keys in trailer dictionary
-		  Dim keys() As Variant = trailerDict.Keys
-		  Dim keyList As String = ""
-		  For i As Integer = 0 To keys.LastIndex
-		    If keyList <> "" Then keyList = keyList + " | "
-		    Dim keyStr As String = keys(i).StringValue
-		    keyList = keyList + "[" + Str(i) + "]='" + keyStr + "'(len=" + Str(keyStr.Length) + ")"
-		  Next
-
-		  // Try both "Root" and "/Root" key formats
-		  Dim rootKey As String = ""
-		  If trailerDict.HasKey("Root") Then
-		    rootKey = "Root"
-		  ElseIf trailerDict.HasKey("/Root") Then
-		    rootKey = "/Root"
-		  Else
-		    mError = "Trailer dictionary missing /Root entry. Found keys: " + keyList + " (count=" + Str(keys.Count) + ")"
-		    Return False
+		  
+		  Dim kidsObj As VNSPDFType = dict.Value("Kids")
+		  If Not (kidsObj IsA VNSPDFArray) Then
+		    Return
 		  End If
-
-		  // Root is an indirect reference to the catalog
-		  Dim rootRef As VNSPDFType = trailerDict.Value(rootKey)
-		  If Not (rootRef IsA VNSPDFIndirectObjectReference) Then
-		    mError = "Trailer /Root is not an indirect reference"
-		    Return False
-		  End If
-
-		  // Parse catalog object
-		  Dim catalogRef As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(rootRef)
-		  Dim catalogOffset As Int64 = mXref.GetObjectOffset(catalogRef.objectNumber)
-		  If catalogOffset = -1 Then
-		    mError = "Cannot find catalog object offset in xref table"
-		    Return False
-		  End If
-
+		  
+		  Dim kidsArray As VNSPDFArray = VNSPDFArray(kidsObj)
+		  Dim kids() As VNSPDFType = kidsArray.value
+		  
 		  Dim parser As New VNSPDFParser
-		  parser.SetPDFReader(Self)  // Enable indirect reference resolution for stream Length
-		  Dim catalogObj As VNSPDFType = parser.ParseIndirectObject(mReader, catalogOffset)
-		  If Not (catalogObj IsA VNSPDFDictionary) Then
-		    mError = "Catalog object is not a dictionary"
-		    Return False
+		  
+		  For i As Integer = 0 To kids.LastIndex
+		    Dim kidRef As VNSPDFType = kids(i)
+		    If kidRef IsA VNSPDFIndirectObjectReference Then
+		      Dim ref As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(kidRef)
+		      // Use GetObject to support objects in object streams (PDF 1.5+)
+		      Dim kidObj As VNSPDFType = GetObject(ref.objectNumber)
+		      If kidObj IsA VNSPDFDictionary Then
+		        BuildPageList(VNSPDFDictionary(kidObj), currentMediaBox)
+		      End If
+		    End If
+		  Next
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function FindPageInTree(pagesDict As VNSPDFDictionary, pageNum As Integer, inheritedMediaBox As VNSPDFArray = Nil) As VNSPDFDictionary
+		  // Navigate the page tree to find a specific page
+		  // PDF page tree is hierarchical - Pages nodes contain Kids arrays
+		  // inheritedMediaBox: MediaBox from parent Pages node (inherited if page doesn't have one)
+		  
+		  Dim dict As Dictionary = pagesDict.value
+		  
+		  // Check if this Pages/Page node has its own MediaBox
+		  Dim currentMediaBox As VNSPDFArray = inheritedMediaBox
+		  If dict.HasKey("MediaBox") Then
+		    Dim mediaBoxObj As VNSPDFType = dict.Value("MediaBox")
+		    If mediaBoxObj IsA VNSPDFArray Then
+		      currentMediaBox = VNSPDFArray(mediaBoxObj)
+		    End If
 		  End If
-
-		  mCatalog = VNSPDFDictionary(catalogObj)
-
-		  // Build complete page list in visual order
-		  // Get Pages dictionary from catalog
-		  Dim catalogDict As Dictionary = mCatalog.value
-		  If catalogDict.HasKey("Pages") Then
-		    Dim pagesRef As VNSPDFType = catalogDict.Value("Pages")
-		    If pagesRef IsA VNSPDFIndirectObjectReference Then
-		      // Parse Pages object
-		      Dim pagesRefObj As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(pagesRef)
-		      Dim pagesOffset As Int64 = mXref.GetObjectOffset(pagesRefObj.objectNumber)
-		      If pagesOffset <> -1 Then
-		        Dim pagesObj As VNSPDFType = parser.ParseIndirectObject(mReader, pagesOffset)
-		        If pagesObj IsA VNSPDFDictionary Then
-		          // Build the page list
-		          BuildPageList(VNSPDFDictionary(pagesObj))
+		  
+		  // Check if this is a Page leaf node
+		  If dict.HasKey("Type") Then
+		    Dim typeObj As VNSPDFType = dict.Value("Type")
+		    If typeObj IsA VNSPDFName Then
+		      Dim typeName As String = VNSPDFName(typeObj).value
+		      If typeName = "Page" Then
+		        // This is a page leaf - check if it's the one we want
+		        // For now, we'll assume linear traversal
+		        mCurrentPageIndex = mCurrentPageIndex + 1
+		        If mCurrentPageIndex = pageNum Then
+		          // If this page doesn't have MediaBox, inherit from parent
+		          If Not dict.HasKey("MediaBox") And currentMediaBox <> Nil Then
+		            dict.Value("MediaBox") = currentMediaBox
+		          End If
+		          Return pagesDict
+		        Else
+		          Return Nil
 		        End If
 		      End If
 		    End If
 		  End If
+		  
+		  // This is a Pages intermediate node - traverse Kids
+		  If Not dict.HasKey("Kids") Then
+		    Return Nil
+		  End If
+		  
+		  Dim kidsObj As VNSPDFType = dict.Value("Kids")
+		  If Not (kidsObj IsA VNSPDFArray) Then
+		    Return Nil
+		  End If
+		  
+		  Dim kidsArray As VNSPDFArray = VNSPDFArray(kidsObj)
+		  Dim kids() As VNSPDFType = kidsArray.value
+		  
+		  For i As Integer = 0 To kids.LastIndex
+		    Dim kidRef As VNSPDFType = kids(i)
+		    If kidRef IsA VNSPDFIndirectObjectReference Then
+		      Dim ref As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(kidRef)
+		      // Use GetObject to support objects in object streams (PDF 1.5+)
+		      Dim kidObj As VNSPDFType = GetObject(ref.objectNumber)
+		      If kidObj IsA VNSPDFDictionary Then
+		        Dim result As VNSPDFDictionary = FindPageInTree(VNSPDFDictionary(kidObj), pageNum, currentMediaBox)
+		        If result <> Nil Then
+		          Return result
+		        End If
+		      End If
+		    End If
+		  Next
 
-		  Return True
+		  Return Nil
 		End Function
 	#tag EndMethod
 
@@ -111,120 +162,33 @@ Protected Class VNSPDFReader
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 4F70656E206120504446206672616D20696E2D6D656D6F727920737472696E6720646174612E
-		Function OpenData(pdfData As String) As Boolean
-		  // Open a PDF from in-memory string data
-		  mError = ""
-
-		  If pdfData = "" Then
-		    mError = "PDF data is empty"
-		    Return False
-		  End If
-
-		  // Convert string to MemoryBlock and create stream reader
-		  Dim mb As New MemoryBlock(pdfData.Bytes)
-		  mb.StringValue(0, pdfData.Bytes) = pdfData
-		  mReader = New VNSPDFStreamReader(mb)
-
-		  // Parse cross-reference table
-		  Dim xrefReader As New VNSPDFXrefReader
-		  mXref = xrefReader.Parse(mReader)
-		  If mXref = Nil Then
-		    mError = "Failed to parse cross-reference table"
-		    Return False
-		  End If
-
-		  // Get catalog from trailer
-		  If mXref.trailer = Nil Then
-		    mError = "Cross-reference table has no trailer"
-		    Return False
-		  End If
-
-		  Dim trailerDict As Dictionary = mXref.trailer.value
-
-		  // Try both "Root" and "/Root" key formats
-		  Dim rootKey As String = ""
-		  If trailerDict.HasKey("Root") Then
-		    rootKey = "Root"
-		  ElseIf trailerDict.HasKey("/Root") Then
-		    rootKey = "/Root"
-		  Else
-		    mError = "Trailer dictionary missing /Root entry"
-		    Return False
-		  End If
-
-		  // Root is an indirect reference to the catalog
-		  Dim rootRef As VNSPDFType = trailerDict.Value(rootKey)
-		  If Not (rootRef IsA VNSPDFIndirectObjectReference) Then
-		    mError = "Trailer /Root is not an indirect reference"
-		    Return False
-		  End If
-
-		  // Parse catalog object
-		  Dim catalogRef As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(rootRef)
-		  Dim catalogOffset As Int64 = mXref.GetObjectOffset(catalogRef.objectNumber)
-		  If catalogOffset = -1 Then
-		    mError = "Cannot find catalog object offset in xref table"
-		    Return False
-		  End If
-
-		  Dim parser As New VNSPDFParser
-		  parser.SetPDFReader(Self)
-		  Dim catalogObj As VNSPDFType = parser.ParseIndirectObject(mReader, catalogOffset)
-		  If Not (catalogObj IsA VNSPDFDictionary) Then
-		    mError = "Catalog object is not a dictionary"
-		    Return False
-		  End If
-
-		  mCatalog = VNSPDFDictionary(catalogObj)
-
-		  // Build complete page list in visual order
-		  Dim catalogDict As Dictionary = mCatalog.value
-		  If catalogDict.HasKey("Pages") Then
-		    Dim pagesRef As VNSPDFType = catalogDict.Value("Pages")
-		    If pagesRef IsA VNSPDFIndirectObjectReference Then
-		      Dim pagesRefObj As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(pagesRef)
-		      Dim pagesOffset As Int64 = mXref.GetObjectOffset(pagesRefObj.objectNumber)
-		      If pagesOffset <> -1 Then
-		        Dim pagesObj As VNSPDFType = parser.ParseIndirectObject(mReader, pagesOffset)
-		        If pagesObj IsA VNSPDFDictionary Then
-		          BuildPageList(VNSPDFDictionary(pagesObj))
-		        End If
-		      End If
-		    End If
-		  End If
-
-		  Return True
-		End Function
-	#tag EndMethod
-
 	#tag Method, Flags = &h0
 		Function GetObject(objectNumber As Integer) As VNSPDFType
 		  // Get a PDF object by its object number
 		  // objectNumber: The object number to retrieve
 		  // Returns: The parsed PDF object, or Nil if not found
 		  // Supports both direct objects and compressed objects in object streams (PDF 1.5+)
-
+		  
 		  // Check if this is a compressed object (type 2 xref entry)
 		  Dim entry As VNSPDFXrefEntry = mXref.GetEntry(objectNumber)
 		  If entry = Nil Or Not entry.inUse Then Return Nil
-
+		  
 		  If entry.compressedInStream >= 0 Then
 		    // Object is compressed inside an object stream
 		    Return GetObjectFromStream(entry.compressedInStream, entry.streamIndex)
 		  End If
-
+		  
 		  // Regular object - get offset from cross-reference table
 		  Dim offset As Int64 = mXref.GetObjectOffset(objectNumber)
 		  If offset = -1 Then
 		    Return Nil
 		  End If
-
+		  
 		  // Parse the object at this offset
 		  Dim parser As New VNSPDFParser
 		  parser.SetPDFReader(Self)  // Enable indirect reference resolution for stream Length
 		  Dim obj As VNSPDFType = parser.ParseIndirectObject(mReader, offset)
-
+		  
 		  Return obj
 		End Function
 	#tag EndMethod
@@ -236,47 +200,53 @@ Protected Class VNSPDFReader
 		  // Format: N 0 obj << /Type /ObjStm /N count /First firstOffset /Length ... >> stream
 		  //   Header pairs: objNum1 offset1 objNum2 offset2 ...
 		  //   Then object data starting at /First offset
-
+		  
 		  // Get the object stream itself (must be a regular type 1 object)
 		  Dim streamOffset As Int64 = mXref.GetObjectOffset(streamObjNumber)
 		  If streamOffset = -1 Then Return Nil
-
+		  
 		  // Parse the object stream
 		  Dim parser As New VNSPDFParser
 		  parser.SetPDFReader(Self)
 		  Dim streamObj As VNSPDFType = parser.ParseIndirectObject(mReader, streamOffset)
 		  If Not (streamObj IsA VNSPDFStream) Then Return Nil
-
+		  
 		  Dim objStream As VNSPDFStream = VNSPDFStream(streamObj)
 		  Dim streamDict As Dictionary = objStream.dictionary.value
-
+		  
 		  // Get /N (number of objects) and /First (byte offset of first object data)
 		  Dim nKey As String = "N"
 		  If Not streamDict.HasKey(nKey) Then nKey = "/N"
 		  Dim objectCount As Integer = 0
-		  If streamDict.HasKey(nKey) And streamDict.Value(nKey) IsA VNSPDFNumeric Then
-		    objectCount = CType(VNSPDFNumeric(streamDict.Value(nKey)).value, Integer)
+		  If streamDict.HasKey(nKey) Then
+		    Dim nObj As Object = streamDict.Value(nKey)
+		    If nObj IsA VNSPDFNumeric Then
+		      objectCount = CType(VNSPDFNumeric(nObj).value, Integer)
+		    End If
 		  End If
 		  If objectCount <= 0 Or index >= objectCount Then Return Nil
 
 		  Dim firstKey As String = "First"
 		  If Not streamDict.HasKey(firstKey) Then firstKey = "/First"
 		  Dim firstOffset As Integer = 0
-		  If streamDict.HasKey(firstKey) And streamDict.Value(firstKey) IsA VNSPDFNumeric Then
-		    firstOffset = CType(VNSPDFNumeric(streamDict.Value(firstKey)).value, Integer)
+		  If streamDict.HasKey(firstKey) Then
+		    Dim fObj As Object = streamDict.Value(firstKey)
+		    If fObj IsA VNSPDFNumeric Then
+		      firstOffset = CType(VNSPDFNumeric(fObj).value, Integer)
+		    End If
 		  End If
-
+		  
 		  // Get decoded stream data
 		  Dim decodedData As String = objStream.GetDecodedData()
 		  If decodedData = "" Then Return Nil
-
+		  
 		  // Parse header: pairs of (objNumber, byteOffset) relative to /First
 		  // Read header as tokens from the decoded data
 		  Dim headerMB As New MemoryBlock(firstOffset)
 		  headerMB.StringValue(0, firstOffset) = decodedData.Left(firstOffset)
 		  Dim headerReader As New VNSPDFStreamReader(headerMB)
 		  Dim headerTokenizer As New VNSPDFTokenizer(headerReader)
-
+		  
 		  Dim objOffsets() As Integer
 		  For i As Integer = 0 To objectCount - 1
 		    Dim objNumToken As String = headerTokenizer.GetNextToken()
@@ -284,9 +254,9 @@ Protected Class VNSPDFReader
 		    If objNumToken = "" Or objOffToken = "" Then Exit For i
 		    objOffsets.Add(Val(objOffToken))
 		  Next
-
+		  
 		  If index > objOffsets.LastIndex Then Return Nil
-
+		  
 		  // Calculate the start and end of the object data within the stream
 		  Dim objStart As Integer = firstOffset + objOffsets(index)
 		  Dim objEnd As Integer
@@ -295,20 +265,20 @@ Protected Class VNSPDFReader
 		  Else
 		    objEnd = decodedData.Length
 		  End If
-
+		  
 		  If objStart >= decodedData.Length Then Return Nil
-
+		  
 		  // Extract the object data and parse it
 		  Dim objData As String = decodedData.Middle(objStart, objEnd - objStart)
 		  Dim objMB As New MemoryBlock(objData.Bytes)
 		  objMB.StringValue(0, objData.Bytes) = objData
 		  Dim objReader As New VNSPDFStreamReader(objMB)
 		  Dim objTokenizer As New VNSPDFTokenizer(objReader)
-
+		  
 		  // Parse the first token to determine type
 		  Dim firstToken As String = objTokenizer.GetNextToken()
 		  If firstToken = "" Then Return Nil
-
+		  
 		  If firstToken = "<<" Then
 		    // Dictionary
 		    Return VNSPDFDictionary.Parse(objTokenizer)
@@ -348,40 +318,31 @@ Protected Class VNSPDFReader
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Function GetPageCount() As Integer
-		  // Get the number of pages in the PDF
-		  // Returns the count from the pre-built page list
-
-		  Return mPageList.Count
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
 		Function GetPage(pageNum As Integer) As VNSPDFImportedPage
 		  // Get a specific page (1-based) from the pre-built page list
 		  // This ensures pages are returned in visual order
-
+		  
 		  // Validate page number
 		  If pageNum < 1 Or pageNum > mPageList.Count Then
 		    System.DebugLog("GetPage: ERROR - Page number out of range!")
 		    Return Nil
 		  End If
-
+		  
 		  // Get page dictionary from list (convert 1-based to 0-based index)
 		  Dim pageDict As VNSPDFDictionary = mPageList(pageNum - 1)
 		  If pageDict = Nil Then
 		    System.DebugLog("GetPage: ERROR - Page dictionary is Nil!")
 		    Return Nil
 		  End If
-
+		  
 		  // Create VNSPDFImportedPage object
 		  Dim page As New VNSPDFImportedPage
 		  page.pageDict = pageDict
 		  page.pageNumber = pageNum
-
+		  
 		  // Extract page properties
 		  Dim dict As Dictionary = pageDict.value
-
+		  
 		  // Get MediaBox for page dimensions
 		  If dict.HasKey("MediaBox") Then
 		    Dim mediaBox As VNSPDFType = dict.Value("MediaBox")
@@ -399,107 +360,199 @@ Protected Class VNSPDFReader
 		      End If
 		    End If
 		  End If
-
+		  
 		  // Get Resources
 		  If dict.HasKey("Resources") Then
 		    Dim resourcesObj As VNSPDFType = dict.Value("Resources")
 		    If resourcesObj IsA VNSPDFDictionary Then
 		      page.resources = VNSPDFDictionary(resourcesObj)
 		    ElseIf resourcesObj IsA VNSPDFIndirectObjectReference Then
-		      // Resolve indirect reference
+		      // Resolve indirect reference (supports object streams for PDF 1.5+)
 		      Dim ref As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(resourcesObj)
-		      Dim offset As Int64 = mXref.GetObjectOffset(ref.objectNumber)
-		      If offset <> -1 Then
-		        Dim parser As New VNSPDFParser
-		        Dim resObj As VNSPDFType = parser.ParseIndirectObject(mReader, offset)
-		        If resObj IsA VNSPDFDictionary Then
-		          page.resources = VNSPDFDictionary(resObj)
-		        End If
+		      Dim resObj As VNSPDFType = GetObject(ref.objectNumber)
+		      If resObj IsA VNSPDFDictionary Then
+		        page.resources = VNSPDFDictionary(resObj)
 		      End If
 		    End If
 		  End If
-
+		  
 		  // Get Contents
 		  If dict.HasKey("Contents") Then
 		    page.contents = dict.Value("Contents")
 		  End If
-
+		  
 		  Return page
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h21
-		Private Function FindPageInTree(pagesDict As VNSPDFDictionary, pageNum As Integer, inheritedMediaBox As VNSPDFArray = Nil) As VNSPDFDictionary
-		  // Navigate the page tree to find a specific page
-		  // PDF page tree is hierarchical - Pages nodes contain Kids arrays
-		  // inheritedMediaBox: MediaBox from parent Pages node (inherited if page doesn't have one)
+	#tag Method, Flags = &h0
+		Function GetPageCount() As Integer
+		  // Get the number of pages in the PDF
+		  // Returns the count from the pre-built page list
+		  
+		  Return mPageList.Count
+		End Function
+	#tag EndMethod
 
-		  Dim dict As Dictionary = pagesDict.value
-
-		  // Check if this Pages/Page node has its own MediaBox
-		  Dim currentMediaBox As VNSPDFArray = inheritedMediaBox
-		  If dict.HasKey("MediaBox") Then
-		    Dim mediaBoxObj As VNSPDFType = dict.Value("MediaBox")
-		    If mediaBoxObj IsA VNSPDFArray Then
-		      currentMediaBox = VNSPDFArray(mediaBoxObj)
-		    End If
+	#tag Method, Flags = &h0, Description = 4F70656E206120504446206672616D20696E2D6D656D6F727920737472696E6720646174612E
+		Function OpenData(pdfData As String) As Boolean
+		  // Open a PDF from in-memory string data
+		  mError = ""
+		  
+		  If pdfData = "" Then
+		    mError = "PDF data is empty"
+		    Return False
+		  End If
+		  
+		  // Convert string to MemoryBlock and create stream reader
+		  Dim mb As New MemoryBlock(pdfData.Bytes)
+		  mb.StringValue(0, pdfData.Bytes) = pdfData
+		  mReader = New VNSPDFStreamReader(mb)
+		  
+		  // Parse cross-reference table
+		  Dim xrefReader As New VNSPDFXrefReader
+		  mXref = xrefReader.Parse(mReader)
+		  If mXref = Nil Then
+		    mError = "Failed to parse cross-reference table"
+		    Return False
+		  End If
+		  
+		  // Get catalog from trailer
+		  If mXref.trailer = Nil Then
+		    mError = "Cross-reference table has no trailer"
+		    Return False
+		  End If
+		  
+		  Dim trailerDict As Dictionary = mXref.trailer.value
+		  
+		  // Try both "Root" and "/Root" key formats
+		  Dim rootKey As String = ""
+		  If trailerDict.HasKey("Root") Then
+		    rootKey = "Root"
+		  ElseIf trailerDict.HasKey("/Root") Then
+		    rootKey = "/Root"
+		  Else
+		    mError = "Trailer dictionary missing /Root entry"
+		    Return False
+		  End If
+		  
+		  // Root is an indirect reference to the catalog
+		  Dim rootRef As VNSPDFType = trailerDict.Value(rootKey)
+		  If Not (rootRef IsA VNSPDFIndirectObjectReference) Then
+		    mError = "Trailer /Root is not an indirect reference"
+		    Return False
+		  End If
+		  
+		  // Parse catalog object (may be in object stream for PDF 1.5+)
+		  Dim catalogRef As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(rootRef)
+		  Dim catalogObj As VNSPDFType = GetObject(catalogRef.objectNumber)
+		  If Not (catalogObj IsA VNSPDFDictionary) Then
+		    mError = "Catalog object is not a dictionary (obj " + Str(catalogRef.objectNumber) + ")"
+		    Return False
 		  End If
 
-		  // Check if this is a Page leaf node
-		  If dict.HasKey("Type") Then
-		    Dim typeObj As VNSPDFType = dict.Value("Type")
-		    If typeObj IsA VNSPDFName Then
-		      Dim typeName As String = VNSPDFName(typeObj).value
-		      If typeName = "Page" Then
-		        // This is a page leaf - check if it's the one we want
-		        // For now, we'll assume linear traversal
-		        mCurrentPageIndex = mCurrentPageIndex + 1
-		        If mCurrentPageIndex = pageNum Then
-		          // If this page doesn't have MediaBox, inherit from parent
-		          If Not dict.HasKey("MediaBox") And currentMediaBox <> Nil Then
-		            dict.Value("MediaBox") = currentMediaBox
-		          End If
-		          Return pagesDict
-		        Else
-		          Return Nil
-		        End If
+		  mCatalog = VNSPDFDictionary(catalogObj)
+
+		  // Build complete page list in visual order
+		  Dim catalogDict As Dictionary = mCatalog.value
+		  If catalogDict.HasKey("Pages") Then
+		    Dim pagesRef As VNSPDFType = catalogDict.Value("Pages")
+		    If pagesRef IsA VNSPDFIndirectObjectReference Then
+		      Dim pagesRefObj As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(pagesRef)
+		      Dim pagesObj As VNSPDFType = GetObject(pagesRefObj.objectNumber)
+		      If pagesObj IsA VNSPDFDictionary Then
+		        BuildPageList(VNSPDFDictionary(pagesObj))
 		      End If
 		    End If
 		  End If
 
-		  // This is a Pages intermediate node - traverse Kids
-		  If Not dict.HasKey("Kids") Then
-		    Return Nil
+		  Return True
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function OpenFile(filePath As String) As Boolean
+		  // Open a PDF file for reading
+		  mError = ""
+		  
+		  Dim file As FolderItem = New FolderItem(filePath, FolderItem.PathModes.Native)
+		  If Not file.Exists Then
+		    mError = "File does not exist: " + filePath
+		    Return False
 		  End If
-
-		  Dim kidsObj As VNSPDFType = dict.Value("Kids")
-		  If Not (kidsObj IsA VNSPDFArray) Then
-		    Return Nil
+		  
+		  mReader = New VNSPDFStreamReader(file)
+		  
+		  // Parse cross-reference table
+		  Dim xrefReader As New VNSPDFXrefReader
+		  mXref = xrefReader.Parse(mReader)
+		  If mXref = Nil Then
+		    mError = "Failed to parse cross-reference table"
+		    Return False
 		  End If
-
-		  Dim kidsArray As VNSPDFArray = VNSPDFArray(kidsObj)
-		  Dim kids() As VNSPDFType = kidsArray.value
-
-		  Dim parser As New VNSPDFParser
-
-		  For i As Integer = 0 To kids.LastIndex
-		    Dim kidRef As VNSPDFType = kids(i)
-		    If kidRef IsA VNSPDFIndirectObjectReference Then
-		      Dim ref As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(kidRef)
-		      Dim offset As Int64 = mXref.GetObjectOffset(ref.objectNumber)
-		      If offset <> -1 Then
-		        Dim kidObj As VNSPDFType = parser.ParseIndirectObject(mReader, offset)
-		        If kidObj IsA VNSPDFDictionary Then
-		          Dim result As VNSPDFDictionary = FindPageInTree(VNSPDFDictionary(kidObj), pageNum, currentMediaBox)
-		          If result <> Nil Then
-		            Return result
-		          End If
-		        End If
-		      End If
-		    End If
+		  
+		  // Get catalog from trailer
+		  If mXref.trailer = Nil Then
+		    mError = "Cross-reference table has no trailer"
+		    Return False
+		  End If
+		  
+		  Dim trailerDict As Dictionary = mXref.trailer.value
+		  
+		  // Debug: List all keys in trailer dictionary
+		  Dim keys() As Variant = trailerDict.Keys
+		  Dim keyList As String = ""
+		  For i As Integer = 0 To keys.LastIndex
+		    If keyList <> "" Then keyList = keyList + " | "
+		    Dim keyStr As String = keys(i).StringValue
+		    keyList = keyList + "[" + Str(i) + "]='" + keyStr + "'(len=" + Str(keyStr.Length) + ")"
 		  Next
+		  
+		  // Try both "Root" and "/Root" key formats
+		  Dim rootKey As String = ""
+		  If trailerDict.HasKey("Root") Then
+		    rootKey = "Root"
+		  ElseIf trailerDict.HasKey("/Root") Then
+		    rootKey = "/Root"
+		  Else
+		    mError = "Trailer dictionary missing /Root entry. Found keys: " + keyList + " (count=" + Str(keys.Count) + ")"
+		    Return False
+		  End If
+		  
+		  // Root is an indirect reference to the catalog
+		  Dim rootRef As VNSPDFType = trailerDict.Value(rootKey)
+		  If Not (rootRef IsA VNSPDFIndirectObjectReference) Then
+		    mError = "Trailer /Root is not an indirect reference"
+		    Return False
+		  End If
+		  
+		  // Parse catalog object (may be in object stream for PDF 1.5+)
+		  Dim catalogRef As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(rootRef)
+		  Dim catalogObj As VNSPDFType = GetObject(catalogRef.objectNumber)
+		  If Not (catalogObj IsA VNSPDFDictionary) Then
+		    mError = "Catalog object is not a dictionary (obj " + Str(catalogRef.objectNumber) + ")"
+		    Return False
+		  End If
 
-		  Return Nil
+		  mCatalog = VNSPDFDictionary(catalogObj)
+
+		  // Build complete page list in visual order
+		  // Get Pages dictionary from catalog
+		  Dim catalogDict As Dictionary = mCatalog.value
+		  If catalogDict.HasKey("Pages") Then
+		    Dim pagesRef As VNSPDFType = catalogDict.Value("Pages")
+		    If pagesRef IsA VNSPDFIndirectObjectReference Then
+		      // Parse Pages object (may be in object stream for PDF 1.5+)
+		      Dim pagesRefObj As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(pagesRef)
+		      Dim pagesObj As VNSPDFType = GetObject(pagesRefObj.objectNumber)
+		      If pagesObj IsA VNSPDFDictionary Then
+		        // Build the page list
+		        BuildPageList(VNSPDFDictionary(pagesObj))
+		      End If
+		    End If
+		  End If
+
+		  Return True
 		End Function
 	#tag EndMethod
 
@@ -510,93 +563,6 @@ Protected Class VNSPDFReader
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21
-		Private Sub BuildPageList(pagesDict As VNSPDFDictionary, inheritedMediaBox As VNSPDFArray = Nil)
-		  // Build a complete list of all pages in visual (tree) order
-		  // This is called once during OpenFile() to build mPageList()
-
-		  Dim dict As Dictionary = pagesDict.value
-
-		  // Check if this Pages/Page node has its own MediaBox
-		  Dim currentMediaBox As VNSPDFArray = inheritedMediaBox
-		  If dict.HasKey("MediaBox") Then
-		    Dim mediaBoxObj As VNSPDFType = dict.Value("MediaBox")
-		    If mediaBoxObj IsA VNSPDFArray Then
-		      currentMediaBox = VNSPDFArray(mediaBoxObj)
-		    End If
-		  End If
-
-		  // Check if this is a Page leaf node
-		  If dict.HasKey("Type") Then
-		    Dim typeObj As VNSPDFType = dict.Value("Type")
-		    If typeObj IsA VNSPDFName Then
-		      Dim typeName As String = VNSPDFName(typeObj).value
-		      If typeName = "Page" Then
-		        // This is a page leaf - add it to our list
-		        // If this page doesn't have MediaBox, inherit from parent
-		        If Not dict.HasKey("MediaBox") And currentMediaBox <> Nil Then
-		          dict.Value("MediaBox") = currentMediaBox
-		        End If
-		        Dim pageIndex As Integer = mPageList.Count + 1
-
-		        // DEBUG: Try to extract first text content to identify this page
-		        Dim pageID As String = "Page " + Str(pageIndex)
-		        Try
-		          If dict.HasKey("Contents") Then
-		            Dim contentsObj As VNSPDFType = dict.Value("Contents")
-		            If contentsObj IsA VNSPDFIndirectObjectReference Then
-		              Dim ref As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(contentsObj)
-		              pageID = pageID + " (Contents Obj #" + Str(ref.objectNumber) + ")"
-		            End If
-		          End If
-		        Catch
-		        End Try
-
-		        mPageList.Add(pagesDict)
-		        Return
-		      End If
-		    End If
-		  End If
-
-		  // This is a Pages intermediate node - traverse Kids
-		  If Not dict.HasKey("Kids") Then
-		    Return
-		  End If
-
-		  Dim kidsObj As VNSPDFType = dict.Value("Kids")
-		  If Not (kidsObj IsA VNSPDFArray) Then
-		    Return
-		  End If
-
-		  Dim kidsArray As VNSPDFArray = VNSPDFArray(kidsObj)
-		  Dim kids() As VNSPDFType = kidsArray.value
-
-		  Dim parser As New VNSPDFParser
-
-		  For i As Integer = 0 To kids.LastIndex
-		    Dim kidRef As VNSPDFType = kids(i)
-		    If kidRef IsA VNSPDFIndirectObjectReference Then
-		      Dim ref As VNSPDFIndirectObjectReference = VNSPDFIndirectObjectReference(kidRef)
-		      Dim offset As Int64 = mXref.GetObjectOffset(ref.objectNumber)
-		      If offset <> -1 Then
-		        Dim kidObj As VNSPDFType = parser.ParseIndirectObject(mReader, offset)
-		        If kidObj IsA VNSPDFDictionary Then
-		          BuildPageList(VNSPDFDictionary(kidObj), currentMediaBox)
-		        End If
-		      End If
-		    End If
-		  Next
-		End Sub
-	#tag EndMethod
-
-
-	#tag Property, Flags = &h21
-		Private mReader As VNSPDFStreamReader
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mXref As VNSPDFCrossReference
-	#tag EndProperty
 
 	#tag Property, Flags = &h21
 		Private mCatalog As VNSPDFDictionary
@@ -612,6 +578,14 @@ Protected Class VNSPDFReader
 
 	#tag Property, Flags = &h21
 		Private mPageList() As VNSPDFDictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mReader As VNSPDFStreamReader
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mXref As VNSPDFCrossReference
 	#tag EndProperty
 
 

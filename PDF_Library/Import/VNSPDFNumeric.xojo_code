@@ -1,11 +1,11 @@
 #tag Class
 Protected Class VNSPDFNumeric
 Inherits VNSPDFType
-	#tag Method, Flags = &h1
-		Shared Function Create(val As Double) As VNSPDFNumeric
+	#tag Method, Flags = &h0
+		Shared Function Create(aValue As Double) As VNSPDFNumeric
 		  // Create numeric object (integer or real)
 		  Dim obj As New VNSPDFNumeric
-		  obj.value = val
+		  obj.value = aValue
 		  Return obj
 		End Function
 	#tag EndMethod

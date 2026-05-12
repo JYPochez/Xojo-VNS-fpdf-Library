@@ -1,11 +1,11 @@
 #tag Class
 Protected Class VNSPDFIndirectObject
 Inherits VNSPDFType
-	#tag Method, Flags = &h1
+	#tag Method, Flags = &h0
 		Shared Function Parse(tokenizer As VNSPDFTokenizer, objNum As Integer, gen As Integer) As VNSPDFIndirectObject
 		  // Parse indirect object: 5 0 obj ... endobj
 		  // Object number and generation are already read
-
+		  
 		  // Skip "obj" keyword (should be next token)
 		  Dim objToken As String = tokenizer.GetNextToken()
 		  If objToken <> "obj" Then
@@ -16,19 +16,19 @@ Inherits VNSPDFType
 		    obj.value = New VNSPDFNull
 		    Return obj
 		  End If
-
+		  
 		  // Read the object value
 		  Dim token As String = tokenizer.GetNextToken()
 		  Dim objectValue As VNSPDFType
-
+		  
 		  If token = "<<" Then
 		    // Dictionary or stream
 		    Dim dict As VNSPDFDictionary = VNSPDFDictionary.Parse(tokenizer)
-
+		    
 		    // Check if it's followed by "stream"
 		    Dim reader As VNSPDFStreamReader = tokenizer.GetReader()
 		    Dim offset As Integer = reader.GetOffset()
-
+		    
 		    // Skip whitespace
 		    While True
 		      Dim b As Integer = reader.ReadByte()
@@ -40,7 +40,7 @@ Inherits VNSPDFType
 		      End If
 		      offset = reader.GetOffset()
 		    Wend
-
+		    
 		    Dim peekToken As String = tokenizer.GetNextToken()
 		    If peekToken = "stream" Then
 		      // It's a stream
@@ -78,13 +78,13 @@ Inherits VNSPDFType
 		    // Numeric
 		    objectValue = VNSPDFNumeric.Create(Val(token))
 		  End If
-
+		  
 		  // Skip to "endobj" keyword
 		  While True
 		    Dim endToken As String = tokenizer.GetNextToken()
 		    If endToken = "" Or endToken = "endobj" Then Exit While
 		  Wend
-
+		  
 		  Dim obj As New VNSPDFIndirectObject
 		  obj.objectNumber = objNum
 		  obj.generation = gen
@@ -95,11 +95,11 @@ Inherits VNSPDFType
 
 
 	#tag Property, Flags = &h0
-		objectNumber As Integer
+		generation As Integer
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
-		generation As Integer
+		objectNumber As Integer
 	#tag EndProperty
 
 

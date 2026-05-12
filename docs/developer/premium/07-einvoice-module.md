@@ -16,6 +16,7 @@ In the Xojo IDE, create a `Premium` folder inside the `PDF_Library` folder of yo
 - `VNSPDFEInvoice.xojo_code` — Invoice data model
 - `VNSPDFEInvoiceParty.xojo_code` — Seller/buyer party data model
 - `VNSPDFEInvoiceLineItem.xojo_code` — Line item data model
+- `VNSPDFEInvoiceAllowanceCharge.xojo_code` — Allowance/charge data model (BG-20/BG-21/BG-27/BG-28)
 - `VNSPDFEInvoiceTaxBreakdown.xojo_code` — Tax breakdown data model
 - `VNSPDFEInvoiceXMLGenerator.xojo_code` — CII XML generator (write direction)
 - `VNSPDFEInvoiceXMLParser.xojo_code` — CII XML parser (read direction)
@@ -90,7 +91,7 @@ The EU Value in Digital Age (ViDA) directive mandates structured electronic invo
 ### Creating a Factur-X Invoice
 
 ```xojo
-// 1. Create invoice data
+// 1. Create invoice data (all precision defaults to 2 decimal places)
 Dim invoice As New VNSPDFEInvoice
 invoice.InvoiceNumber = "INV-2026-001"
 invoice.InvoiceDate = New DateTime(2026, 2, 14)
@@ -129,23 +130,45 @@ item1.ProductName = "Consulting Services"
 item1.Quantity = 10
 item1.UnitCode = "HUR"
 item1.UnitPrice = 150.00
-item1.NetAmount = 1500.00
+// NetAmount is auto-computed (Quantity x UnitPrice - allowances + charges) per EN 16931 BT-131
 item1.TaxRate = 20.0
 item1.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
 invoice.AddLineItem(item1)
 
-// 5. Add tax breakdown
+// 5. Add line-level discount (10% volume discount on item1)
+Dim lineDiscount As New VNSPDFEInvoiceAllowanceCharge
+lineDiscount.IsCharge = False              // False = allowance (discount)
+lineDiscount.Amount = 150.00               // 10% of 1500
+lineDiscount.Percentage = 10.0
+lineDiscount.BasisAmount = 1500.00
+lineDiscount.Reason = "Volume discount"
+lineDiscount.ReasonCode = "95"             // UNTDID 5189 code for discount
+lineDiscount.TaxRate = 20.0
+lineDiscount.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+item1.AddAllowanceCharge(lineDiscount)
+// item1.NetAmount is now 1350.00 (1500 - 150)
+
+// 6. Add document-level charge (shipping)
+Dim shipping As New VNSPDFEInvoiceAllowanceCharge
+shipping.IsCharge = True                   // True = charge (surcharge)
+shipping.Amount = 25.00
+shipping.Reason = "Shipping and handling"
+shipping.ReasonCode = "FC"                 // UNTDID 7161 code for freight
+shipping.TaxRate = 20.0
+shipping.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+invoice.AddAllowanceCharge(shipping)
+
+// 7. Add tax breakdown (adjusted for allowances/charges)
+// Tax basis = LineTotalAmount(1350) - DocAllowances(0) + DocCharges(25) = 1375
 Dim tax As New VNSPDFEInvoiceTaxBreakdown
-tax.TaxableAmount = 1500.00
-tax.TaxAmount = 300.00
+tax.TaxableAmount = 1375.00
+tax.TaxAmount = 275.00
 tax.TaxRate = 20.0
 tax.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
 invoice.AddTaxBreakdown(tax)
-
-// 6. Set totals
-invoice.LineTotalAmount = 1500.00
-invoice.TaxTotalAmount = 300.00
-invoice.GrandTotalAmount = 1800.00
+// Totals are computed automatically:
+// LineTotalAmount = 1350.00, TaxBasisTotalAmount = 1375.00
+// GrandTotalAmount = 1375.00 + 275.00 = 1650.00
 
 // 7. Create PDF and embed e-invoice
 Dim pdf As New VNSPDFDocument
@@ -156,7 +179,8 @@ pdf.Cell(0, 10, "Invoice INV-2026-001")
 VNSPDFEInvoicePremium.CreateFacturXInvoice(pdf, invoice, _
     VNSPDFEInvoicePremium.eFacturXProfile.EN16931)
 
-pdf.Save("invoice_facturx.pdf")
+Dim outFile As FolderItem = SpecialFolder.Desktop.Child("invoice_facturx.pdf")
+pdf.Save(outFile)
 ```
 
 ### Creating a ZUGFeRD Invoice
@@ -496,55 +520,202 @@ Property Seller As VNSPDFEInvoiceParty
 Property Buyer As VNSPDFEInvoiceParty
 
 // Totals
-Property LineTotalAmount As Double
-Property TaxTotalAmount As Double
-Property GrandTotalAmount As Double
+Function LineTotalAmount() As Double         // Sum of line net amounts
+Function AllowanceTotalAmount() As Double    // Sum of doc-level allowances (BT-107)
+Function ChargeTotalAmount() As Double       // Sum of doc-level charges (BT-108)
+Function TaxBasisTotalAmount() As Double     // LineTotalAmount - Allowances + Charges (BT-109)
+Function TaxTotalAmount() As Double
+Function GrandTotalAmount() As Double        // TaxBasisTotalAmount + TaxTotalAmount
 
 // Collections
 Sub AddLineItem(item As VNSPDFEInvoiceLineItem)
 Sub AddTaxBreakdown(tb As VNSPDFEInvoiceTaxBreakdown)
+Sub AddAllowanceCharge(ac As VNSPDFEInvoiceAllowanceCharge)
 Function LineItems() As VNSPDFEInvoiceLineItem()
 Function TaxBreakdowns() As VNSPDFEInvoiceTaxBreakdown()
+Function AllowancesCharges() As VNSPDFEInvoiceAllowanceCharge()
 ```
 
-### VNSPDFEInvoiceParty
+---
+
+## EN 16931 Property Reference
+
+All properties below map to EN 16931:2017 business terms (BT). Cardinality: **M** = Mandatory, **C** = Conditional, **O** = Optional.
+
+### VNSPDFEInvoice — Invoice Header
+
+| Property | BT | M/C/O | Type | Description | Example |
+|----------|-----|-------|------|-------------|---------|
+| `InvoiceNumber` | BT-1 | **M** | String | Unique sequential invoice identifier | `"INV-2026-0042"` |
+| `InvoiceDate` | BT-2 | **M** | DateTime | Invoice issue date | `DateTime.Now` |
+| `InvoiceTypeCode` | BT-3 | **M** | String | UNTDID 1001 code: 380=Invoice, 381=Credit note, 389=Self-billed | `"380"` |
+| `Currency` | BT-5 | **M** | String | ISO 4217 currency code | `"EUR"` |
+| `DueDate` | BT-9 | O | DateTime | Payment due date | `New DateTime(2026, 4, 30)` |
+| `BuyerReference` | BT-10 | **C** | String | Buyer's reference or PO number. Mandatory in France B2G and EN 16931 profile | `"PO-2026-1234"` |
+| `ProjectReference` | BT-11 | O | String | Project reference for project billing | `"PROJ-2026-007"` |
+| `ContractReference` | BT-12 | O | String | Contract reference number | `"CONTRACT-2025-100"` |
+| `PurchaseOrderReference` | BT-13 | O | String | Buyer's purchase order number | `"PO-98765"` |
+| `PaymentTerms` | BT-20 | O | String | Payment terms description text | `"Net 30 days, 2% discount if paid within 10 days"` |
+| `PrecedingInvoiceNumber` | BT-25 | O | String | Original invoice number (for credit notes) | `"INV-2026-0038"` |
+| `PrecedingInvoiceDate` | BT-26 | O | DateTime | Original invoice date | `New DateTime(2026, 1, 15)` |
+| `InvoicePeriodStart` | BT-73 | O | DateTime | Invoicing period start date (for service invoices) | `New DateTime(2026, 1, 1)` |
+| `InvoicePeriodEnd` | BT-74 | O | DateTime | Invoicing period end date | `New DateTime(2026, 3, 31)` |
+| `Seller` | BG-4 | **M** | Party | Seller party (see below) | |
+| `Buyer` | BG-7 | **M** | Party | Buyer party (see below) | |
+| `DeliveryDate` | BT-72 | O | DateTime | Actual delivery date | `DateTime.Now` |
+| `DeliveryLocationID` | BT-71 | O | String | Deliver-to location identifier (GLN, etc.) | `"7300010000001"` |
+| `DeliveryAddress` | BG-15 | O | Party | Deliver-to address (when different from buyer) | |
+
+**Payment (BG-16/BG-17):**
+
+| Property | BT | M/C/O | Type | Description | Example |
+|----------|-----|-------|------|-------------|---------|
+| `PaymentMeansCode` | BT-81 | **M** | String | UNTDID 4461: 30=Credit transfer, 58=SEPA, 48=Bank card | `"30"` |
+| `PaymentReference` | BT-83 | O | String | Remittance information / structured reference | `"INV-2026-0042"` |
+| `IBAN` | BT-84 | **C** | String | Payment account IBAN. Required for credit transfer (code 30/58) | `"FR7630006000011234567890189"` |
+| `BIC` | BT-86 | O | String | BIC/SWIFT code of the bank | `"BNPAFRPPXXX"` |
+
+**Payee (BG-10) — when payment goes to a different entity than seller:**
+
+| Property | BT | M/C/O | Type | Description | Example |
+|----------|-----|-------|------|-------------|---------|
+| `PayeeName` | BT-59 | **M** if payee | String | Payee name (mandatory if BG-10 is used) | `"Collection Agency Ltd"` |
+| `PayeeIdentifier` | BT-60 | O | String | Payee identifier | `"COLL-001"` |
+| `PayeeLegalRegistrationID` | BT-61 | O | String | Payee legal registration ID | `"HRB 98765"` |
+
+**CII XML decimal precision (constructor or properties):**
 
 ```xojo
-Property Name As String
-Property VATNumber As String
-Property LegalRegistrationID As String
-Property AddressLine1 As String
-Property AddressLine2 As String
-Property City As String
-Property PostalCode As String
-Property CountryCode As String           // ISO 3166-1 alpha-2 (e.g. "FR")
-Property ContactName As String
-Property ContactEmail As String
-Property ContactPhone As String
+// Default: all 2 decimal places
+Dim invoice As New VNSPDFEInvoice
+
+// Custom precision: amounts=2, prices=5, quantities=3, percents=2
+Dim invoice As New VNSPDFEInvoice(2, 5, 3, 2)
+
+// Or set via properties after construction
+invoice.PricePrecision = 4
 ```
 
-### VNSPDFEInvoiceLineItem
+| Property | Default | Max (EN 16931) | Description |
+|----------|---------|----------------|-------------|
+| `AmountPrecision` | 2 | 2 | Monetary amounts (BT-131, BT-116, etc.) |
+| `PricePrecision` | 2 | 8 | Unit prices (BT-146, BT-148) |
+| `QuantityPrecision` | 2 | 6 | Quantities (BT-129) |
+| `PercentPrecision` | 2 | 4 | Tax rates, allowance percentages |
+
+Trailing zeros are trimmed when precision > 2, keeping a minimum of 2 decimal places (e.g., `0.00250` with precision 5 outputs `"0.0025"`, `20.00` with precision 4 outputs `"20.00"`).
+
+**Computed totals (read-only):**
+
+| Method | BT | Description |
+|--------|-----|-------------|
+| `LineTotalAmount()` | BT-106 | Sum of all line net amounts |
+| `AllowanceTotalAmount()` | BT-107 | Sum of document-level allowances |
+| `ChargeTotalAmount()` | BT-108 | Sum of document-level charges |
+| `TaxBasisTotalAmount()` | BT-109 | = LineTotalAmount - AllowanceTotalAmount + ChargeTotalAmount |
+| `TaxTotalAmount()` | BT-110 | Sum of all tax breakdown amounts |
+| `GrandTotalAmount()` | BT-112 | = TaxBasisTotalAmount + TaxTotalAmount |
+
+**Collections:**
 
 ```xojo
-Property LineID As String
-Property ProductName As String
-Property ProductDescription As String
-Property Quantity As Double
-Property UnitCode As String              // UN/ECE Rec 20 (e.g. "HUR", "C62", "KGM")
-Property UnitPrice As Double
-Property NetAmount As Double
-Property TaxRate As Double
-Property TaxCategoryCode As VNSPDFEInvoicePremium.eTaxCategoryCode
+Sub AddLineItem(item As VNSPDFEInvoiceLineItem)       // At least one required
+Sub AddTaxBreakdown(tb As VNSPDFEInvoiceTaxBreakdown)  // At least one required
+Sub AddAllowanceCharge(ac As VNSPDFEInvoiceAllowanceCharge)  // Document-level
+Sub AddNote(content As String, subjectCode As String = "")   // BT-22 + BT-21
 ```
 
-### VNSPDFEInvoiceTaxBreakdown
+### VNSPDFEInvoiceParty — Seller/Buyer/Delivery Address
 
-```xojo
-Property TaxableAmount As Double
-Property TaxAmount As Double
-Property TaxRate As Double
-Property TaxCategoryCode As VNSPDFEInvoicePremium.eTaxCategoryCode
-```
+Used for BG-4 (Seller), BG-7 (Buyer), and BG-15 (Delivery address).
+
+| Property | BT (Seller/Buyer) | M/C/O | Type | Description | Example |
+|----------|-------------------|-------|------|-------------|---------|
+| `Name` | BT-27 / BT-44 | **M** | String | Legal name of the party | `"VeryNiceSW SARL"` |
+| `VATNumber` | BT-31 / BT-48 | **C** | String | VAT identifier with country prefix. Required if VAT applies | `"FR12345678901"` |
+| `LegalRegistrationID` | BT-30 / BT-47 | O | String | Legal registration (SIREN, HRB, etc.) | `"123456789"` |
+| `LegalRegistrationScheme` | BT-30-1 | O | String | Scheme ID for legal registration (0002=SIREN, 0106=KvK) | `"0002"` |
+| `AddressLine1` | BT-35 / BT-50 | O | String | Street address line 1 | `"42 Rue de la Paix"` |
+| `AddressLine2` | BT-36 / BT-51 | O | String | Street address line 2 | `"Building B, 3rd floor"` |
+| `City` | BT-37 / BT-52 | O | String | City name | `"Paris"` |
+| `PostalCode` | BT-38 / BT-53 | O | String | Postal/ZIP code | `"75002"` |
+| `CountryCode` | BT-40 / BT-55 | **M** | String | ISO 3166-1 alpha-2 country code | `"FR"` |
+| `ContactName` | BT-41 / BT-56 | O | String | Contact person name | `"Jean-Yves Pochez"` |
+| `ContactEmail` | BT-43 / BT-58 | O | String | Contact email address | `"contact@verynicesw.com"` |
+| `ContactPhone` | BT-42 / BT-57 | O | String | Contact telephone number | `"+33 1 42 00 00 00"` |
+| `ElectronicAddress` | BT-34 / BT-49 | **M** | String | Electronic address for e-invoicing | `"contact@verynicesw.com"` |
+| `ElectronicAddressScheme` | BT-34-1 | **M** | String | Scheme ID: EM=email, 0201=IT Codice | `"EM"` |
+
+### VNSPDFEInvoiceLineItem — Invoice Line (BG-25)
+
+| Property | BT | M/C/O | Type | Description | Example |
+|----------|-----|-------|------|-------------|---------|
+| `LineID` | BT-126 | **M** | String | Unique line identifier within the invoice | `"1"` |
+| `ProductName` | BT-153 | **M** | String | Item name | `"Consulting Services"` |
+| `ProductDescription` | BT-154 | O | String | Item description | `"Senior developer, React migration"` |
+| `Quantity` | BT-129 | **M** | Double | Invoiced quantity | `10.0` |
+| `UnitCode` | BT-130 | **M** | String | UN/ECE Rec 20 unit code: C62=unit, HUR=hour, KGM=kg, MTR=meter, LTR=liter, DAY=day | `"HUR"` |
+| `UnitPrice` | BT-146 | **M** | Double | Item net price (after any price-level discount) | `150.00` |
+| `GrossPrice` | BT-148 | O | Double | Item gross price before price-level allowances. Set to 0 to omit | `200.00` |
+| `TaxRate` | BT-152 | **C** | Double | VAT rate percentage. Required when TaxCategoryCode = S | `20.0` |
+| `TaxCategoryCode` | BT-151 | **M** | Enum | VAT category (see codes below) | `.StandardRate` |
+| `SellerItemID` | BT-155 | O | String | Seller's item identifier (SKU, article number) | `"LIB-DESK-001"` |
+| `StandardItemID` | BT-157 | O | String | Standard item identifier (GTIN, EAN, ISBN) | `"4012345678901"` |
+| `StandardItemSchemeID` | BT-157-1 | O | String | Scheme: 0160=GTIN, 0088=EAN | `"0160"` |
+| `LinePeriodStart` | BT-134 | O | DateTime | Service period start for this line | `New DateTime(2026, 3, 1)` |
+| `LinePeriodEnd` | BT-135 | O | DateTime | Service period end for this line | `New DateTime(2026, 3, 31)` |
+
+**Computed:**
+
+| Method | BT | Description |
+|--------|-----|-------------|
+| `NetAmount()` | BT-131 | = Quantity x UnitPrice - line allowances + line charges |
+| `AllowanceTotalAmount()` | | Sum of line-level allowance amounts |
+| `ChargeTotalAmount()` | | Sum of line-level charge amounts |
+
+### VNSPDFEInvoiceAllowanceCharge — Allowance or Charge
+
+Used for document-level (BG-20/BG-21) and line-level (BG-27/BG-28).
+
+| Property | BT (doc/line) | M/C/O | Type | Description | Example |
+|----------|--------------|-------|------|-------------|---------|
+| `IsCharge` | | **M** | Boolean | `False` = allowance (discount), `True` = charge (surcharge) | `False` |
+| `Amount` | BT-92/BT-136 | **M** | Double | Actual allowance/charge amount (always positive) | `150.00` |
+| `BasisAmount` | BT-93/BT-137 | O | Double | Base amount for percentage calculation | `1500.00` |
+| `Percentage` | BT-94/BT-138 | **C** | Double | Percentage. Required if BasisAmount is given | `10.0` |
+| `Reason` | BT-97/BT-139 | O | String | Text reason. At least one of Reason or ReasonCode required (doc-level) | `"Volume discount"` |
+| `ReasonCode` | BT-98/BT-140 | **C** | String | UNTDID 5189 (allowances) or 7161 (charges). See codes below | `"95"` |
+| `TaxCategoryCode` | BT-95 | **M** (doc) | Enum | VAT category. Required for document-level, inherited for line-level | `.StandardRate` |
+| `TaxRate` | BT-96 | **C** (doc) | Double | VAT rate. Required for document-level when category = S | `20.0` |
+
+**Common allowance reason codes (UNTDID 5189):** 41=Bonus, 42=Special agreement, 60=Manufacturer discount, 62=Trade discount, 63=Early payment, 64=Volume discount, 65=Retailing, 66=Standard, 67=Contract, 95=Discount, 100=Special rebate, 104=Freight charge reduction
+
+**Common charge reason codes (UNTDID 7161):** AAA=Advertising, ABL=Packing, ADR=Dangerous goods, FC=Freight, FI=Financing, IN=Insurance, MAC=Minimum order charge, TAE=Environmental tax
+
+### VNSPDFEInvoiceTaxBreakdown — VAT Breakdown (BG-23)
+
+At least one required. One per unique combination of tax category + rate.
+
+| Property | BT | M/C/O | Type | Description | Example |
+|----------|-----|-------|------|-------------|---------|
+| `TaxableAmount` | BT-117 | **M** | Double | Taxable base = sum of line nets + doc charges - doc allowances at this rate | `1375.00` |
+| `TaxAmount` | BT-116 | **M** | Double | VAT amount = TaxableAmount x TaxRate / 100 | `275.00` |
+| `TaxRate` | BT-119 | **C** | Double | VAT rate percentage. Required when category = S | `20.0` |
+| `TaxCategoryCode` | BT-118 | **M** | Enum | VAT category code | `.StandardRate` |
+
+### VAT Category Codes (eTaxCategoryCode)
+
+| Code | Enum Value | Meaning |
+|------|-----------|---------|
+| S | `.StandardRate` | Standard rate (default) |
+| Z | `.ZeroRated` | Zero rated goods |
+| E | `.Exempt` | VAT exempt |
+| AE | `.ReverseCharge` | Reverse charge (buyer pays VAT) |
+| K | `.IntraCommunitySupply` | Intra-community supply (EU B2B) |
+| G | `.ExportOutsideEU` | Export outside EU |
+| O | `.OutsideScopeOfVAT` | Outside scope of VAT |
+| L | `.CanaryIslandsTax` | Canary Islands general tax (IGIC) |
+| M | `.CeutaMelillaTax` | Ceuta and Melilla tax (IPSI) |
 
 ### VNSPDFEInvoiceXMLParser
 
@@ -570,11 +741,21 @@ Sub ClearWarnings()
 ### VNSPDFEInvoiceValidator
 
 ```xojo
-// Validate invoice against profile requirements
+// Validate invoice against profile requirements with optional country-specific rules
 // Returns array of error messages (empty = valid)
+// countryCode: 2-letter ISO 3166-1 code (auto-detected from seller if empty)
 Function Validate(invoice As VNSPDFEInvoice, _
-    profile As VNSPDFEInvoicePremium.eFacturXProfile) As String()
+    profile As VNSPDFEInvoicePremium.eFacturXProfile, _
+    countryCode As String = "") As String()
 ```
+
+### VNSPDFEInvoiceValidatorCodes
+
+Code list validation: invoice type codes (UNTDID 1001), ISO 4217 currencies, ISO 3166-1 countries, UNCL 4461 payment means, and VAT category rules (BR-S, BR-Z, BR-E, BR-AE, BR-IC, BR-G, BR-O).
+
+### VNSPDFEInvoiceValidatorCountry
+
+Country-specific rules: France (BR-FR), Germany (BR-DE), Italy (BR-IT), Netherlands (BR-NL). Auto-dispatched based on seller country code.
 
 ### VNSPDFEInvoiceXMLGenerator
 

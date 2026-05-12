@@ -6,17 +6,17 @@ Protected Class VNSPDFStreamReader
 		  mStream = BinaryStream.Open(file)
 		  mFileSize = file.Length
 		  mIsMemory = False
-
+		  
 		  // Allocate initial buffer (8KB)
 		  mBuffer = New MemoryBlock(gkInitialBufferSize)
-
+		  
 		  // API2: Read as String (binary data), then copy to buffer
 		  Dim data As String = mStream.Read(gkInitialBufferSize)
 		  mBufferLength = data.Bytes
 		  For i As Integer = 0 To mBufferLength - 1
 		    mBuffer.UInt8Value(i) = data.MiddleBytes(i, 1).AscByte
 		  Next
-
+		  
 		  mOffset = 0
 		  mTotalBytesRead = mBufferLength
 		End Sub
@@ -41,9 +41,34 @@ Protected Class VNSPDFStreamReader
 		    mStream.Close()
 		    mStream = Nil
 		  End If
-
+		  
 		  mBuffer = Nil
 		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function EnsureContent() As Boolean
+		  // Ensure there's content at current offset
+		  If mOffset >= mBufferLength Then
+		    Return IncreaseBuffer()
+		  End If
+		  
+		  Return True
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function GetAbsolutePosition() As Integer
+		  // Get absolute position in file (not buffer-relative)
+		  If mIsMemory Then
+		    Return mOffset
+		  Else
+		    // Buffer starts at: (total bytes read) - (current buffer length)
+		    // Absolute position = buffer start + offset within buffer
+		    Dim bufferStart As Integer = mTotalBytesRead - mBufferLength
+		    Return bufferStart + mOffset
+		  End If
+		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
@@ -52,7 +77,7 @@ Protected Class VNSPDFStreamReader
 		  If ensureContent Then
 		    Dim dummy As Boolean = EnsureContent()
 		  End If
-
+		  
 		  Return mBuffer
 		End Function
 	#tag EndMethod
@@ -79,58 +104,44 @@ Protected Class VNSPDFStreamReader
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Function GetAbsolutePosition() As Integer
-		  // Get absolute position in file (not buffer-relative)
-		  If mIsMemory Then
-		    Return mOffset
-		  Else
-		    // Buffer starts at: (total bytes read) - (current buffer length)
-		    // Absolute position = buffer start + offset within buffer
-		    Dim bufferStart As Integer = mTotalBytesRead - mBufferLength
-		    Return bufferStart + mOffset
-		  End If
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
 		Function IncreaseBuffer(Optional size As Integer = 1024) As Boolean
 		  // Increase buffer size by reading more data
 		  // Returns True if more data was read, False if EOF
-
+		  
 		  If mIsMemory Then
 		    // Cannot expand memory buffer
 		    Return False
 		  End If
-
+		  
 		  If mStream = Nil Or mStream.EndOfFile Then
 		    Return False
 		  End If
-
+		  
 		  // Calculate new buffer size
 		  Dim newSize As Integer = mBufferLength + size
 		  Dim newBuffer As New MemoryBlock(newSize)
-
+		  
 		  // Copy existing data
 		  For i As Integer = 0 To mBufferLength - 1
 		    newBuffer.UInt8Value(i) = mBuffer.UInt8Value(i)
 		  Next
-
+		  
 		  // Read more data
 		  Dim bytesToRead As Integer = Min(size, mFileSize - mTotalBytesRead)
 		  If bytesToRead <= 0 Then
 		    Return False
 		  End If
-
+		  
 		  // API2: Read as String (binary data), then copy to buffer
 		  Dim data As String = mStream.Read(bytesToRead)
 		  Dim bytesRead As Integer = data.Bytes
-
+		  
 		  If bytesRead > 0 Then
 		    // Copy to buffer at offset
 		    For i As Integer = 0 To bytesRead - 1
 		      newBuffer.UInt8Value(mBufferLength + i) = data.MiddleBytes(i, 1).AscByte
 		    Next
-
+		    
 		    mBufferLength = mBufferLength + bytesRead
 		    mTotalBytesRead = mTotalBytesRead + bytesRead
 		    mBuffer = newBuffer
@@ -153,10 +164,27 @@ Protected Class VNSPDFStreamReader
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
+		Function ReadByte() As Integer
+		  // Read single byte and advance offset
+		  // Returns -1 if EOF
+		  
+		  If mOffset >= mBufferLength Then
+		    If Not IncreaseBuffer() Then
+		      Return -1
+		    End If
+		  End If
+		  
+		  Dim b As Integer = mBuffer.UInt8Value(mOffset)
+		  mOffset = mOffset + 1
+		  Return b
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
 		Function ReadBytes(length As Integer) As MemoryBlock
 		  // Read specified number of bytes from stream
 		  Dim data As New MemoryBlock(length)
-
+		  
 		  For i As Integer = 0 To length - 1
 		    Dim b As Integer = ReadByte()
 		    If b = -1 Then
@@ -169,25 +197,8 @@ Protected Class VNSPDFStreamReader
 		    End If
 		    data.UInt8Value(i) = b
 		  Next
-
+		  
 		  Return data
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Function ReadByte() As Integer
-		  // Read single byte and advance offset
-		  // Returns -1 if EOF
-
-		  If mOffset >= mBufferLength Then
-		    If Not IncreaseBuffer() Then
-		      Return -1
-		    End If
-		  End If
-
-		  Dim b As Integer = mBuffer.UInt8Value(mOffset)
-		  mOffset = mOffset + 1
-		  Return b
 		End Function
 	#tag EndMethod
 
@@ -196,17 +207,17 @@ Protected Class VNSPDFStreamReader
 		  // Read line until CR/LF
 		  Dim result As String = ""
 		  Dim b As Integer
-
+		  
 		  While True
 		    b = ReadByte()
 		    If b = -1 Or b = 10 Or b = 13 Then
 		      // EOF or line feed or carriage return
 		      Exit While
 		    End If
-
+		    
 		    result = result + Chr(b)
 		  Wend
-
+		  
 		  // Skip additional CR/LF characters
 		  If b = 13 Then
 		    Dim nextByte As Integer
@@ -218,7 +229,7 @@ Protected Class VNSPDFStreamReader
 		      End If
 		    End If
 		  End If
-
+		  
 		  Return result
 		End Function
 	#tag EndMethod
@@ -233,14 +244,14 @@ Protected Class VNSPDFStreamReader
 		    // File: seek and reload buffer
 		    If mStream <> Nil Then
 		      mStream.BytePosition = position
-
+		      
 		      // API2: Read as String (binary data), then copy to buffer
 		      Dim data As String = mStream.Read(gkInitialBufferSize)
 		      mBufferLength = data.Bytes
 		      For i As Integer = 0 To mBufferLength - 1
 		        mBuffer.UInt8Value(i) = data.MiddleBytes(i, 1).AscByte
 		      Next
-
+		      
 		      mOffset = 0
 		      mTotalBytesRead = position + mBufferLength
 		    End If
@@ -255,17 +266,6 @@ Protected Class VNSPDFStreamReader
 		    mOffset = offset
 		  End If
 		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Function EnsureContent() As Boolean
-		  // Ensure there's content at current offset
-		  If mOffset >= mBufferLength Then
-		    Return IncreaseBuffer()
-		  End If
-
-		  Return True
-		End Function
 	#tag EndMethod
 
 

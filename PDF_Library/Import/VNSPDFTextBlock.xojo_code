@@ -1,15 +1,15 @@
 #tag Class
 Protected Class VNSPDFTextBlock
-	#tag Property, Flags = &h0, Description = 546578742063 6F6E74656E740A
-		text As String
-	#tag EndProperty
-
-	#tag Property, Flags = &h0, Description = 466F6E74206E616D65202865 2E672E202F4631290A
+	#tag Property, Flags = &h0, Description = 466F6E74206E616D6520286502E672E202F4631290
 		fontName As String
 	#tag EndProperty
 
 	#tag Property, Flags = &h0, Description = 466F6E742073697A6520696E20706F696E74730A
 		fontSize As Double
+	#tag EndProperty
+
+	#tag Property, Flags = &h0, Description = 54657874206306F6E74656E740
+		text As String
 	#tag EndProperty
 
 	#tag Property, Flags = &h0, Description = 582D706F736974696F6E20696E207573657220756E6974730A
@@ -68,7 +68,7 @@ Protected Class VNSPDFTextBlock
 			Group="Behavior"
 			InitialValue=""
 			Type="String"
-			EditorType=""
+			EditorType="MultiLineEditor"
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="fontName"
@@ -76,7 +76,7 @@ Protected Class VNSPDFTextBlock
 			Group="Behavior"
 			InitialValue=""
 			Type="String"
-			EditorType=""
+			EditorType="MultiLineEditor"
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="fontSize"

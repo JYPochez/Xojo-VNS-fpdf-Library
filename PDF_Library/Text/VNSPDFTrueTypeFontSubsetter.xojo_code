@@ -20,29 +20,29 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  subsetTables.Value("hmtx") = mSubsetHmtx
 		  subsetTables.Value("loca") = mSubsetLoca
 		  subsetTables.Value("maxp") = mSubsetMaxp
-
+		  
 		  // Update 'post' table to match new numGlyphs
 		  If mTables.HasKey("post") Then
 		    Dim postTableInfo As Dictionary = mTables.Value("post")
 		    Dim postOffset As Integer = postTableInfo.Value("offset")
 		    Dim postLength As Integer = postTableInfo.Value("length")
-
+		    
 		    Dim postMB As New MemoryBlock(postLength)
 		    postMB.LittleEndian = False
 		    For i As Integer = 0 To postLength - 1
 		      postMB.Byte(i) = mFontMB.Byte(postOffset + i)
 		    Next
-
+		    
 		    // Update numberOfGlyphs at offset 32 (only for format 2.0)
 		    // Format 2.0 has version 0x00020000 (32-bit at offset 0)
 		    Dim postVersion As UInt32 = postMB.UInt32Value(0)
 		    If postVersion = &h00020000 And postLength >= 34 Then
 		      postMB.UInt16Value(32) = mSubsetNumGlyphs
 		    End If
-
+		    
 		    subsetTables.Value("post") = postMB
 		  End If
-
+		  
 		  // Copy other required tables unchanged
 		  Dim copyTables() As String = Array("name", "OS/2")
 		  For Each tag As String In copyTables
@@ -50,13 +50,13 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		      Dim tableInfo As Dictionary = mTables.Value(tag)
 		      Dim offset As Integer = tableInfo.Value("offset")
 		      Dim length As Integer = tableInfo.Value("length")
-
+		      
 		      Dim tableMB As New MemoryBlock(length)
 		      tableMB.LittleEndian = False
 		      For i As Integer = 0 To length - 1
 		        tableMB.Byte(i) = mFontMB.Byte(offset + i)
 		      Next
-
+		      
 		      subsetTables.Value(tag) = tableMB
 		    End If
 		  Next
@@ -352,7 +352,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		    mSubsetHmtx.Int16Value((gid * 4) + 2) = leftSideBearing
 		  Next
 		  
-		  		  
+		  
 		  Return True
 		End Function
 	#tag EndMethod
@@ -380,7 +380,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		          For k As Integer = 1 To shift
 		            multiplier = multiplier * 2
 		          Next
-		          partial = partial Or (byteValue * multiplier)
+		          partial = partial + (byteValue * multiplier)
 		        End If
 		      Next
 		      sum = sum + partial
@@ -434,7 +434,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  
 		  mSubsetNumGlyphs = maxGlyphID + 1  // Include all IDs up to max (sparse)
 		  
-		  		  
+		  
 		End Sub
 	#tag EndMethod
 
@@ -542,7 +542,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		          If Not glyphsToCheck.HasKey(Str(componentGID)) Then
 		            glyphsToCheck.Value(Str(componentGID)) = True
 		            changed = True
-		            		          End If
+		          End If
 		          
 		          // Skip to next component based on flags
 		          pos = pos + 4
@@ -573,7 +573,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  Next
 		  mUsedGlyphIDs.Sort
 		  
-		  		  
+		  
 		End Sub
 	#tag EndMethod
 
@@ -605,7 +605,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  // Read table count
 		  mNumTables = mFontMB.UInt16Value(4)
 		  
-		  		  
+		  
 		  // Parse table directory
 		  Dim offset As Integer = 12
 		  For i As Integer = 0 To mNumTables - 1
@@ -648,7 +648,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  // indexToLocFormat at offset 50
 		  mIndexToLocFormat = mFontMB.Int16Value(offset + 50)
 		  
-		  		  
+		  
 		  Return True
 		End Function
 	#tag EndMethod
@@ -668,7 +668,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  // numberOfHMetrics at offset 34
 		  mNumberOfHMetrics = mFontMB.UInt16Value(offset + 34)
 		  
-		  		  
+		  
 		  Return True
 		End Function
 	#tag EndMethod
@@ -703,7 +703,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		    Next
 		  End If
 		  
-		  		  
+		  
 		  Return True
 		End Function
 	#tag EndMethod
@@ -723,7 +723,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  // numGlyphs at offset 4
 		  mNumGlyphs = mFontMB.UInt16Value(offset + 4)
 		  
-		  		  
+		  
 		  Return True
 		End Function
 	#tag EndMethod
@@ -864,7 +864,7 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  // Update numGlyphs
 		  mSubsetMaxp.UInt16Value(4) = mSubsetNumGlyphs
 		  
-		  		  
+		  
 		End Sub
 	#tag EndMethod
 

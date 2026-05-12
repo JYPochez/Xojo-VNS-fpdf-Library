@@ -1,19 +1,19 @@
 #tag Class
 Protected Class VNSPDFName
 Inherits VNSPDFType
-	#tag Method, Flags = &h1
+	#tag Method, Flags = &h0
 		Shared Function Parse(reader As VNSPDFStreamReader) As VNSPDFName
 		  // Parse name from stream: /Type or /PageSize or /Name#20With#20Spaces
 		  // Names start with / and can contain #xx hex escapes
-
+		  
 		  Dim result As String = ""
-
+		  
 		  While True
 		    Dim b As Integer = reader.ReadByte()
 		    If b = -1 Then Exit While
-
+		    
 		    Dim ch As String = Chr(b)
-
+		    
 		    // Name ends at delimiter or whitespace
 		    If ch = "/" Or ch = "[" Or ch = "]" Or ch = "(" Or ch = ")" Or _
 		      ch = "<" Or ch = ">" Or ch = "{" Or ch = "}" Or _
@@ -23,7 +23,7 @@ Inherits VNSPDFType
 		      reader.SetOffset(offset - 1)
 		      Exit While
 		    End If
-
+		    
 		    // Handle hex escape #xx
 		    If ch = "#" Then
 		      Dim hex1 As Integer = reader.ReadByte()
@@ -37,7 +37,7 @@ Inherits VNSPDFType
 		      result = result + ch
 		    End If
 		  Wend
-
+		  
 		  Dim obj As New VNSPDFName
 		  obj.value = result
 		  Return obj

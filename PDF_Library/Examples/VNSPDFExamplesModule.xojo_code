@@ -418,7 +418,7 @@ Protected Module VNSPDFExamplesModule
 	#tag Method, Flags = &h21, Description = 43726F73732D706C6174666F726D206E756D62657220666F726D617474696E67
 		Private Function FormatHelper(value As Double, formatStr As String) As String
 		  // Cross-platform number formatting
-		  #If TargetiOS Then
+		  #If TargetiOS Or TargetAndroid Then
 		    // iOS: Simple formatting (Format() not available)
 		    // Round to 2 decimal places if format is "0.00"
 		    If formatStr = "0.00" Then
@@ -2396,7 +2396,7 @@ Protected Module VNSPDFExamplesModule
 		    Dim errorMsg As String = pdf2.GetError()
 		    
 		    // Check if it's the expected error message about premium module
-		    #If TargetiOS Then
+		    #If TargetiOS Or TargetAndroid Then
 		      Dim isPremiumError As Boolean = (errorMsg.IndexOf("premium Encryption module") >= 0)
 		    #Else
 		      Dim isPremiumError As Boolean = (errorMsg.IndexOf("premium Encryption module") > 0)
@@ -3944,7 +3944,7 @@ Protected Module VNSPDFExamplesModule
 		    Dim ttfLabels() As String
 		    Dim ttfPaths() As String
 
-		    #If TargetiOS Then
+		    #If TargetiOS Or TargetAndroid Then
 		      // iOS: bundled fonts only - skip TrueType section
 		      pdf.SetFont("helvetica", "I", 10)
 		      pdf.Cell(0, 6, "iOS: TrueType fonts must be bundled with the app. See Example 5.", 0, 1)
@@ -4011,7 +4011,7 @@ Protected Module VNSPDFExamplesModule
 
 		    #EndIf
 
-		    #If Not TargetiOS Then
+		    #If Not TargetiOS And Not TargetAndroid Then
 		      Dim kTestPhrase As String = "The quick brown fox jumps over the lazy dog. 0123456789"
 
 		      For i As Integer = 0 To ttfFonts.LastIndex
@@ -8367,7 +8367,7 @@ Protected Module VNSPDFExamplesModule
 		    Dim fontPath As String
 		    Dim fontFile As FolderItem
 		    
-		    #If TargetiOS Then
+		    #If TargetiOS Or TargetAndroid Then
 		      // iOS: Load bundled Arial Unicode font from app resources
 		      Try
 		        // Try different name variations
@@ -8450,7 +8450,7 @@ Protected Module VNSPDFExamplesModule
 		      statusText = statusText + "Font file found: " + fontPath + EndOfLine
 		      
 		      // Load TrueType font
-		      #If TargetiOS Then
+		      #If TargetiOS Or TargetAndroid Then
 		        // iOS: Load font from MemoryBlock (file is in bundle)
 		        Try
 		          Dim fontStream As BinaryStream = BinaryStream.Open(fontFile)
@@ -8543,9 +8543,8 @@ Protected Module VNSPDFExamplesModule
 		        pdf.Cell(0, 7, "★ ☆ ♠ ♣ ♥ ♦ ♪ ♫ ☎ ✓ ✗ ✉ ☺ ☹", 1, 1)
 		        pdf.Ln(2)
 		        
-		        // Section: Color Emoji (Desktop, iOS - rendered as images)
-		        // Note: Web emoji support is planned but not yet implemented (see docs/EMOJI_FONT_PARSING.md)
-		        #If TargetDesktop Or TargetiOS Then
+		        // Section: Color Emoji (Desktop, iOS, Web - rendered as images)
+		        #If TargetDesktop Or TargetiOS Or TargetAndroid Or TargetWeb Then
 		          pdf.SetFont("helvetica", "B", 10)
 		          pdf.Cell(0, 6, "Color Emoji Support (Image-Based Rendering):", 0, 1)
 		          pdf.SetFont("helvetica", "", 9)
@@ -8553,6 +8552,8 @@ Protected Module VNSPDFExamplesModule
 		            pdf.MultiCell(0, 4, "Emoji are rendered using the platform's native emoji font (Apple Color Emoji, Segoe UI Emoji, or Noto Color Emoji) and embedded as images for cross-platform compatibility.", 0)
 		          #ElseIf TargetiOS Then
 		            pdf.MultiCell(0, 4, "Emoji are rendered using iOS UIKit API with the native emoji font and embedded as JPEG images.", 0)
+		          #ElseIf TargetWeb Then
+		            pdf.MultiCell(0, 4, "Emoji are rendered by parsing the SBIX table from Apple Color Emoji.ttc and extracting embedded PNG images (macOS Web servers).", 0)
 		          #EndIf
 		          pdf.Ln(2)
 		          
@@ -8643,14 +8644,6 @@ Protected Module VNSPDFExamplesModule
 		          pdf.MultiCell(0, 3, "Note: Image-based emoji rendering works on Desktop (macOS, Windows, Linux) using Picture.Graphics API with native emoji fonts, and on iOS using UIKit declares.", 1)
 		          pdf.Ln(2)
 		          
-		        #ElseIf TargetWeb Then
-		          // Web: Emoji not yet supported
-		          pdf.SetFont("helvetica", "B", 10)
-		          pdf.Cell(0, 6, "Color Emoji Support:", 0, 1)
-		          pdf.SetFont("helvetica", "", 9)
-		          pdf.MultiCell(0, 4, "Image-based emoji rendering is not yet supported on Web platform. The server-side Picture.Graphics API cannot access emoji fonts (Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji). Implementation is planned - see docs/EMOJI_FONT_PARSING.md for details.", 1)
-		          pdf.Ln(2)
-		          
 		        #Else
 		          // Console: Emoji not supported
 		          pdf.SetFont("helvetica", "B", 10)
@@ -8677,7 +8670,7 @@ Protected Module VNSPDFExamplesModule
 		      // Font file not found - show fallback example
 		      statusText = statusText + "Font file not found: " + fontPath + EndOfLine
 		      
-		      #If TargetiOS Then
+		      #If TargetiOS Or TargetAndroid Then
 		        // iOS-specific message
 		        pdf.SetFont("helvetica", "B", 12)
 		        pdf.Cell(0, 8, "iOS Platform - Limited Font Support", 0, 1)
@@ -9312,7 +9305,7 @@ Protected Module VNSPDFExamplesModule
 		    #EndIf
 		    
 		    // iOS: Check for bundled images using SpecialFolder.Resource()
-		    #If TargetiOS Then
+		    #If TargetiOS Or TargetAndroid Then
 		      Dim bundledPic As Picture
 		      Dim resourceFile As FolderItem
 		      
@@ -9411,7 +9404,7 @@ Protected Module VNSPDFExamplesModule
 		    End If
 		    
 		    // Check if we have any images available (file-based or bundled)
-		    #If TargetiOS Then
+		    #If TargetiOS Or TargetAndroid Then
 		      Dim hasImages As Boolean = (imageFile <> Nil And imageFile.Exists) Or (bundledPic <> Nil)
 		    #Else
 		      Dim hasImages As Boolean = (imageFile <> Nil And imageFile.Exists)
@@ -9423,7 +9416,7 @@ Protected Module VNSPDFExamplesModule
 		      pdf.Ln(5)
 		      
 		      // iOS: Handle bundled image using RegisterImageFromBytes
-		      #If TargetiOS Then
+		      #If TargetiOS Or TargetAndroid Then
 		        If bundledPic <> Nil Then
 		          pdf.SetFont("helvetica", "B", 12)
 		          pdf.SetFillColor(255, 230, 230)
@@ -9601,7 +9594,7 @@ Protected Module VNSPDFExamplesModule
 		      #Else
 		        // iOS/Console: Picture/Graphics API not fully available
 		        pdf.SetFont("helvetica", "", 9)
-		        #If TargetiOS Then
+		        #If TargetiOS Or TargetAndroid Then
 		          pdf.MultiCell(0, 5, "Picture.Graphics API not available on iOS. However, charts can be embedded using ToPicture() - see chart example below.", 0, "L")
 		        #Else
 		          pdf.MultiCell(0, 5, "Picture/Graphics API not available on Console platform.", 0, "L")
@@ -9613,10 +9606,11 @@ Protected Module VNSPDFExamplesModule
 		      // Test ImageFromPicture() with Chart (Desktop and iOS only)
 		      // Note: WebChart cannot be instantiated programmatically (protected constructor)
 		      #If TargetDesktop Or TargetiOS Then
+		        // Note: MobileChart not available on Android in Xojo 2025r3
 		        pdf.AddPage()
 		        pdf.SetFont("helvetica", "B", 12)
 		        pdf.SetFillColor(230, 255, 230)
-		        
+
 		        #If TargetDesktop Then
 		          pdf.Cell(0, 8, "DesktopChart Embedding (Desktop)", 1, 1, "L", True)
 		        #ElseIf TargetiOS Then
@@ -9702,7 +9696,7 @@ Protected Module VNSPDFExamplesModule
 		      #EndIf
 		      
 		      // If no test images, use fallback (but not on iOS if bundled image exists)
-		      #If TargetiOS Then
+		      #If TargetiOS Or TargetAndroid Then
 		        Dim shouldUseFallback As Boolean = (jpegFile = Nil And pngFile = Nil And bundledPic = Nil)
 		      #Else
 		        Dim shouldUseFallback As Boolean = (jpegFile = Nil And pngFile = Nil)
@@ -9784,16 +9778,10 @@ Protected Module VNSPDFExamplesModule
 		  Dim result As String = ""
 		  Dim hexLen As Integer = hex.Length
 		  
-		  For i As Integer = 1 To hexLen Step 2
-		    #If TargetiOS Then
-		      Dim hexByte As String = hex.Middle(i - 1, 2) // 0-based
-		      Dim byteValue As Integer = Val("&h" + hexByte)
-		      result = result + String.ChrByte(byteValue)
-		    #Else
-		      Dim hexByte As String = hex.Middle(i, 2)
-		      Dim byteValue As Integer = Val("&h" + hexByte)
-		      result = result + String.ChrByte(byteValue)
-		    #EndIf
+		  For i As Integer = 0 To hexLen - 1 Step 2
+		    Dim hexByte As String = hex.Middle(i, 2)  // API2 Middle is 0-based on all platforms
+		    Dim byteValue As Integer = Val("&h" + hexByte)
+		    result = result + String.ChrByte(byteValue)
 		  Next
 		  
 		  Return result
@@ -9875,7 +9863,7 @@ Protected Module VNSPDFExamplesModule
 		  
 		  Dim result As New Dictionary
 		  Dim output As String = "=== Testing Pure Xojo AES Implementation ===" + EndOfLine
-		  output = output + "Running NIST SP 800-38A test vectors..." + EndOfLine + EndOfLine
+		  output = output + "Running NIST SP 800-38A + 800-38D test vectors..." + EndOfLine + EndOfLine
 		  
 		  Dim allPassed As Boolean = True
 		  
@@ -9884,7 +9872,7 @@ Protected Module VNSPDFExamplesModule
 		  Dim test1Result As Dictionary = TestECB_AES128()
 		  Dim testOutput As String = test1Result.Value("output")
 		  If testOutput <> "" Then output = output + testOutput
-		  If test1Result.Value("passed") Then
+		  If test1Result.Value("passed") = True Then
 		    output = output + "  ECB-AES128: PASSED" + EndOfLine
 		  Else
 		    output = output + "  ECB-AES128: FAILED" + EndOfLine
@@ -9897,7 +9885,7 @@ Protected Module VNSPDFExamplesModule
 		  Dim test2Result As Dictionary = TestCBC_AES128()
 		  testOutput = test2Result.Value("output")
 		  If testOutput <> "" Then output = output + testOutput
-		  If test2Result.Value("passed") Then
+		  If test2Result.Value("passed") = True Then
 		    output = output + "  CBC-AES128: PASSED" + EndOfLine
 		  Else
 		    output = output + "  CBC-AES128: FAILED" + EndOfLine
@@ -9910,7 +9898,7 @@ Protected Module VNSPDFExamplesModule
 		  Dim test3Result As Dictionary = TestECB_AES256()
 		  testOutput = test3Result.Value("output")
 		  If testOutput <> "" Then output = output + testOutput
-		  If test3Result.Value("passed") Then
+		  If test3Result.Value("passed") = True Then
 		    output = output + "  ECB-AES256: PASSED" + EndOfLine
 		  Else
 		    output = output + "  ECB-AES256: FAILED" + EndOfLine
@@ -9923,7 +9911,7 @@ Protected Module VNSPDFExamplesModule
 		  Dim test4Result As Dictionary = TestCBC_AES256()
 		  testOutput = test4Result.Value("output")
 		  If testOutput <> "" Then output = output + testOutput
-		  If test4Result.Value("passed") Then
+		  If test4Result.Value("passed") = True Then
 		    output = output + "  CBC-AES256: PASSED" + EndOfLine
 		  Else
 		    output = output + "  CBC-AES256: FAILED" + EndOfLine
@@ -9931,26 +9919,104 @@ Protected Module VNSPDFExamplesModule
 		  End If
 		  output = output + EndOfLine
 		  
+		  // Test ECB-AES128 Decrypt
+		  output = output + "Testing ECB-AES128 Decrypt..." + EndOfLine
+		  Dim test5Result As Dictionary = TestDecryptECB_AES128()
+		  testOutput = test5Result.Value("output")
+		  If testOutput <> "" Then output = output + testOutput
+		  If test5Result.Value("passed") = True Then
+		    output = output + "  ECB-AES128 Decrypt: PASSED" + EndOfLine
+		  Else
+		    output = output + "  ECB-AES128 Decrypt: FAILED" + EndOfLine
+		    allPassed = False
+		  End If
+		  output = output + EndOfLine
+
+		  // Test CBC-AES128 Decrypt
+		  output = output + "Testing CBC-AES128 Decrypt..." + EndOfLine
+		  Dim test6Result As Dictionary = TestDecryptCBC_AES128()
+		  testOutput = test6Result.Value("output")
+		  If testOutput <> "" Then output = output + testOutput
+		  If test6Result.Value("passed") = True Then
+		    output = output + "  CBC-AES128 Decrypt: PASSED" + EndOfLine
+		  Else
+		    output = output + "  CBC-AES128 Decrypt: FAILED" + EndOfLine
+		    allPassed = False
+		  End If
+		  output = output + EndOfLine
+
+		  // Test CBC-AES256 PKCS7 Roundtrip
+		  output = output + "Testing CBC-AES256 PKCS7 Roundtrip..." + EndOfLine
+		  Dim test7Result As Dictionary = TestCBC_AES256_PKCS7()
+		  testOutput = test7Result.Value("output")
+		  If testOutput <> "" Then output = output + testOutput
+		  If test7Result.Value("passed") = True Then
+		    output = output + "  CBC-AES256 PKCS7: PASSED" + EndOfLine
+		  Else
+		    output = output + "  CBC-AES256 PKCS7: FAILED" + EndOfLine
+		    allPassed = False
+		  End If
+		  output = output + EndOfLine
+
+		  // Test GCM-AES128 (NIST SP 800-38D)
+		  output = output + "Testing GCM-AES128 (NIST SP 800-38D)..." + EndOfLine
+		  Dim test8Result As Dictionary = TestGCM_AES128()
+		  testOutput = test8Result.Value("output")
+		  If testOutput <> "" Then output = output + testOutput
+		  If test8Result.Value("passed") = True Then
+		    output = output + "  GCM-AES128: PASSED" + EndOfLine
+		  Else
+		    output = output + "  GCM-AES128: FAILED" + EndOfLine
+		    allPassed = False
+		  End If
+		  output = output + EndOfLine
+
+		  // Test GCM Decrypt + Authentication
+		  output = output + "Testing GCM Decrypt + Auth..." + EndOfLine
+		  Dim test9Result As Dictionary = TestGCM_Decrypt()
+		  testOutput = test9Result.Value("output")
+		  If testOutput <> "" Then output = output + testOutput
+		  If test9Result.Value("passed") = True Then
+		    output = output + "  GCM Decrypt: PASSED" + EndOfLine
+		  Else
+		    output = output + "  GCM Decrypt: FAILED" + EndOfLine
+		    allPassed = False
+		  End If
+		  output = output + EndOfLine
+
+		  // Test GCM Authentication Failure
+		  output = output + "Testing GCM Auth Failure..." + EndOfLine
+		  Dim test10Result As Dictionary = TestGCM_AuthFail()
+		  testOutput = test10Result.Value("output")
+		  If testOutput <> "" Then output = output + testOutput
+		  If test10Result.Value("passed") = True Then
+		    output = output + "  GCM Auth Fail: PASSED" + EndOfLine
+		  Else
+		    output = output + "  GCM Auth Fail: FAILED" + EndOfLine
+		    allPassed = False
+		  End If
+		  output = output + EndOfLine
+
 		  // Test SHA-384 (needed for PDF Revision 6)
 		  #If hasPremiumVNSEncryptionModule Then
 		    output = output + "Testing SHA-384..." + EndOfLine
 		    Dim testSHA384 As Boolean = VNSPDFEncryptionPremium.TestSHA384()
 		    If testSHA384 Then
 		      output = output + "  SHA-384: PASSED" + EndOfLine
-		      // allPassed remains unchanged
 		    Else
 		      output = output + "  SHA-384: FAILED" + EndOfLine
 		      allPassed = False
 		    End If
 		    output = output + EndOfLine
 		  #EndIf
-		  
+
 		  // Summary
 		  If allPassed Then
 		    output = output + "=== ALL TESTS PASSED ===" + EndOfLine
 		    output = output + "Pure Xojo AES implementation is working correctly!" + EndOfLine
-		    output = output + "AES-128 (ECB + CBC) - Ready for PDF Revision 4" + EndOfLine
-		    output = output + "AES-256 (ECB + CBC) - Ready for PDF Revisions 5-6" + EndOfLine
+		    output = output + "AES-128 (ECB + CBC encrypt/decrypt) - Ready for PDF Revision 4" + EndOfLine
+		    output = output + "AES-256 (ECB + CBC encrypt/decrypt) - Ready for PDF Revisions 5-6" + EndOfLine
+		    output = output + "AES-GCM (authenticated encrypt/decrypt) - Ready for general use" + EndOfLine
 		    #If hasPremiumVNSEncryptionModule Then
 		      output = output + "SHA-384 - Ready for PDF Revision 6" + EndOfLine
 		    #EndIf
@@ -9961,7 +10027,8 @@ Protected Module VNSPDFExamplesModule
 		  output = output + EndOfLine
 		  
 		  result.Value("passed") = allPassed
-		  result.Value("output") = output
+		  // Ensure output is UTF-8 (binary operations in tests can strip encoding)
+		  result.Value("output") = output.DefineEncoding(Encodings.UTF8)
 		  Return result
 		End Function
 	#tag EndMethod
@@ -10218,6 +10285,306 @@ Protected Module VNSPDFExamplesModule
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h21
+		Private Function TestDecryptECB_AES128() As Dictionary
+		  Dim result As New Dictionary
+		  Dim output As String = ""
+
+		  #If hasPremiumVNSEncryptionModule Then
+		    Try
+		      Dim key As String = HexToString("2b7e151628aed2a6abf7158809cf4f3c")
+
+		      Dim ciphertext As String = HexToString( _
+		      "3ad77bb40d7a3660a89ecaf32466ef97" + _
+		      "f5d3d58503b9699de785895a96fdbaaf" + _
+		      "43b1cd7f598ece23881b00e3ed030688" + _
+		      "7b0c785e27e8ad3f8223207104725dd4")
+
+		      Dim expectedPlaintext As String = HexToString( _
+		      "6bc1bee22e409f96e93d7e117393172a" + _
+		      "ae2d8a571e03ac9c9eb76fac45af8e51" + _
+		      "30c81c46a35ce411e5fbc1191a0a52ef" + _
+		      "f69f2445df4f9b17ad2b417be66c3710")
+
+		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
+		      aes.SetKey(key)
+		      Dim plaintext As String = aes.DecryptECB(ciphertext)
+
+		      output = output + "  Decrypted: " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
+		      output = output + "  Expected:  " + StringToHex(expectedPlaintext).Left(32) + "..." + EndOfLine
+
+		      result.Value("passed") = (plaintext = expectedPlaintext)
+		      If plaintext <> expectedPlaintext Then
+		        output = output + "  ERROR: Plaintext mismatch!" + EndOfLine
+		      End If
+
+		    Catch e As RuntimeException
+		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
+		      result.Value("passed") = False
+		    End Try
+		  #Else
+		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
+		    result.Value("passed") = False
+		  #EndIf
+
+		  result.Value("output") = output
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function TestDecryptCBC_AES128() As Dictionary
+		  Dim result As New Dictionary
+		  Dim output As String = ""
+
+		  #If hasPremiumVNSEncryptionModule Then
+		    Try
+		      Dim key As String = HexToString("2b7e151628aed2a6abf7158809cf4f3c")
+		      Dim iv As String = HexToString("000102030405060708090a0b0c0d0e0f")
+
+		      Dim ciphertext As String = HexToString( _
+		      "7649abac8119b246cee98e9b12e9197d" + _
+		      "5086cb9b507219ee95db113a917678b2" + _
+		      "73bed6b8e3c1743b7116e69e22229516" + _
+		      "3ff1caa1681fac09120eca307586e1a7")
+
+		      Dim expectedPlaintext As String = HexToString( _
+		      "6bc1bee22e409f96e93d7e117393172a" + _
+		      "ae2d8a571e03ac9c9eb76fac45af8e51" + _
+		      "30c81c46a35ce411e5fbc1191a0a52ef" + _
+		      "f69f2445df4f9b17ad2b417be66c3710")
+
+		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
+		      aes.SetKey(key)
+		      Dim plaintext As String = aes.DecryptCBC(ciphertext, iv)
+
+		      output = output + "  Decrypted: " + StringToHex(plaintext).Left(32) + "..." + EndOfLine
+		      output = output + "  Expected:  " + StringToHex(expectedPlaintext).Left(32) + "..." + EndOfLine
+
+		      result.Value("passed") = (plaintext = expectedPlaintext)
+		      If plaintext <> expectedPlaintext Then
+		        output = output + "  ERROR: Plaintext mismatch!" + EndOfLine
+		      End If
+
+		    Catch e As RuntimeException
+		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
+		      result.Value("passed") = False
+		    End Try
+		  #Else
+		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
+		    result.Value("passed") = False
+		  #EndIf
+
+		  result.Value("output") = output
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function TestCBC_AES256_PKCS7() As Dictionary
+		  Dim result As New Dictionary
+		  Dim output As String = ""
+
+		  #If hasPremiumVNSEncryptionModule Then
+		    Try
+		      Dim key As String = HexToString("603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4")
+		      Dim iv As String = HexToString("000102030405060708090a0b0c0d0e0f")
+		      Dim plaintext As String = "Hello, AES-256-CBC with PKCS7!"
+
+		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength256)
+		      aes.SetKey(key)
+
+		      Dim padded As String = aes.PKCS7Pad(plaintext)
+		      Dim ciphertext As String = aes.EncryptCBC(padded, iv)
+		      Dim decrypted As String = aes.DecryptCBC(ciphertext, iv)
+		      Dim unpadded As String = aes.PKCS7Unpad(decrypted)
+		      // DefineEncoding: DecryptCBC returns binary string, must convert to UTF-8 for display
+		      unpadded = unpadded.DefineEncoding(Encodings.UTF8)
+
+		      output = output + "  Original:  " + plaintext + EndOfLine
+		      output = output + "  Roundtrip: " + unpadded + EndOfLine
+
+		      result.Value("passed") = (unpadded = plaintext And aes.Ok)
+		      If unpadded <> plaintext Then
+		        output = output + "  ERROR: Roundtrip mismatch!" + EndOfLine
+		      End If
+
+		    Catch e As RuntimeException
+		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
+		      result.Value("passed") = False
+		    End Try
+		  #Else
+		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
+		    result.Value("passed") = False
+		  #EndIf
+
+		  result.Value("output") = output
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function TestGCM_AES128() As Dictionary
+		  Dim result As New Dictionary
+		  Dim output As String = ""
+
+		  #If hasPremiumVNSEncryptionModule Then
+		    Try
+		      // NIST SP 800-38D Test Case 2
+		      Dim key As String = HexToString("00000000000000000000000000000000")
+		      Dim iv As String = HexToString("000000000000000000000000")
+		      Dim pt As String = HexToString("00000000000000000000000000000000")
+		      Dim expectedCT As String = HexToString("0388dace60b6a392f328c2b971b2fe78")
+		      Dim expectedTag As String = HexToString("ab6e47d42cec13bdf53a67b21257bddf")
+
+		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
+		      aes.SetKey(key)
+
+		      Dim tag As String
+		      Dim ct As String = aes.EncryptGCM(pt, iv, "", tag)
+
+		      output = output + "  Test Case 2 (zero key, zero IV, zero PT):" + EndOfLine
+		      output = output + "  CT Expected: " + StringToHex(expectedCT) + EndOfLine
+		      output = output + "  CT Got:      " + StringToHex(ct) + EndOfLine
+		      output = output + "  Tag Expected: " + StringToHex(expectedTag) + EndOfLine
+		      output = output + "  Tag Got:      " + StringToHex(tag) + EndOfLine
+
+		      Dim passed As Boolean = (ct = expectedCT And tag = expectedTag)
+
+		      // NIST Test Case 4 (with AAD)
+		      Dim key4 As String = HexToString("feffe9928665731c6d6a8f9467308308")
+		      Dim iv4 As String = HexToString("cafebabefacedbaddecaf888")
+		      Dim aad4 As String = HexToString("feedfacedeadbeeffeedfacedeadbeefabaddad2")
+		      Dim pt4 As String = HexToString( _
+		      "d9313225f88406e5a55909c5aff5269a" + _
+		      "86a7a9531534f7da2e4c303d8a318a72" + _
+		      "1c3c0c95956809532fcf0e2449a6b525" + _
+		      "b16aedf5aa0de657ba637b39")
+		      Dim expectedTag4 As String = HexToString("5bc94fbc3221a5db94fae95ae7121a47")
+
+		      Dim aes4 As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
+		      aes4.SetKey(key4)
+		      Dim tag4 As String
+		      Dim ct4 As String = aes4.EncryptGCM(pt4, iv4, aad4, tag4)
+
+		      output = output + "  Test Case 4 (with AAD, 60-byte PT):" + EndOfLine
+		      output = output + "  Tag Expected: " + StringToHex(expectedTag4) + EndOfLine
+		      output = output + "  Tag Got:      " + StringToHex(tag4) + EndOfLine
+
+		      If tag4 <> expectedTag4 Then passed = False
+
+		      result.Value("passed") = passed
+		      If Not passed Then
+		        output = output + "  ERROR: GCM test vectors mismatch!" + EndOfLine
+		      End If
+
+		    Catch e As RuntimeException
+		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
+		      result.Value("passed") = False
+		    End Try
+		  #Else
+		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
+		    result.Value("passed") = False
+		  #EndIf
+
+		  result.Value("output") = output
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function TestGCM_Decrypt() As Dictionary
+		  Dim result As New Dictionary
+		  Dim output As String = ""
+
+		  #If hasPremiumVNSEncryptionModule Then
+		    Try
+		      Dim key As String = HexToString("feffe9928665731c6d6a8f9467308308")
+		      Dim iv As String = HexToString("cafebabefacedbaddecaf888")
+		      Dim aad As String = HexToString("feedfacedeadbeeffeedfacedeadbeefabaddad2")
+		      Dim pt As String = HexToString( _
+		      "d9313225f88406e5a55909c5aff5269a" + _
+		      "86a7a9531534f7da2e4c303d8a318a72" + _
+		      "1c3c0c95956809532fcf0e2449a6b525" + _
+		      "b16aedf5aa0de657ba637b39")
+
+		      // Encrypt
+		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
+		      aes.SetKey(key)
+		      Dim tag As String
+		      Dim ct As String = aes.EncryptGCM(pt, iv, aad, tag)
+
+		      // Decrypt
+		      Dim aes2 As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
+		      aes2.SetKey(key)
+		      Dim decrypted As String = aes2.DecryptGCM(ct, iv, aad, tag)
+
+		      output = output + "  Encrypt then decrypt roundtrip with AAD" + EndOfLine
+		      output = output + "  Match: " + Str(decrypted = pt) + EndOfLine
+
+		      result.Value("passed") = (decrypted = pt And aes2.Ok)
+		      If decrypted <> pt Then
+		        output = output + "  ERROR: GCM roundtrip mismatch!" + EndOfLine
+		      End If
+
+		    Catch e As RuntimeException
+		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
+		      result.Value("passed") = False
+		    End Try
+		  #Else
+		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
+		    result.Value("passed") = False
+		  #EndIf
+
+		  result.Value("output") = output
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function TestGCM_AuthFail() As Dictionary
+		  Dim result As New Dictionary
+		  Dim output As String = ""
+
+		  #If hasPremiumVNSEncryptionModule Then
+		    Try
+		      Dim key As String = HexToString("00000000000000000000000000000000")
+		      Dim iv As String = HexToString("000000000000000000000000")
+		      Dim pt As String = HexToString("00000000000000000000000000000000")
+
+		      Dim aes As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
+		      aes.SetKey(key)
+		      Dim tag As String
+		      Dim ct As String = aes.EncryptGCM(pt, iv, "", tag)
+
+		      // Tamper with tag
+		      Dim badTag As String = VNSPDFModule.StringChrB(VNSPDFModule.StringAscB(VNSPDFModule.StringMidB(tag, 1, 1)) Xor &hFF)
+		      badTag = badTag + VNSPDFModule.StringMidB(tag, 2, VNSPDFModule.StringLenB(tag) - 1)
+
+		      // Decrypt with tampered tag should fail
+		      Dim aes2 As New VNSAESCore(VNSAESConstants.kAESKeyLength128)
+		      aes2.SetKey(key)
+		      Call aes2.DecryptGCM(ct, iv, "", badTag)
+
+		      Dim authFailed As Boolean = (aes2.GetError = VNSAESConstants.eAESError.AuthenticationFailed)
+		      output = output + "  Tampered tag detected: " + Str(authFailed) + EndOfLine
+
+		      result.Value("passed") = authFailed
+
+		    Catch e As RuntimeException
+		      output = output + "  EXCEPTION: " + e.Message + EndOfLine
+		      result.Value("passed") = False
+		    End Try
+		  #Else
+		    output = "  SKIPPED: Encryption module not available in free version" + EndOfLine
+		    result.Value("passed") = False
+		  #EndIf
+
+		  result.Value("output") = output
+		  Return result
+		End Function
+	#tag EndMethod
+
 	#tag Method, Flags = &h0, Description = 546573742070757265205869626F207A6C696220696D706C656D656E746174696F6E2077697468206B6E6F776E20746573742076656374666F72732E
 		Function TestZlib() As Dictionary
 		  // Test pure Xojo zlib implementation with known test vectors
@@ -10235,7 +10602,7 @@ Protected Module VNSPDFExamplesModule
 		  Dim test1Result As Dictionary = TestZlibEmptyString()
 		  testOutput = test1Result.Value("output")
 		  If testOutput <> "" Then output = output + testOutput
-		  If test1Result.Value("passed") Then
+		  If test1Result.Value("passed") = True Then
 		    output = output + "  PASSED" + EndOfLine
 		  Else
 		    output = output + "  FAILED" + EndOfLine
@@ -10247,7 +10614,7 @@ Protected Module VNSPDFExamplesModule
 		  Dim test2Result As Dictionary = TestZlibShortString()
 		  testOutput = test2Result.Value("output")
 		  If testOutput <> "" Then output = output + testOutput
-		  If test2Result.Value("passed") Then
+		  If test2Result.Value("passed") = True Then
 		    output = output + "  PASSED" + EndOfLine
 		  Else
 		    output = output + "  FAILED" + EndOfLine
@@ -10259,7 +10626,7 @@ Protected Module VNSPDFExamplesModule
 		  Dim test3Result As Dictionary = TestZlibRFC1950()
 		  testOutput = test3Result.Value("output")
 		  If testOutput <> "" Then output = output + testOutput
-		  If test3Result.Value("passed") Then
+		  If test3Result.Value("passed") = True Then
 		    output = output + "  PASSED" + EndOfLine
 		  Else
 		    output = output + "  FAILED" + EndOfLine
@@ -10271,7 +10638,7 @@ Protected Module VNSPDFExamplesModule
 		  Dim test4Result As Dictionary = TestZlibRepeatedPattern()
 		  testOutput = test4Result.Value("output")
 		  If testOutput <> "" Then output = output + testOutput
-		  If test4Result.Value("passed") Then
+		  If test4Result.Value("passed") = True Then
 		    output = output + "  PASSED" + EndOfLine
 		  Else
 		    output = output + "  FAILED" + EndOfLine
@@ -10283,7 +10650,7 @@ Protected Module VNSPDFExamplesModule
 		  Dim test5Result As Dictionary = TestAdler32()
 		  testOutput = test5Result.Value("output")
 		  If testOutput <> "" Then output = output + testOutput
-		  If test5Result.Value("passed") Then
+		  If test5Result.Value("passed") = True Then
 		    output = output + "  PASSED" + EndOfLine
 		  Else
 		    output = output + "  FAILED" + EndOfLine
@@ -10295,7 +10662,7 @@ Protected Module VNSPDFExamplesModule
 		  Dim test6Result As Dictionary = TestZlibRoundTrip()
 		  testOutput = test6Result.Value("output")
 		  If testOutput <> "" Then output = output + testOutput
-		  If test6Result.Value("passed") Then
+		  If test6Result.Value("passed") = True Then
 		    output = output + "  PASSED" + EndOfLine
 		  Else
 		    output = output + "  FAILED" + EndOfLine
@@ -10360,14 +10727,14 @@ Protected Module VNSPDFExamplesModule
 		      output = output + "  Error: Compression returned empty result" + EndOfLine
 		      result.Value("passed") = False
 		    Else
-		      #If TargetiOS Then
+		      #If TargetiOS Or TargetAndroid Then
 		        Dim inputLen As Integer = input.Length
 		      #Else
 		        Dim inputLen As Integer = input.Bytes
 		      #EndIf
 		      Dim ratio As Double = 100.0 * compressedResult.Size / inputLen
 		      output = output + "  Input: " + Str(inputLen) + " bytes, Output: " + Str(compressedResult.Size) + " bytes" + EndOfLine
-		      #If TargetiOS Then
+		      #If TargetiOS Or TargetAndroid Then
 		        output = output + "  Compression ratio: " + FormatHelper(ratio, "0.0") + "%" + EndOfLine
 		      #Else
 		        output = output + "  Compression ratio: " + Format(ratio, "0.0") + "%" + EndOfLine
@@ -10419,7 +10786,7 @@ Protected Module VNSPDFExamplesModule
 		        output = output + "  Error: Invalid FCHECK in header" + EndOfLine
 		        result.Value("passed") = False
 		      Else
-		        #If TargetiOS Then
+		        #If TargetiOS Or TargetAndroid Then
 		          output = output + "  Input: " + Str(input.Length) + " bytes, Output: " + Str(compressedResult.Size) + " bytes" + EndOfLine
 		          output = output + "  Compression ratio: " + FormatHelper(100.0 * compressedResult.Size / input.Length, "0.0") + "%" + EndOfLine
 		        #Else
@@ -10456,7 +10823,7 @@ Protected Module VNSPDFExamplesModule
 		      output = output + "  Error: Compression failed" + EndOfLine
 		      result.Value("passed") = False
 		    Else
-		      #If TargetiOS Then
+		      #If TargetiOS Or TargetAndroid Then
 		        output = output + "  Compressed " + Str(input.Length) + " -> " + Str(compressed.Size) + " bytes" + EndOfLine
 		      #Else
 		        output = output + "  Compressed " + Str(input.Bytes) + " -> " + Str(compressed.Size) + " bytes" + EndOfLine
@@ -10466,7 +10833,7 @@ Protected Module VNSPDFExamplesModule
 		      // This uses pure Xojo inflate on all platforms when hasPremiumVNSZlibModule = True
 		      Dim compressedStr As String = compressed.StringValue(0, compressed.Size)
 		      
-		      #If TargetiOS Then
+		      #If TargetiOS Or TargetAndroid Then
 		        Dim inputLen As Integer = input.Length
 		      #Else
 		        Dim inputLen As Integer = input.Bytes
@@ -10480,7 +10847,7 @@ Protected Module VNSPDFExamplesModule
 		        result.Value("passed") = False
 		      ElseIf decompressed = input Then
 		        output = output + "  Round-trip successful! Data matches." + EndOfLine
-		        #If TargetiOS Then
+		        #If TargetiOS Or TargetAndroid Then
 		          output = output + "  (Using pure Xojo inflate on iOS)" + EndOfLine
 		        #Else
 		          output = output + "  (Using pure Xojo inflate)" + EndOfLine
@@ -10488,7 +10855,7 @@ Protected Module VNSPDFExamplesModule
 		        result.Value("passed") = True
 		      Else
 		        output = output + "  Error: Decompressed data doesn't match original" + EndOfLine
-		        #If TargetiOS Then
+		        #If TargetiOS Or TargetAndroid Then
 		          output = output + "  Expected length: " + Str(input.Length) + EndOfLine
 		          output = output + "  Got length: " + Str(decompressed.Length) + EndOfLine
 		        #Else
@@ -10528,7 +10895,7 @@ Protected Module VNSPDFExamplesModule
 		        output = output + "  Error: Invalid zlib header byte: " + Hex(compressedResult.Byte(0)) + EndOfLine
 		        result.Value("passed") = False
 		      Else
-		        #If TargetiOS Then
+		        #If TargetiOS Or TargetAndroid Then
 		          output = output + "  Input: " + Str(input.Length) + " bytes, Output: " + Str(compressedResult.Size) + " bytes" + EndOfLine
 		        #Else
 		          output = output + "  Input: " + Str(input.Bytes) + " bytes, Output: " + Str(compressedResult.Size) + " bytes" + EndOfLine
@@ -10677,7 +11044,7 @@ Protected Module VNSPDFExamplesModule
 		  statusText = statusText + "✓ All pages imported successfully" + EndOfLine + EndOfLine
 
 		  // Save result
-		  #If TargetiOS Then
+		  #If TargetiOS Or TargetAndroid Then
 		    Dim desktop As FolderItem = SpecialFolder.Documents
 		  #Else
 		    Dim desktop As FolderItem = SpecialFolder.Desktop
@@ -10711,7 +11078,7 @@ Protected Module VNSPDFExamplesModule
 	#tag EndMethod
 
 	#tag Method, Flags = &h1
-		Function DetectTOCEntries(pdfPath As String, ByRef statusText As String, Optional thresholdMultiplier As Double = 1.10, Optional progressCallback As VNSPDFModule.ProgressDelegate = Nil) As Dictionary()
+		Function DetectTOCEntries(pdfPath As String, ByRef statusText As String, Optional thresholdMultiplier As Double = 1.10, Optional progressCallback As ProgressDelegate = Nil) As Dictionary()
 		  // Detect TOC entries by analyzing PDF text structure with font information
 		  // Returns array of Dictionary with "page" (Integer), "title" (String), and "level" (Integer) keys
 		  // thresholdMultiplier: Multiplier of average font size for heading detection (default 1.10 = 10% larger, range 0.5 to 2.0)
@@ -11192,8 +11559,95 @@ Protected Module VNSPDFExamplesModule
 		      pdf.Cell(0, 5, "Platform: Other/Unknown", 0, 1, "L")
 		    #EndIf
 
-		    pdf.Cell(0, 5, "Xojo Version: 2025r2.1 API2", 0, 1, "L")
+		    pdf.Cell(0, 5, "Xojo Version: 2025r3.1 API2", 0, 1, "L")
 		    pdf.Cell(0, 5, "Report Source: Geoff Bridges (Windows 11 user)", 0, 1, "L")
+
+		    // ========== Section: Geoff v1.3 Fixes ==========
+		    pdf.AddPage()
+		    pdf.SetFont("Helvetica", "B", 14)
+		    pdf.Cell(0, 10, "Geoff v1.3 Fixes", 0, 1, "L")
+		    pdf.Ln(2)
+
+		    // --- Test: Cell Vertical Alignment ---
+		    pdf.SetFont("Helvetica", "B", 10)
+		    pdf.Cell(0, 6, "Test: Cell Vertical Alignment (vAlign parameter)", 0, 1, "L")
+		    pdf.SetFont("Helvetica", "", 9)
+		    pdf.Cell(0, 5, "Four cells with 20mm height, same text, different vertical alignment:", 0, 1, "L")
+		    pdf.Ln(2)
+
+		    Dim cellW As Double = 45
+		    Dim cellH As Double = 20
+		    pdf.SetFont("Helvetica", "", 8)
+
+		    // Top aligned
+		    pdf.Cell(cellW, cellH, "Top aligned", 1, 0, "L", False, "", VNSPDFModule.eVerticalAlignment.Top)
+		    // Middle aligned (default)
+		    pdf.Cell(cellW, cellH, "Middle aligned", 1, 0, "L", False, "", VNSPDFModule.eVerticalAlignment.Middle)
+		    // Bottom aligned
+		    pdf.Cell(cellW, cellH, "Bottom aligned", 1, 0, "L", False, "", VNSPDFModule.eVerticalAlignment.Bottom)
+		    // Baseline aligned
+		    pdf.Cell(cellW, cellH, "Baseline aligned", 1, 0, "L", False, "", VNSPDFModule.eVerticalAlignment.Baseline)
+		    pdf.Ln(cellH + 2)
+
+		    pdf.SetFont("Helvetica", "", 8)
+		    pdf.Cell(0, 4, "Expected: text at top/middle/bottom/baseline of each cell", 0, 1, "L")
+		    pdf.Ln(4)
+
+		    // --- Test: Empty Cell with Borders ---
+		    pdf.SetFont("Helvetica", "B", 10)
+		    pdf.Cell(0, 6, "Test: Empty MultiCell with Borders", 0, 1, "L")
+		    pdf.SetFont("Helvetica", "", 9)
+		    pdf.Cell(0, 5, "Empty MultiCell with border=1 should draw borders (was missing before fix):", 0, 1, "L")
+		    pdf.Ln(2)
+
+		    pdf.MultiCell(80, 10, "", 1, "L")
+		    pdf.SetFont("Helvetica", "", 8)
+		    pdf.Cell(0, 4, "Expected: empty rectangle with border above", 0, 1, "L")
+		    pdf.Ln(4)
+
+		    // --- Test: Write with Linebreaks ---
+		    pdf.SetFont("Helvetica", "B", 10)
+		    pdf.Cell(0, 6, "Test: Write() with Linebreak Characters", 0, 1, "L")
+		    pdf.SetFont("Helvetica", "", 9)
+		    pdf.Cell(0, 5, "Write() should respect Chr(10) newline characters:", 0, 1, "L")
+		    pdf.Ln(2)
+
+		    pdf.SetFont("Helvetica", "", 10)
+		    pdf.Write(5, "Line one" + Chr(10) + "Line two" + Chr(10) + "Line three")
+		    pdf.Ln(8)
+
+		    pdf.SetFont("Helvetica", "", 8)
+		    pdf.Cell(0, 4, "Expected: three separate lines above", 0, 1, "L")
+		    pdf.Ln(4)
+
+		    // --- Test: Border.IsNumeric ---
+		    pdf.SetFont("Helvetica", "B", 10)
+		    pdf.Cell(0, 6, "Test: Border Variant Type Handling", 0, 1, "L")
+		    pdf.SetFont("Helvetica", "", 9)
+		    pdf.Cell(0, 5, "Cell with border=1 (Integer), border=""1"" (String), border=""LR"" (String):", 0, 1, "L")
+		    pdf.Ln(2)
+
+		    pdf.SetFont("Helvetica", "", 10)
+		    pdf.Cell(60, 8, "border=1 (Integer)", 1, 0, "L")
+		    pdf.Cell(60, 8, "border=""1"" (String)", "1", 0, "L")
+		    pdf.Cell(60, 8, "border=""LR"" (sides)", "LR", 1, "L")
+		    pdf.Ln(2)
+		    pdf.SetFont("Helvetica", "", 8)
+		    pdf.Cell(0, 4, "Expected: all three cells have visible borders", 0, 1, "L")
+		    pdf.Ln(4)
+
+		    // --- Test: Vertical Alignment with different content ---
+		    pdf.SetFont("Helvetica", "B", 10)
+		    pdf.Cell(0, 6, "Test: Mixed Vertical Alignment in Row", 0, 1, "L")
+		    pdf.Ln(2)
+
+		    pdf.SetFont("Helvetica", "", 10)
+		    cellH = 15
+		    pdf.Cell(45, cellH, "Header (Top)", 1, 0, "C", True, "", VNSPDFModule.eVerticalAlignment.Top)
+		    pdf.Cell(45, cellH, "Value (Middle)", 1, 0, "C", False, "", VNSPDFModule.eVerticalAlignment.Middle)
+		    pdf.Cell(45, cellH, "Footer (Bottom)", 1, 0, "C", False, "", VNSPDFModule.eVerticalAlignment.Bottom)
+		    pdf.Cell(45, cellH, "Base (Baseline)", 1, 0, "C", False, "", VNSPDFModule.eVerticalAlignment.Baseline)
+		    pdf.Ln(cellH + 2)
 
 		    // Generate output
 		    If Not pdf.Ok() Then
@@ -11218,6 +11672,10 @@ Protected Module VNSPDFExamplesModule
 		      statusText = statusText + "  3. First character of long words (X, A, Z)" + EndOfLine
 		      statusText = statusText + "  4. Image visibility" + EndOfLine
 		      statusText = statusText + "  5. MultiCell positioning alignment" + EndOfLine
+		      statusText = statusText + "  6. Cell vertical alignment (Top/Middle/Bottom/Baseline)" + EndOfLine
+		      statusText = statusText + "  7. Empty MultiCell with borders" + EndOfLine
+		      statusText = statusText + "  8. Write() linebreak characters" + EndOfLine
+		      statusText = statusText + "  9. Border variant type handling" + EndOfLine
 		      result.Value("success") = True
 		      result.Value("pdf") = pdfData
 		      result.Value("filename") = "example26_bug_tests.pdf"
@@ -11249,7 +11707,7 @@ Protected Module VNSPDFExamplesModule
 		    pdf.Subject = "Converting HTML to PDF"
 
 		    // Load UTF-8 font for full Unicode/emoji support
-		    #If Not TargetiOS Then
+		    #If Not TargetiOS And Not TargetAndroid Then
 		      Dim fontPath27 As String = "/System/Library/Fonts/Supplemental/Arial Unicode.ttf"
 		      Dim fontFile27 As New FolderItem(fontPath27, FolderItem.PathModes.Native)
 		      If fontFile27.Exists Then
@@ -11338,7 +11796,7 @@ Protected Module VNSPDFExamplesModule
 		    pdf.Subject = "Converting Markdown to PDF"
 
 		    // Load UTF-8 font for full Unicode/emoji support
-		    #If Not TargetiOS Then
+		    #If Not TargetiOS And Not TargetAndroid Then
 		      Dim fontPath28 As String = "/System/Library/Fonts/Supplemental/Arial Unicode.ttf"
 		      Dim fontFile28 As New FolderItem(fontPath28, FolderItem.PathModes.Native)
 		      If fontFile28.Exists Then
@@ -12064,15 +12522,16 @@ Protected Module VNSPDFExamplesModule
 	#tag EndMethod
 
 	#tag Method, Flags = &h0, Description = 4578616D706C652033303A20452D496E766F69636520284661637475722D582F5A55474665524429202D205072656D69756D
-		Function GenerateExample30() As Dictionary
+		Function GenerateExample30(countryCode As String) As Dictionary
 		  #If hasPremiumVNSEInvoiceModule Then
 		    // Example 30: E-Invoice (Factur-X/ZUGFeRD)
 		    // Demonstrates creating a PDF/A-3b compliant invoice with embedded CII XML
+		    // countryCode: 2-letter ISO country code of the seller (FR, DE, IT, ES, etc.)
 
 		    Dim result As New Dictionary
 		    Dim statusText As String = ""
 
-		    statusText = statusText + "Example 30: E-Invoice (Factur-X/ZUGFeRD)" + EndOfLine
+		    statusText = statusText + "Example 30: E-Invoice (Factur-X/ZUGFeRD) - Country: " + countryCode + EndOfLine
 		    statusText = statusText + "==========================================" + EndOfLine + EndOfLine
 
 		    // --- Build invoice data model ---
@@ -12082,38 +12541,253 @@ Protected Module VNSPDFExamplesModule
 		    invoice.InvoiceNumber = "INV-2026-0042"
 		    invoice.InvoiceDate = DateTime.Now
 		    invoice.DueDate = DateTime.Now
+		    invoice.DeliveryDate = DateTime.Now
 		    invoice.Currency = "EUR"
-		    invoice.InvoiceTypeCode = "380"
+		    invoice.InvoiceTypeCode = VNSPDFEInvoicePremium.eInvoiceTypeCode.Invoice.ToString
 		    invoice.BuyerReference = "PO-2026-1234"
-		    invoice.PaymentMeansCode = "30"
-		    invoice.IBAN = "FR7630006000011234567890189"
-		    invoice.BIC = "BNPAFRPPXXX"
+		    invoice.PaymentMeansCode = VNSPDFEInvoicePremium.ePaymentMeansCode.CreditTransfer.ToString
 		    invoice.PaymentReference = "INV-2026-0042"
-		    invoice.Note = "Thank you for your business!"
+		    invoice.PurchaseOrderReference = "PO-2026-1234"
+		    invoice.ContractReference = "CONTRACT-2025-100"
+		    invoice.ProjectReference = "PROJ-2026-007"
+		    invoice.PaymentTerms = "Net 30 days. 2% discount if paid within 10 days."
+		    invoice.InvoicePeriodStart = New DateTime(2026, 3, 1)
+		    invoice.InvoicePeriodEnd = New DateTime(2026, 3, 31)
 
-		    // Seller
+		    // Seller and buyer data based on country
 		    Dim seller As New VNSPDFEInvoiceParty
-		    seller.Name = "VeryNiceSW SARL"
-		    seller.VATNumber = "FR12345678901"
-		    seller.AddressLine1 = "42 Rue de la Paix"
-		    seller.City = "Paris"
-		    seller.PostalCode = "75002"
-		    seller.CountryCode = "FR"
-		    seller.ContactName = "Jean-Yves Pochez"
-		    seller.ContactEmail = "contact@verynicesw.com"
-		    seller.ContactPhone = "+33 1 42 00 00 00"
-		    invoice.Seller = seller
-
-		    // Buyer
 		    Dim buyer As New VNSPDFEInvoiceParty
-		    buyer.Name = "Acme GmbH"
-		    buyer.VATNumber = "DE987654321"
-		    buyer.AddressLine1 = "10 Friedrichstrasse"
-		    buyer.City = "Berlin"
-		    buyer.PostalCode = "10117"
-		    buyer.CountryCode = "DE"
-		    buyer.ContactName = "Hans Mueller"
-		    buyer.ContactEmail = "hans@acme.de"
+
+		    Select Case countryCode
+		    Case "FR"
+		      // France: SIREN required, electronic address, French notes
+		      invoice.IBAN = "FR7630006000011234567890189"
+		      invoice.BIC = "BNPAFRPPXXX"
+
+		      seller.Name = "VeryNiceSW SARL"
+		      seller.VATNumber = "FR12345678901"
+		      seller.LegalRegistrationID = "123456789"
+		      seller.LegalRegistrationScheme = "0002"
+		      seller.ElectronicAddress = "contact@verynicesw.com"
+		      seller.ElectronicAddressScheme = "EM"
+		      seller.AddressLine1 = "42 Rue de la Paix"
+		      seller.City = "Paris"
+		      seller.PostalCode = "75002"
+		      seller.CountryCode = "FR"
+		      seller.ContactName = "Jean-Yves Pochez"
+		      seller.ContactEmail = "contact@verynicesw.com"
+		      seller.ContactPhone = "+33 1 42 00 00 00"
+
+		      buyer.Name = "Acme GmbH"
+		      buyer.VATNumber = "DE987654321"
+		      buyer.ElectronicAddress = "hans@acme.de"
+		      buyer.ElectronicAddressScheme = "EM"
+		      buyer.AddressLine1 = "10 Friedrichstrasse"
+		      buyer.City = "Berlin"
+		      buyer.PostalCode = "10117"
+		      buyer.CountryCode = "DE"
+		      buyer.ContactName = "Hans Mueller"
+		      buyer.ContactEmail = "hans@acme.de"
+
+		      // French-specific notes with subject codes
+		      // BR-FR-05: AAB note (discount/early payment terms) is mandatory in France
+		      invoice.AddNote("Pas d'escompte pour paiement anticipe.", "AAB")
+		      invoice.AddNote("Late payment penalties: 3x the legal interest rate.", "PMD")
+		      invoice.AddNote("Recovery costs for unpaid invoices: 40 EUR.", "PMT")
+
+		    Case "DE"
+		      // Germany: Leitweg-ID, XRechnung
+		      invoice.IBAN = "DE89370400440532013000"
+		      invoice.BIC = "COBADEFFXXX"
+
+		      seller.Name = "Muster GmbH"
+		      seller.VATNumber = "DE123456789"
+		      seller.LegalRegistrationID = "HRB 12345"
+		      seller.LegalRegistrationScheme = "0002"
+		      seller.ElectronicAddress = "info@muster.de"
+		      seller.ElectronicAddressScheme = "EM"
+		      seller.AddressLine1 = "15 Hauptstrasse"
+		      seller.City = "Munich"
+		      seller.PostalCode = "80331"
+		      seller.CountryCode = "DE"
+		      seller.ContactName = "Klaus Schmidt"
+		      seller.ContactEmail = "info@muster.de"
+		      seller.ContactPhone = "+49 89 1234567"
+
+		      buyer.Name = "Buyer SA"
+		      buyer.VATNumber = "FR98765432101"
+		      buyer.ElectronicAddress = "buyer@example.fr"
+		      buyer.ElectronicAddressScheme = "EM"
+		      buyer.AddressLine1 = "5 Avenue des Champs"
+		      buyer.City = "Lyon"
+		      buyer.PostalCode = "69001"
+		      buyer.CountryCode = "FR"
+		      buyer.ContactName = "Pierre Dupont"
+		      buyer.ContactEmail = "buyer@example.fr"
+
+		      invoice.AddNote("Thank you for your business!")
+
+		    Case "IT"
+		      // Italy: Codice Destinatario / PEC
+		      invoice.IBAN = "IT60X0542811101000000123456"
+		      invoice.BIC = "BLOPIT22XXX"
+
+		      seller.Name = "Esempio SRL"
+		      seller.VATNumber = "IT01234567890"
+		      seller.LegalRegistrationID = "01234567890"
+		      seller.LegalRegistrationScheme = "0210"
+		      seller.ElectronicAddress = "ABCDEFG"
+		      seller.ElectronicAddressScheme = "0201"
+		      seller.AddressLine1 = "Via Roma 10"
+		      seller.City = "Rome"
+		      seller.PostalCode = "00100"
+		      seller.CountryCode = "IT"
+		      seller.ContactName = "Marco Rossi"
+		      seller.ContactEmail = "info@esempio.it"
+		      seller.ContactPhone = "+39 06 1234567"
+
+		      buyer.Name = "Comprador SL"
+		      buyer.VATNumber = "ESB12345678"
+		      buyer.ElectronicAddress = "comprador@example.es"
+		      buyer.ElectronicAddressScheme = "EM"
+		      buyer.AddressLine1 = "Calle Mayor 20"
+		      buyer.City = "Madrid"
+		      buyer.PostalCode = "28001"
+		      buyer.CountryCode = "ES"
+		      buyer.ContactName = "Carlos Garcia"
+		      buyer.ContactEmail = "comprador@example.es"
+
+		      invoice.AddNote("Thank you for your business!")
+
+		    Case "ES"
+		      // Spain
+		      invoice.IBAN = "ES9121000418450200051332"
+		      invoice.BIC = "CABORAESXXX"
+
+		      seller.Name = "Vendedor SL"
+		      seller.VATNumber = "ESA12345678"
+		      seller.LegalRegistrationID = "A12345678"
+		      seller.LegalRegistrationScheme = "0002"
+		      seller.ElectronicAddress = "info@vendedor.es"
+		      seller.ElectronicAddressScheme = "EM"
+		      seller.AddressLine1 = "Calle Gran Via 30"
+		      seller.City = "Barcelona"
+		      seller.PostalCode = "08001"
+		      seller.CountryCode = "ES"
+		      seller.ContactName = "Maria Lopez"
+		      seller.ContactEmail = "info@vendedor.es"
+		      seller.ContactPhone = "+34 93 1234567"
+
+		      buyer.Name = "Koper BV"
+		      buyer.VATNumber = "NL123456789B01"
+		      buyer.ElectronicAddress = "koper@example.nl"
+		      buyer.ElectronicAddressScheme = "EM"
+		      buyer.AddressLine1 = "Keizersgracht 100"
+		      buyer.City = "Amsterdam"
+		      buyer.PostalCode = "1015AA"
+		      buyer.CountryCode = "NL"
+		      buyer.ContactName = "Jan de Vries"
+		      buyer.ContactEmail = "koper@example.nl"
+
+		      invoice.AddNote("Thank you for your business!")
+
+		    Case "BE"
+		      // Belgium
+		      invoice.IBAN = "BE68539007547034"
+		      invoice.BIC = "BBRUBEBB"
+
+		      seller.Name = "Verkoper NV"
+		      seller.VATNumber = "BE0123456789"
+		      seller.LegalRegistrationID = "0123456789"
+		      seller.LegalRegistrationScheme = "0208"
+		      seller.ElectronicAddress = "info@verkoper.be"
+		      seller.ElectronicAddressScheme = "EM"
+		      seller.AddressLine1 = "Rue de la Loi 50"
+		      seller.City = "Brussels"
+		      seller.PostalCode = "1000"
+		      seller.CountryCode = "BE"
+		      seller.ContactName = "Luc Peeters"
+		      seller.ContactEmail = "info@verkoper.be"
+		      seller.ContactPhone = "+32 2 1234567"
+
+		      buyer.Name = "Kaeufer AG"
+		      buyer.VATNumber = "ATU12345678"
+		      buyer.ElectronicAddress = "kaeufer@example.at"
+		      buyer.ElectronicAddressScheme = "EM"
+		      buyer.AddressLine1 = "Mariahilfer Strasse 40"
+		      buyer.City = "Vienna"
+		      buyer.PostalCode = "1060"
+		      buyer.CountryCode = "AT"
+		      buyer.ContactName = "Franz Huber"
+		      buyer.ContactEmail = "kaeufer@example.at"
+
+		      invoice.AddNote("Thank you for your business!")
+
+		    Case "NL"
+		      // Netherlands
+		      invoice.IBAN = "NL91ABNA0417164300"
+		      invoice.BIC = "ABNANL2A"
+
+		      seller.Name = "Verkoper BV"
+		      seller.VATNumber = "NL123456789B01"
+		      seller.LegalRegistrationID = "12345678"
+		      seller.LegalRegistrationScheme = "0106"
+		      seller.ElectronicAddress = "info@verkoper.nl"
+		      seller.ElectronicAddressScheme = "EM"
+		      seller.AddressLine1 = "Herengracht 200"
+		      seller.City = "Amsterdam"
+		      seller.PostalCode = "1016BS"
+		      seller.CountryCode = "NL"
+		      seller.ContactName = "Pieter Jansen"
+		      seller.ContactEmail = "info@verkoper.nl"
+		      seller.ContactPhone = "+31 20 1234567"
+
+		      buyer.Name = "Acheteur SARL"
+		      buyer.VATNumber = "FR98765432101"
+		      buyer.ElectronicAddress = "acheteur@example.fr"
+		      buyer.ElectronicAddressScheme = "EM"
+		      buyer.AddressLine1 = "12 Rue de Rivoli"
+		      buyer.City = "Paris"
+		      buyer.PostalCode = "75001"
+		      buyer.CountryCode = "FR"
+		      buyer.ContactName = "Marie Martin"
+		      buyer.ContactEmail = "acheteur@example.fr"
+
+		      invoice.AddNote("Thank you for your business!")
+
+		    Else
+		      // Generic / other country
+		      invoice.IBAN = "GB29NWBK60161331926819"
+		      invoice.BIC = "NWBKGB2L"
+
+		      seller.Name = "Generic Seller Ltd"
+		      seller.VATNumber = countryCode + "123456789"
+		      seller.ElectronicAddress = "seller@example.com"
+		      seller.ElectronicAddressScheme = "EM"
+		      seller.AddressLine1 = "1 Main Street"
+		      seller.City = "Capital City"
+		      seller.PostalCode = "10000"
+		      seller.CountryCode = countryCode
+		      seller.ContactName = "John Doe"
+		      seller.ContactEmail = "seller@example.com"
+		      seller.ContactPhone = "+1 555 1234567"
+
+		      buyer.Name = "Generic Buyer Inc"
+		      buyer.VATNumber = "US987654321"
+		      buyer.ElectronicAddress = "buyer@example.com"
+		      buyer.ElectronicAddressScheme = "EM"
+		      buyer.AddressLine1 = "2 Commerce Ave"
+		      buyer.City = "Trade City"
+		      buyer.PostalCode = "20000"
+		      buyer.CountryCode = "US"
+		      buyer.ContactName = "Jane Smith"
+		      buyer.ContactEmail = "buyer@example.com"
+
+		      invoice.AddNote("Thank you for your business!")
+
+		    End Select
+
+		    invoice.Seller = seller
 		    invoice.Buyer = buyer
 
 		    // Line items
@@ -12122,10 +12796,15 @@ Protected Module VNSPDFExamplesModule
 		    item1.ProductName = "VNS PDF Library - Desktop License"
 		    item1.ProductDescription = "Pure Xojo PDF generation library, desktop platform"
 		    item1.Quantity = 2
-		    item1.UnitCode = "C62"
+		    item1.UnitCode = VNSPDFEInvoicePremium.eUnitCode.Unit.ToString
 		    item1.UnitPrice = 50.00
 		    item1.TaxRate = 20.0
 		    item1.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    item1.SellerItemID = "LIB-DESK-001"
+		    item1.StandardItemID = "4012345678901"
+		    item1.StandardItemSchemeID = "0160"
+		    item1.LinePeriodStart = New DateTime(2026, 3, 1)
+		    item1.LinePeriodEnd = New DateTime(2026, 3, 31)
 		    invoice.AddLineItem(item1)
 
 		    Dim item2 As New VNSPDFEInvoiceLineItem
@@ -12133,10 +12812,11 @@ Protected Module VNSPDFExamplesModule
 		    item2.ProductName = "Premium Encryption Module"
 		    item2.ProductDescription = "AES-256/128 encryption with granular permissions"
 		    item2.Quantity = 2
-		    item2.UnitCode = "C62"
+		    item2.UnitCode = VNSPDFEInvoicePremium.eUnitCode.Unit.ToString
 		    item2.UnitPrice = 50.00
 		    item2.TaxRate = 20.0
 		    item2.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    item2.SellerItemID = "MOD-ENCRYPT-001"
 		    invoice.AddLineItem(item2)
 
 		    Dim item3 As New VNSPDFEInvoiceLineItem
@@ -12144,16 +12824,80 @@ Protected Module VNSPDFExamplesModule
 		    item3.ProductName = "Premium E-Invoice Module"
 		    item3.ProductDescription = "Factur-X/ZUGFeRD e-invoicing with CII XML"
 		    item3.Quantity = 2
-		    item3.UnitCode = "C62"
+		    item3.UnitCode = VNSPDFEInvoicePremium.eUnitCode.Unit.ToString
 		    item3.UnitPrice = 50.00
 		    item3.TaxRate = 20.0
 		    item3.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    item3.SellerItemID = "MOD-EINV-001"
 		    invoice.AddLineItem(item3)
 
-		    // Tax breakdown
+		    // --- Line-level allowances/charges ---
+
+		    // Item 1: 10% volume discount (2 x 50 = 100, discount = 10, net = 90)
+		    Dim lineDiscount1 As New VNSPDFEInvoiceAllowanceCharge
+		    lineDiscount1.IsCharge = False
+		    lineDiscount1.Amount = 10.00
+		    lineDiscount1.BasisAmount = 100.00
+		    lineDiscount1.Percentage = 10.0
+		    lineDiscount1.Reason = "Volume discount"
+		    lineDiscount1.ReasonCode = VNSPDFEInvoicePremium.eAllowanceReasonCode.Discount.ToString
+		    lineDiscount1.TaxRate = 20.0
+		    lineDiscount1.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    item1.AddAllowanceCharge(lineDiscount1)
+
+		    // Item 2: fixed 5 EUR loyalty discount (2 x 50 = 100, discount = 5, net = 95)
+		    Dim lineDiscount2 As New VNSPDFEInvoiceAllowanceCharge
+		    lineDiscount2.IsCharge = False
+		    lineDiscount2.Amount = 5.00
+		    lineDiscount2.Reason = "Loyalty discount"
+		    lineDiscount2.ReasonCode = VNSPDFEInvoicePremium.eAllowanceReasonCode.SpecialRebate.ToString
+		    lineDiscount2.TaxRate = 20.0
+		    lineDiscount2.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    item2.AddAllowanceCharge(lineDiscount2)
+
+		    // Item 3: 8 EUR rush delivery surcharge (2 x 50 = 100, charge = 8, net = 108)
+		    Dim lineCharge3 As New VNSPDFEInvoiceAllowanceCharge
+		    lineCharge3.IsCharge = True
+		    lineCharge3.Amount = 8.00
+		    lineCharge3.Reason = "Rush delivery surcharge"
+		    lineCharge3.ReasonCode = VNSPDFEInvoicePremium.eChargeReasonCode.Advertising.ToString
+		    lineCharge3.TaxRate = 20.0
+		    lineCharge3.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    item3.AddAllowanceCharge(lineCharge3)
+
+		    // --- Document-level allowances/charges ---
+
+		    // Early payment discount
+		    Dim docDiscount As New VNSPDFEInvoiceAllowanceCharge
+		    docDiscount.IsCharge = False
+		    docDiscount.Amount = 15.00
+		    docDiscount.Reason = "Early payment discount (2%)"
+		    docDiscount.ReasonCode = VNSPDFEInvoicePremium.eAllowanceReasonCode.Retailing.ToString
+		    docDiscount.TaxRate = 20.0
+		    docDiscount.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    invoice.AddAllowanceCharge(docDiscount)
+
+		    // Shipping and handling charge
+		    Dim docCharge As New VNSPDFEInvoiceAllowanceCharge
+		    docCharge.IsCharge = True
+		    docCharge.Amount = 5.00
+		    docCharge.Reason = "Shipping and handling"
+		    docCharge.ReasonCode = VNSPDFEInvoicePremium.eChargeReasonCode.Freight.ToString
+		    docCharge.TaxRate = 20.0
+		    docCharge.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    invoice.AddAllowanceCharge(docCharge)
+
+		    // Tax breakdown (adjusted for all allowances/charges)
+		    // Item 1: 2x50 - 10 = 90
+		    // Item 2: 2x50 - 5 = 95
+		    // Item 3: 2x50 + 8 = 108
+		    // Line total: 90 + 95 + 108 = 293
+		    // Doc allowance: -15, Doc charge: +5
+		    // Tax basis: 293 - 15 + 5 = 283
+		    // Tax: 283 x 20% = 56.60
 		    Dim tax1 As New VNSPDFEInvoiceTaxBreakdown
-		    tax1.TaxableAmount = 300.00
-		    tax1.TaxAmount = 60.00
+		    tax1.TaxableAmount = 283.00
+		    tax1.TaxAmount = 56.60
 		    tax1.TaxRate = 20.0
 		    tax1.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
 		    invoice.AddTaxBreakdown(tax1)
@@ -12163,6 +12907,9 @@ Protected Module VNSPDFExamplesModule
 		    statusText = statusText + "  Buyer: " + buyer.Name + " (" + buyer.VATNumber + ")" + EndOfLine
 		    statusText = statusText + "  Line items: " + Str(invoice.LineItems.Count) + EndOfLine
 		    statusText = statusText + "  Line total: " + FormatHelper(invoice.LineTotalAmount, "###,##0.00") + " EUR" + EndOfLine
+		    statusText = statusText + "  Doc allowances: -" + FormatHelper(invoice.AllowanceTotalAmount, "###,##0.00") + " EUR" + EndOfLine
+		    statusText = statusText + "  Doc charges: +" + FormatHelper(invoice.ChargeTotalAmount, "###,##0.00") + " EUR" + EndOfLine
+		    statusText = statusText + "  Tax basis: " + FormatHelper(invoice.TaxBasisTotalAmount, "###,##0.00") + " EUR" + EndOfLine
 		    statusText = statusText + "  Tax total: " + FormatHelper(invoice.TaxTotalAmount, "###,##0.00") + " EUR" + EndOfLine
 		    statusText = statusText + "  Grand total: " + FormatHelper(invoice.GrandTotalAmount, "###,##0.00") + " EUR" + EndOfLine + EndOfLine
 
@@ -12187,7 +12934,20 @@ Protected Module VNSPDFExamplesModule
 
 		    Dim ciiXml As String = VNSPDFEInvoiceXMLGenerator.GenerateCII(invoice, VNSPDFEInvoicePremium.eFacturXProfile.EN16931, False)
 		    statusText = statusText + "  XML length: " + Str(ciiXml.Length) + " bytes" + EndOfLine
-		    statusText = statusText + "  First 200 chars: " + ciiXml.Left(200) + "..." + EndOfLine + EndOfLine
+
+		    // Validate XML element ordering
+		    Dim xmlWarnings() As String = VNSPDFEInvoiceXMLParser.ValidateXMLContent(ciiXml)
+		    Dim orderErrors As Integer = 0
+		    For i As Integer = 0 To xmlWarnings.LastIndex
+		      If xmlWarnings(i).BeginsWith("EINV-E50") Then
+		        statusText = statusText + "  ORDER ERROR: " + xmlWarnings(i) + EndOfLine
+		        orderErrors = orderErrors + 1
+		      End If
+		    Next
+		    If orderErrors = 0 Then
+		      statusText = statusText + "  XML element order: OK" + EndOfLine
+		    End If
+		    statusText = statusText + EndOfLine
 
 		    // --- Create PDF with visual invoice ---
 		    statusText = statusText + "Step 4: Creating PDF with visual invoice layout..." + EndOfLine
@@ -12196,6 +12956,23 @@ Protected Module VNSPDFExamplesModule
 		    pdf.Title = "Example 30 - Factur-X E-Invoice"
 		    pdf.Author = "VNS PDF Library"
 		    pdf.Subject = "Factur-X EN 16931 compliant e-invoice"
+
+		    // PDF/A-3 requires all fonts embedded — register TrueType fonts
+		    // Use Arial (separate .ttf files for each style, available on all platforms)
+		    Dim arialPath As String = VNSPDFModule.FindSystemFontPath("Arial", "")
+		    Dim arialBoldPath As String = VNSPDFModule.FindSystemFontPath("Arial", " Bold")
+		    Dim arialItalicPath As String = VNSPDFModule.FindSystemFontPath("Arial", " Italic")
+		    statusText = statusText + "  Font paths:" + EndOfLine
+		    statusText = statusText + "    Arial: " + If(arialPath <> "", arialPath, "NOT FOUND") + EndOfLine
+		    statusText = statusText + "    Arial Bold: " + If(arialBoldPath <> "", arialBoldPath, "NOT FOUND") + EndOfLine
+		    statusText = statusText + "    Arial Italic: " + If(arialItalicPath <> "", arialItalicPath, "NOT FOUND") + EndOfLine
+		    pdf.AddUTF8Font("helvetica", "", arialPath)
+		    pdf.AddUTF8Font("helvetica", "B", arialBoldPath)
+		    pdf.AddUTF8Font("helvetica", "I", arialItalicPath)
+		    If Not pdf.Ok Then
+		      statusText = statusText + "  WARNING: Font loading error: " + pdf.GetError + EndOfLine
+		      pdf.ClearError()
+		    End If
 
 		    // --- Page 1: Invoice layout ---
 		    Call pdf.SetFont("helvetica", "B", 20)
@@ -12208,7 +12985,16 @@ Protected Module VNSPDFExamplesModule
 		    Call pdf.Cell(95, 6, "Date: " + Str(invoice.InvoiceDate.Year) + "-" + invoice.InvoiceDate.Month.ToString("00") + "-" + invoice.InvoiceDate.Day.ToString("00"), 0, 1, "R")
 		    Call pdf.Cell(95, 6, "Buyer Ref: " + invoice.BuyerReference, 0, 0)
 		    Call pdf.Cell(95, 6, "Due: " + Str(invoice.DueDate.Year) + "-" + invoice.DueDate.Month.ToString("00") + "-" + invoice.DueDate.Day.ToString("00"), 0, 1, "R")
-		    Call pdf.Ln(6)
+		    If invoice.PurchaseOrderReference <> "" Then
+		      Call pdf.Cell(95, 6, "PO: " + invoice.PurchaseOrderReference, 0, 0)
+		    End If
+		    If invoice.ContractReference <> "" Then
+		      Call pdf.Cell(95, 6, "Contract: " + invoice.ContractReference, 0, 1, "R")
+		    End If
+		    If invoice.InvoicePeriodStart <> Nil And invoice.InvoicePeriodEnd <> Nil Then
+		      Call pdf.Cell(190, 6, "Period: " + Str(invoice.InvoicePeriodStart.Year) + "-" + invoice.InvoicePeriodStart.Month.ToString("00") + "-" + invoice.InvoicePeriodStart.Day.ToString("00") + " to " + Str(invoice.InvoicePeriodEnd.Year) + "-" + invoice.InvoicePeriodEnd.Month.ToString("00") + "-" + invoice.InvoicePeriodEnd.Day.ToString("00"), 0, 1)
+		    End If
+		    Call pdf.Ln(4)
 
 		    // Seller and Buyer boxes side by side
 		    Dim yParties As Double = pdf.GetY()
@@ -12272,6 +13058,36 @@ Protected Module VNSPDFExamplesModule
 		      Call pdf.Cell(20, 6, FormatHelper(li.TaxRate, "0.0") + "%", 1, 0, "C")
 		      Call pdf.Cell(30, 6, FormatHelper(li.NetAmount, "###,##0.00"), 1, 0, "R")
 		      Call pdf.Ln(6)
+
+		      // Show line-level allowances/charges as indented sub-rows
+		      Dim lineACs() As VNSPDFEInvoiceAllowanceCharge = li.AllowancesCharges
+		      If lineACs.Count > 0 Then
+		        Call pdf.SetFont("helvetica", "I", 8)
+		        pdf.SetTextColor(100, 100, 100)
+		        For ai As Integer = 0 To lineACs.LastIndex
+		          Dim ac As VNSPDFEInvoiceAllowanceCharge = lineACs(ai)
+		          Dim acLabel As String
+		          If ac.IsCharge Then
+		            acLabel = "  + Charge: "
+		          Else
+		            acLabel = "  - Allowance: "
+		          End If
+		          acLabel = acLabel + ac.Reason
+		          If ac.Percentage > 0 Then acLabel = acLabel + " (" + FormatHelper(ac.Percentage, "0.#") + "%)"
+		          Dim acAmt As String
+		          If ac.IsCharge Then
+		            acAmt = "+" + FormatHelper(ac.Amount, "0.00")
+		          Else
+		            acAmt = "-" + FormatHelper(ac.Amount, "0.00")
+		          End If
+		          Call pdf.Cell(10, 5, "", 0, 0)
+		          Call pdf.Cell(115, 5, acLabel, 0, 0, "L")
+		          Call pdf.Cell(30, 5, acAmt, 0, 0, "R")
+		          Call pdf.Ln(5)
+		        Next
+		        Call pdf.SetFont("helvetica", "", 9)
+		        pdf.SetTextColor(0, 0, 0)
+		      End If
 		    Next
 
 		    // Totals
@@ -12279,6 +13095,34 @@ Protected Module VNSPDFExamplesModule
 		    Call pdf.SetFont("helvetica", "", 10)
 		    Call pdf.Cell(145, 6, "Subtotal (excl. VAT):", 0, 0, "R")
 		    Call pdf.Cell(30, 6, FormatHelper(invoice.LineTotalAmount, "###,##0.00") + " EUR", 0, 1, "R")
+
+		    // Document-level allowances/charges
+		    Dim docACs() As VNSPDFEInvoiceAllowanceCharge = invoice.AllowancesCharges
+		    If docACs.Count > 0 Then
+		      For i As Integer = 0 To docACs.LastIndex
+		        Dim ac As VNSPDFEInvoiceAllowanceCharge = docACs(i)
+		        Dim acLabel As String
+		        If ac.IsCharge Then
+		          acLabel = "Charge: " + ac.Reason
+		        Else
+		          acLabel = "Allowance: " + ac.Reason
+		        End If
+		        Dim acAmt As String
+		        If ac.IsCharge Then
+		          acAmt = "+" + FormatHelper(ac.Amount, "###,##0.00") + " EUR"
+		        Else
+		          acAmt = "-" + FormatHelper(ac.Amount, "###,##0.00") + " EUR"
+		        End If
+		        Call pdf.Cell(145, 6, acLabel + ":", 0, 0, "R")
+		        Call pdf.Cell(30, 6, acAmt, 0, 1, "R")
+		      Next
+		    End If
+
+		    // Show tax basis if different from line total (allowances/charges present)
+		    If invoice.AllowanceTotalAmount > 0 Or invoice.ChargeTotalAmount > 0 Then
+		      Call pdf.Cell(145, 6, "Tax basis:", 0, 0, "R")
+		      Call pdf.Cell(30, 6, FormatHelper(invoice.TaxBasisTotalAmount, "###,##0.00") + " EUR", 0, 1, "R")
+		    End If
 
 		    Call pdf.Cell(145, 6, "VAT (20.0%):", 0, 0, "R")
 		    Call pdf.Cell(30, 6, FormatHelper(invoice.TaxTotalAmount, "###,##0.00") + " EUR", 0, 1, "R")
@@ -12299,15 +13143,22 @@ Protected Module VNSPDFExamplesModule
 		    Call pdf.Cell(0, 5, "IBAN: " + invoice.IBAN, 0, 1)
 		    Call pdf.Cell(0, 5, "BIC: " + invoice.BIC, 0, 1)
 		    Call pdf.Cell(0, 5, "Reference: " + invoice.PaymentReference, 0, 1)
+		    If invoice.PaymentTerms <> "" Then
+		      Call pdf.Cell(0, 5, "Terms: " + invoice.PaymentTerms, 0, 1)
+		    End If
 		    Call pdf.Ln(3)
 		    Call pdf.SetFont("helvetica", "I", 9)
-		    Call pdf.Cell(0, 5, invoice.Note, 0, 1)
+		    Dim invoiceNotes() As Dictionary = invoice.Notes
+		    For i As Integer = 0 To invoiceNotes.LastIndex
+		      Call pdf.Cell(0, 5, invoiceNotes(i).Value("content").StringValue, 0, 1)
+		    Next
 
 		    // Factur-X badge
 		    Call pdf.Ln(8)
 		    Call pdf.SetFont("helvetica", "B", 8)
 		    Call pdf.SetTextColor(100, 100, 100)
 		    Call pdf.Cell(0, 5, "This invoice is Factur-X EN 16931 compliant (PDF/A-3b with embedded CII XML)", 0, 1, "C")
+		    Call pdf.Cell(0, 5, "Conforms to " + EInvoiceNormForCountry(countryCode), 0, 1, "C")
 		    Call pdf.SetTextColor(0, 0, 0)
 
 		    If pdf.Err() Then
@@ -12355,7 +13206,327 @@ Protected Module VNSPDFExamplesModule
 		      statusText = statusText + "  - sRGB ICC profile in OutputIntent" + EndOfLine
 		      statusText = statusText + "  - factur-x.xml embedded as attachment" + EndOfLine
 		      result.Value("pdf") = pdfData
-		      result.Value("filename") = "example30_einvoice_facturx.pdf"
+		      result.Value("filename") = "example30_einvoice_facturx_" + countryCode.Lowercase + ".pdf"
+
+		      // --- Generate credit note referencing this invoice ---
+		      statusText = statusText + EndOfLine + "Step 6: Generating credit note..." + EndOfLine
+
+		      Dim creditNote As New VNSPDFEInvoice
+		      creditNote.InvoiceNumber = "CN-2026-0042"
+		      creditNote.InvoiceTypeCode = VNSPDFEInvoicePremium.eInvoiceTypeCode.CreditNote.ToString
+		      creditNote.InvoiceDate = DateTime.Now
+		      creditNote.DueDate = DateTime.Now
+		      creditNote.DeliveryDate = DateTime.Now
+		      creditNote.Currency = "EUR"
+		      creditNote.BuyerReference = invoice.BuyerReference
+		      creditNote.PaymentMeansCode = "30"
+		      creditNote.PaymentReference = "CN-2026-0042"
+		      creditNote.IBAN = invoice.IBAN
+		      creditNote.BIC = invoice.BIC
+		      creditNote.PrecedingInvoiceNumber = invoice.InvoiceNumber
+		      creditNote.PrecedingInvoiceDate = invoice.InvoiceDate
+		      creditNote.PaymentTerms = "Credit applied to account"
+		      creditNote.Seller = invoice.Seller
+		      creditNote.Buyer = invoice.Buyer
+
+		      // Credit note line: partial refund on item 1
+		      Dim cnItem As New VNSPDFEInvoiceLineItem
+		      cnItem.LineID = "1"
+		      cnItem.ProductName = "VNS PDF Library - Desktop License (return)"
+		      cnItem.ProductDescription = "Partial refund: 1 of 2 licenses returned"
+		      cnItem.Quantity = 1
+		      cnItem.UnitCode = VNSPDFEInvoicePremium.eUnitCode.Unit.ToString
+		      cnItem.UnitPrice = 50.00
+		      cnItem.TaxRate = 20.0
+		      cnItem.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		      creditNote.AddLineItem(cnItem)
+
+		      // Tax breakdown for credit note
+		      Dim cnTax As New VNSPDFEInvoiceTaxBreakdown
+		      cnTax.TaxableAmount = 50.00
+		      cnTax.TaxAmount = 10.00
+		      cnTax.TaxRate = 20.0
+		      cnTax.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		      creditNote.AddTaxBreakdown(cnTax)
+
+		      // Add French mandatory notes if FR (BR-FR-05)
+		      If countryCode = "FR" Then
+		        creditNote.AddNote("Avoir suite a retour partiel.", "AAB")
+		        creditNote.AddNote("Late payment penalties: 3x the legal interest rate.", "PMD")
+		        creditNote.AddNote("Recovery costs for unpaid invoices: 40 EUR.", "PMT")
+		      End If
+
+		      // Validate credit note
+		      Dim cnErrors() As String = VNSPDFEInvoiceValidator.Validate(creditNote, VNSPDFEInvoicePremium.eFacturXProfile.EN16931)
+		      If cnErrors.Count > 0 Then
+		        statusText = statusText + "  Credit note validation errors:" + EndOfLine
+		        For i As Integer = 0 To cnErrors.LastIndex
+		          statusText = statusText + "    - " + cnErrors(i) + EndOfLine
+		        Next
+		      Else
+		        statusText = statusText + "  Credit note validation passed!" + EndOfLine
+		      End If
+
+		      // Show credit note settlement XML for debugging
+		      Dim cnXml As String = VNSPDFEInvoiceXMLGenerator.GenerateCII(creditNote, VNSPDFEInvoicePremium.eFacturXProfile.EN16931, False)
+		      Dim settlStart As Integer = cnXml.IndexOf("ApplicableHeaderTradeSettlement")
+		      If settlStart >= 0 Then
+		        Dim settlSnippet As String = cnXml.Middle(settlStart - 5, 800)
+		        statusText = statusText + "  Settlement XML:" + EndOfLine + settlSnippet + EndOfLine + "..." + EndOfLine
+		      End If
+
+		      // Create credit note PDF
+		      Dim cnPdf As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, VNSPDFModule.ePageUnit.Millimeters, VNSPDFModule.ePageFormat.A4)
+		      cnPdf.Title = "Credit Note CN-2026-0042"
+		      cnPdf.Author = "VNS PDF Library"
+
+		      // Embed Arial for PDF/A-3
+		      cnPdf.AddUTF8Font("helvetica", "", VNSPDFModule.FindSystemFontPath("Arial", ""))
+		      cnPdf.AddUTF8Font("helvetica", "B", VNSPDFModule.FindSystemFontPath("Arial", " Bold"))
+		      cnPdf.AddUTF8Font("helvetica", "I", VNSPDFModule.FindSystemFontPath("Arial", " Italic"))
+
+		      // Simple credit note layout
+		      Call cnPdf.SetFont("helvetica", "B", 20)
+		      Call cnPdf.Cell(0, 12, "CREDIT NOTE", 0, 1, "R")
+		      Call cnPdf.SetFont("helvetica", "", 10)
+		      Call cnPdf.Cell(95, 6, "Credit Note No: " + creditNote.InvoiceNumber, 0, 0)
+		      Call cnPdf.Cell(95, 6, "Date: " + Str(creditNote.InvoiceDate.Year) + "-" + creditNote.InvoiceDate.Month.ToString("00") + "-" + creditNote.InvoiceDate.Day.ToString("00"), 0, 1, "R")
+		      Call cnPdf.Cell(190, 6, "References invoice: " + creditNote.PrecedingInvoiceNumber, 0, 1)
+		      Call cnPdf.Ln(4)
+
+		      Call cnPdf.SetFont("helvetica", "B", 11)
+		      Call cnPdf.Cell(90, 7, "FROM: " + seller.Name, 0, 0)
+		      Call cnPdf.Cell(90, 7, "TO: " + buyer.Name, 0, 1)
+		      Call cnPdf.Ln(6)
+
+		      // Line items table
+		      Call cnPdf.SetFont("helvetica", "B", 9)
+		      Call cnPdf.SetFillColor(220, 220, 220)
+		      Call cnPdf.Cell(10, 7, "#", 1, 0, "C", True)
+		      Call cnPdf.Cell(80, 7, "Description", 1, 0, "L", True)
+		      Call cnPdf.Cell(20, 7, "Qty", 1, 0, "C", True)
+		      Call cnPdf.Cell(25, 7, "Price", 1, 0, "R", True)
+		      Call cnPdf.Cell(20, 7, "VAT%", 1, 0, "C", True)
+		      Call cnPdf.Cell(30, 7, "Amount", 1, 0, "R", True)
+		      Call cnPdf.Ln(7)
+
+		      Call cnPdf.SetFont("helvetica", "", 9)
+		      Call cnPdf.Cell(10, 6, "1", 1, 0, "C")
+		      Call cnPdf.Cell(80, 6, cnItem.ProductName, 1, 0, "L")
+		      Call cnPdf.Cell(20, 6, "1", 1, 0, "C")
+		      Call cnPdf.Cell(25, 6, "50.00", 1, 0, "R")
+		      Call cnPdf.Cell(20, 6, "20.0%", 1, 0, "C")
+		      Call cnPdf.Cell(30, 6, "50.00", 1, 0, "R")
+		      Call cnPdf.Ln(6)
+
+		      Call cnPdf.Ln(3)
+		      Call cnPdf.SetFont("helvetica", "", 10)
+		      Call cnPdf.Cell(145, 6, "Subtotal:", 0, 0, "R")
+		      Call cnPdf.Cell(30, 6, "50.00 EUR", 0, 1, "R")
+		      Call cnPdf.Cell(145, 6, "VAT (20.0%):", 0, 0, "R")
+		      Call cnPdf.Cell(30, 6, "10.00 EUR", 0, 1, "R")
+		      Call cnPdf.SetFont("helvetica", "B", 11)
+		      Call cnPdf.Cell(145, 8, "CREDIT TOTAL:", 0, 0, "R")
+		      Call cnPdf.Cell(30, 8, "60.00 EUR", 0, 1, "R")
+
+		      Call cnPdf.Ln(8)
+		      Call cnPdf.SetFont("helvetica", "B", 8)
+		      cnPdf.SetTextColor(100, 100, 100)
+		      Call cnPdf.Cell(0, 5, "This credit note is Factur-X EN 16931 compliant (PDF/A-3b with embedded CII XML)", 0, 1, "C")
+		      cnPdf.SetTextColor(0, 0, 0)
+
+		      // Apply Factur-X compliance
+		      VNSPDFEInvoicePremium.CreateFacturXInvoice(cnPdf, creditNote, VNSPDFEInvoicePremium.eFacturXProfile.EN16931)
+
+		      Dim cnData As String = cnPdf.Output()
+		      If cnData <> "" Then
+		        result.Value("pdf2") = cnData
+		        result.Value("filename2") = "example30_creditnote_facturx_" + countryCode.Lowercase + ".pdf"
+		        statusText = statusText + "  Credit note PDF size: " + Str(cnData.Length) + " bytes" + EndOfLine
+		      End If
+		    End If
+
+		    // --- Generate precision test invoice (small prices x large quantities) ---
+		    statusText = statusText + EndOfLine + "Step 7: Generating precision test invoice..." + EndOfLine
+
+		    Dim precInv As New VNSPDFEInvoice(2, 5, 3, 2)
+		    precInv.InvoiceNumber = "INV-2026-PREC"
+		    precInv.InvoiceDate = DateTime.Now
+		    precInv.DueDate = DateTime.Now
+		    precInv.DeliveryDate = DateTime.Now
+		    precInv.Currency = "EUR"
+		    precInv.InvoiceTypeCode = "380"
+		    precInv.BuyerReference = "PO-PRECISION-TEST"
+		    precInv.PaymentMeansCode = "30"
+		    precInv.PaymentReference = "INV-2026-PREC"
+		    precInv.IBAN = invoice.IBAN
+		    precInv.BIC = invoice.BIC
+		    precInv.PaymentTerms = "Net 30 days"
+		    precInv.Seller = invoice.Seller
+		    precInv.Buyer = invoice.Buyer
+
+		    If countryCode = "FR" Then
+		      precInv.AddNote("Pas d'escompte pour paiement anticipe.", "AAB")
+		      precInv.AddNote("Late payment penalties: 3x the legal interest rate.", "PMD")
+		      precInv.AddNote("Recovery costs for unpaid invoices: 40 EUR.", "PMT")
+		    End If
+
+		    // Line 1: Small unit price x large quantity
+		    // 0.00250 EUR x 10000 = 25.00 EUR
+		    Dim precItem1 As New VNSPDFEInvoiceLineItem
+		    precItem1.LineID = "1"
+		    precItem1.ProductName = "Micro-component (small price x large qty)"
+		    precItem1.ProductDescription = "Unit price 0.00250 EUR x 10000 units = 25.00 EUR"
+		    precItem1.Quantity = 10000
+		    precItem1.UnitPrice = 0.0025
+		    precItem1.TaxRate = 20.0
+		    precItem1.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    precInv.AddLineItem(precItem1)
+
+		    // Line 2: Fractional quantity
+		    // 150.00 EUR x 1.500 kg = 225.00 EUR
+		    Dim precItem2 As New VNSPDFEInvoiceLineItem
+		    precItem2.LineID = "2"
+		    precItem2.ProductName = "Bulk material sold by weight"
+		    precItem2.ProductDescription = "150.00 EUR/kg x 1.500 kg"
+		    precItem2.Quantity = 1.5
+		    precItem2.UnitCode = VNSPDFEInvoicePremium.eUnitCode.Kilogram.ToString
+		    precItem2.UnitPrice = 150.00
+		    precItem2.TaxRate = 20.0
+		    precItem2.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    precInv.AddLineItem(precItem2)
+
+		    // Line 3: Very small price with allowance -> negative net
+		    // 0.01000 EUR x 500 = 5.00, allowance 10.00 -> net = -5.00 EUR
+		    Dim precItem3 As New VNSPDFEInvoiceLineItem
+		    precItem3.LineID = "3"
+		    precItem3.ProductName = "Sample items (net negative after discount)"
+		    precItem3.ProductDescription = "0.01 EUR x 500 = 5.00, minus 10.00 discount = -5.00"
+		    precItem3.Quantity = 500
+		    precItem3.UnitPrice = 0.01
+		    precItem3.TaxRate = 20.0
+		    precItem3.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    precInv.AddLineItem(precItem3)
+		    Dim precDiscount As New VNSPDFEInvoiceAllowanceCharge
+		    precDiscount.IsCharge = False
+		    precDiscount.Amount = 10.00
+		    precDiscount.Reason = "Promotional discount exceeding line value"
+		    precDiscount.TaxRate = 20.0
+		    precDiscount.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    precItem3.AddAllowanceCharge(precDiscount)
+
+		    // Tax breakdown: sum of lines = 25.00 + 225.00 + (-5.00) = 245.00
+		    // VAT = 245.00 * 20% = 49.00
+		    Dim precTax As New VNSPDFEInvoiceTaxBreakdown
+		    precTax.TaxableAmount = 245.00
+		    precTax.TaxAmount = 49.00
+		    precTax.TaxRate = 20.0
+		    precTax.TaxCategoryCode = VNSPDFEInvoicePremium.eTaxCategoryCode.StandardRate
+		    precInv.AddTaxBreakdown(precTax)
+
+		    statusText = statusText + "  Precision settings: amounts=" + Str(precInv.AmountPrecision)
+		    statusText = statusText + ", prices=" + Str(precInv.PricePrecision)
+		    statusText = statusText + ", quantities=" + Str(precInv.QuantityPrecision)
+		    statusText = statusText + ", percents=" + Str(precInv.PercentPrecision) + EndOfLine
+		    statusText = statusText + "  Line 1: 0.00250 x 10000 = " + Str(precItem1.NetAmount, "0.00") + EndOfLine
+		    statusText = statusText + "  Line 2: 149.99 x 1.500 = " + Str(precItem2.NetAmount, "0.00") + EndOfLine
+		    statusText = statusText + "  Line 3: 0.01 x 500 - 10.00 = " + Str(precItem3.NetAmount, "0.00") + EndOfLine
+		    statusText = statusText + "  Line total: " + Str(precInv.LineTotalAmount, "0.00") + EndOfLine
+		    statusText = statusText + "  Grand total: " + Str(precInv.GrandTotalAmount, "0.00") + " EUR" + EndOfLine
+
+		    // Validate
+		    Dim precErrors() As String = VNSPDFEInvoiceValidator.Validate(precInv, VNSPDFEInvoicePremium.eFacturXProfile.EN16931)
+		    If precErrors.Count > 0 Then
+		      statusText = statusText + "  Validation errors:" + EndOfLine
+		      For i As Integer = 0 To precErrors.LastIndex
+		        statusText = statusText + "    - " + precErrors(i) + EndOfLine
+		      Next
+		    Else
+		      statusText = statusText + "  Validation passed!" + EndOfLine
+		    End If
+
+		    // Generate PDF
+		    Dim precPdf As New VNSPDFDocument(VNSPDFModule.ePageOrientation.Portrait, VNSPDFModule.ePageUnit.Millimeters, VNSPDFModule.ePageFormat.A4)
+		    precPdf.Title = "Precision Test Invoice INV-2026-PREC"
+		    precPdf.Author = "VNS PDF Library"
+
+		    precPdf.AddUTF8Font("helvetica", "", VNSPDFModule.FindSystemFontPath("Arial", ""))
+		    precPdf.AddUTF8Font("helvetica", "B", VNSPDFModule.FindSystemFontPath("Arial", " Bold"))
+		    precPdf.AddUTF8Font("helvetica", "I", VNSPDFModule.FindSystemFontPath("Arial", " Italic"))
+
+		    Call precPdf.SetFont("helvetica", "B", 20)
+		    Call precPdf.Cell(0, 12, "PRECISION TEST INVOICE", 0, 1, "R")
+		    Call precPdf.SetFont("helvetica", "", 10)
+		    Call precPdf.Cell(95, 6, "Invoice No: " + precInv.InvoiceNumber, 0, 0)
+		    Call precPdf.Cell(95, 6, "Date: " + Str(precInv.InvoiceDate.Year) + "-" + precInv.InvoiceDate.Month.ToString("00") + "-" + precInv.InvoiceDate.Day.ToString("00"), 0, 1, "R")
+		    Call precPdf.Cell(190, 6, "Precision: prices=" + Str(precInv.PricePrecision) + " qty=" + Str(precInv.QuantityPrecision), 0, 1)
+		    Call precPdf.Ln(4)
+
+		    Call precPdf.SetFont("helvetica", "B", 11)
+		    Call precPdf.Cell(90, 7, "FROM: " + seller.Name, 0, 0)
+		    Call precPdf.Cell(90, 7, "TO: " + buyer.Name, 0, 1)
+		    Call precPdf.Ln(6)
+
+		    // Table header
+		    Call precPdf.SetFont("helvetica", "B", 9)
+		    Call precPdf.SetFillColor(220, 220, 220)
+		    Call precPdf.Cell(10, 7, "#", 1, 0, "C", True)
+		    Call precPdf.Cell(60, 7, "Description", 1, 0, "L", True)
+		    Call precPdf.Cell(25, 7, "Qty", 1, 0, "R", True)
+		    Call precPdf.Cell(30, 7, "Unit Price", 1, 0, "R", True)
+		    Call precPdf.Cell(20, 7, "VAT%", 1, 0, "C", True)
+		    Call precPdf.Cell(30, 7, "Net Amount", 1, 0, "R", True)
+		    Call precPdf.Ln(7)
+
+		    Call precPdf.SetFont("helvetica", "", 9)
+		    // Line 1
+		    Call precPdf.Cell(10, 6, "1", 1, 0, "C")
+		    Call precPdf.Cell(60, 6, precItem1.ProductName, 1, 0, "L")
+		    Call precPdf.Cell(25, 6, Str(precItem1.Quantity, "#,##0.###"), 1, 0, "R")
+		    Call precPdf.Cell(30, 6, Str(precItem1.UnitPrice, "0.00000"), 1, 0, "R")
+		    Call precPdf.Cell(20, 6, "20%", 1, 0, "C")
+		    Call precPdf.Cell(30, 6, Str(precItem1.NetAmount, "0.00"), 1, 0, "R")
+		    Call precPdf.Ln(6)
+		    // Line 2
+		    Call precPdf.Cell(10, 6, "2", 1, 0, "C")
+		    Call precPdf.Cell(60, 6, precItem2.ProductName, 1, 0, "L")
+		    Call precPdf.Cell(25, 6, Str(precItem2.Quantity, "#,##0.###"), 1, 0, "R")
+		    Call precPdf.Cell(30, 6, Str(precItem2.UnitPrice, "0.00"), 1, 0, "R")
+		    Call precPdf.Cell(20, 6, "20%", 1, 0, "C")
+		    Call precPdf.Cell(30, 6, Str(precItem2.NetAmount, "0.00"), 1, 0, "R")
+		    Call precPdf.Ln(6)
+		    // Line 3 (negative net)
+		    Call precPdf.Cell(10, 6, "3", 1, 0, "C")
+		    Call precPdf.Cell(60, 6, precItem3.ProductName, 1, 0, "L")
+		    Call precPdf.Cell(25, 6, Str(precItem3.Quantity, "#,##0.###"), 1, 0, "R")
+		    Call precPdf.Cell(30, 6, Str(precItem3.UnitPrice, "0.00000"), 1, 0, "R")
+		    Call precPdf.Cell(20, 6, "20%", 1, 0, "C")
+		    Call precPdf.Cell(30, 6, Str(precItem3.NetAmount, "0.00"), 1, 0, "R")
+		    Call precPdf.Ln(6)
+
+		    Call precPdf.Ln(3)
+		    Call precPdf.SetFont("helvetica", "", 10)
+		    Call precPdf.Cell(145, 6, "Line Total:", 0, 0, "R")
+		    Call precPdf.Cell(30, 6, Str(precInv.LineTotalAmount, "0.00") + " EUR", 0, 1, "R")
+		    Call precPdf.Cell(145, 6, "VAT (20%):", 0, 0, "R")
+		    Call precPdf.Cell(30, 6, Str(precInv.TaxTotalAmount, "0.00") + " EUR", 0, 1, "R")
+		    Call precPdf.SetFont("helvetica", "B", 11)
+		    Call precPdf.Cell(145, 8, "GRAND TOTAL:", 0, 0, "R")
+		    Call precPdf.Cell(30, 8, Str(precInv.GrandTotalAmount, "0.00") + " EUR", 0, 1, "R")
+
+		    Call precPdf.Ln(8)
+		    Call precPdf.SetFont("helvetica", "B", 8)
+		    precPdf.SetTextColor(100, 100, 100)
+		    Call precPdf.Cell(0, 5, "Precision test: Factur-X EN 16931 compliant (prices 5 decimals, quantities 3 decimals)", 0, 1, "C")
+		    precPdf.SetTextColor(0, 0, 0)
+
+		    VNSPDFEInvoicePremium.CreateFacturXInvoice(precPdf, precInv, VNSPDFEInvoicePremium.eFacturXProfile.EN16931)
+
+		    Dim precData As String = precPdf.Output()
+		    If precData <> "" Then
+		      result.Value("pdf3") = precData
+		      result.Value("filename3") = "example30_precision_facturx_" + countryCode.Lowercase + ".pdf"
+		      statusText = statusText + "  Precision test PDF size: " + Str(precData.Length) + " bytes" + EndOfLine
 		    End If
 
 		    result.Value("message") = statusText
@@ -12512,6 +13683,54 @@ Protected Module VNSPDFExamplesModule
 		            Dim net As Double = 0
 		            If item.HasKey(kNet) Then net = item.Value(kNet)
 		            statusText = statusText + "  " + lineID + ": " + prodName + " (qty=" + Str(qty, "0.00") + " x " + Str(price, "0.00") + " = " + Str(net, "0.00") + ")" + EndOfLine
+
+		            // Line-level allowances/charges
+		            Dim kACs As String = VNSPDFEInvoicePremium.eInvoiceJSONKey.AllowancesCharges.ToString
+		            If item.HasKey(kACs) Then
+		              Dim lineACs As JSONItem = item.Value(kACs)
+		              For ai As Integer = 0 To lineACs.Count - 1
+		                Dim acItem As JSONItem = lineACs.ChildAt(ai)
+		                Dim acType As String
+		                If acItem.Value(VNSPDFEInvoicePremium.eInvoiceJSONKey.IsCharge.ToString) Then
+		                  acType = "Charge"
+		                Else
+		                  acType = "Allowance"
+		                End If
+		                Dim acAmt As String = acItem.Value(VNSPDFEInvoicePremium.eInvoiceJSONKey.Amount.ToString).StringValue
+		                Dim acReason As String = ""
+		                Dim kReason As String = VNSPDFEInvoicePremium.eInvoiceJSONKey.Reason.ToString
+		                If acItem.HasKey(kReason) Then acReason = acItem.Value(kReason).StringValue
+		                Dim acPctStr As String = ""
+		                Dim kPct As String = VNSPDFEInvoicePremium.eInvoiceJSONKey.Percentage.ToString
+		                If acItem.HasKey(kPct) Then acPctStr = " (" + acItem.Value(kPct).StringValue + "%)"
+		                statusText = statusText + "       " + acType + ": " + acAmt + acPctStr
+		                If acReason <> "" Then statusText = statusText + " - " + acReason
+		                statusText = statusText + EndOfLine
+		              Next
+		            End If
+		          Next
+		        End If
+
+		        // Document-level allowances/charges
+		        Dim kDocACs As String = VNSPDFEInvoicePremium.eInvoiceJSONKey.AllowancesCharges.ToString
+		        If inv.HasKey(kDocACs) Then
+		          Dim docACs As JSONItem = inv.Value(kDocACs)
+		          statusText = statusText + EndOfLine + "Document Allowances/Charges (" + Str(docACs.Count) + "):" + EndOfLine
+		          For i As Integer = 0 To docACs.Count - 1
+		            Dim acItem As JSONItem = docACs.ChildAt(i)
+		            Dim acType As String
+		            If acItem.Value(VNSPDFEInvoicePremium.eInvoiceJSONKey.IsCharge.ToString) Then
+		              acType = "Charge"
+		            Else
+		              acType = "Allowance"
+		            End If
+		            Dim acAmt As String = acItem.Value(VNSPDFEInvoicePremium.eInvoiceJSONKey.Amount.ToString).StringValue
+		            Dim acReason As String = ""
+		            Dim kReason As String = VNSPDFEInvoicePremium.eInvoiceJSONKey.Reason.ToString
+		            If acItem.HasKey(kReason) Then acReason = acItem.Value(kReason).StringValue
+		            statusText = statusText + "  " + acType + ": " + acAmt
+		            If acReason <> "" Then statusText = statusText + " - " + acReason
+		            statusText = statusText + EndOfLine
 		          Next
 		        End If
 
@@ -12519,15 +13738,43 @@ Protected Module VNSPDFExamplesModule
 		        statusText = statusText + EndOfLine + "Totals:" + EndOfLine
 		        Dim kLineTotal As String = VNSPDFEInvoicePremium.eInvoiceJSONKey.LineTotalAmount.ToString
 		        If inv.HasKey(kLineTotal) Then
-		          statusText = statusText + "  Line Total: " + Str(inv.Value(kLineTotal).DoubleValue, "0.00") + EndOfLine
+		          statusText = statusText + "  Line Total:      " + Str(inv.Value(kLineTotal).DoubleValue, "0.00") + EndOfLine
+		        End If
+		        Dim kAllowTotal As String = VNSPDFEInvoicePremium.eInvoiceJSONKey.AllowanceTotalAmount.ToString
+		        If inv.HasKey(kAllowTotal) Then
+		          statusText = statusText + "  Allowances:     -" + Str(inv.Value(kAllowTotal).DoubleValue, "0.00") + EndOfLine
+		        End If
+		        Dim kChargeTotal As String = VNSPDFEInvoicePremium.eInvoiceJSONKey.ChargeTotalAmount.ToString
+		        If inv.HasKey(kChargeTotal) Then
+		          statusText = statusText + "  Charges:        +" + Str(inv.Value(kChargeTotal).DoubleValue, "0.00") + EndOfLine
+		        End If
+		        Dim kTaxBasis As String = VNSPDFEInvoicePremium.eInvoiceJSONKey.TaxBasisTotalAmount.ToString
+		        If inv.HasKey(kTaxBasis) Then
+		          statusText = statusText + "  Tax Basis:       " + Str(inv.Value(kTaxBasis).DoubleValue, "0.00") + EndOfLine
 		        End If
 		        Dim kTaxTotal As String = VNSPDFEInvoicePremium.eInvoiceJSONKey.TaxTotalAmount.ToString
 		        If inv.HasKey(kTaxTotal) Then
-		          statusText = statusText + "  Tax Total:  " + Str(inv.Value(kTaxTotal).DoubleValue, "0.00") + EndOfLine
+		          statusText = statusText + "  Tax Total:       " + Str(inv.Value(kTaxTotal).DoubleValue, "0.00") + EndOfLine
 		        End If
 		        Dim kGrandTotal As String = VNSPDFEInvoicePremium.eInvoiceJSONKey.GrandTotalAmount.ToString
 		        If inv.HasKey(kGrandTotal) Then
-		          statusText = statusText + "  Grand Total:" + Str(inv.Value(kGrandTotal).DoubleValue, "0.00") + EndOfLine
+		          statusText = statusText + "  Grand Total:     " + Str(inv.Value(kGrandTotal).DoubleValue, "0.00") + EndOfLine
+		        End If
+		      End If
+
+		      // Validate XML element ordering
+		      If jsonResult.HasKey("rawXML") Then
+		        Dim rawXML As String = jsonResult.Value("rawXML").StringValue
+		        Dim xmlWarnings() As String = VNSPDFEInvoiceXMLParser.ValidateXMLContent(rawXML)
+		        Dim orderErrors As Integer = 0
+		        For i As Integer = 0 To xmlWarnings.LastIndex
+		          If xmlWarnings(i).BeginsWith("EINV-E50") Then
+		            statusText = statusText + EndOfLine + "XML ORDER ERROR: " + xmlWarnings(i) + EndOfLine
+		            orderErrors = orderErrors + 1
+		          End If
+		        Next
+		        If orderErrors = 0 Then
+		          statusText = statusText + EndOfLine + "XML element order: OK" + EndOfLine
 		        End If
 		      End If
 
@@ -12659,15 +13906,16 @@ Protected Module VNSPDFExamplesModule
 
 
 	#tag Method, Flags = &h0, Description = 4578616D706C652033323A204469676974616C205369676E61747572657320285041644553202B20584164455329202D205072656D69756D
-		Function GenerateExample32() As Dictionary
+		Function GenerateExample32(countryCode As String) As Dictionary
 		  #If hasPremiumVNSEncryptionModule And hasPremiumVNSEInvoiceModule Then
 		    // Example 32: Digital Signatures (PAdES-B-B + XAdES-BES)
 		    // Demonstrates signing a Factur-X PDF with PAdES and XAdES
+		    // countryCode: 2-letter ISO country code of the seller
 
 		    Dim result As New Dictionary
 		    Dim statusText As String = ""
 
-		    statusText = statusText + "Example 32: Digital Signatures (PAdES + XAdES)" + EndOfLine
+		    statusText = statusText + "Example 32: Digital Signatures (PAdES + XAdES) - Country: " + countryCode + EndOfLine
 		    statusText = statusText + "================================================" + EndOfLine + EndOfLine
 
 		    // --- Step 1: Generate RSA key pair for testing ---
@@ -12716,35 +13964,99 @@ Protected Module VNSPDFExamplesModule
 		    invoice.InvoiceNumber = "INV-2026-SIG-001"
 		    invoice.InvoiceDate = DateTime.Now
 		    invoice.DueDate = DateTime.Now
+		    invoice.DeliveryDate = DateTime.Now
 		    invoice.Currency = "EUR"
 		    invoice.InvoiceTypeCode = "380"
 		    invoice.BuyerReference = "PO-SIG-TEST"
 		    invoice.PaymentMeansCode = "30"
-		    invoice.IBAN = "FR7630006000011234567890189"
-		    invoice.BIC = "BNPAFRPPXXX"
 		    invoice.PaymentReference = "INV-2026-SIG-001"
-		    invoice.Note = "Digitally signed invoice - PAdES + XAdES test"
 
-		    // Seller
+		    // Seller and buyer based on country
 		    Dim seller As New VNSPDFEInvoiceParty
-		    seller.Name = "VeryNiceSW SARL"
-		    seller.VATNumber = "FR12345678901"
-		    seller.AddressLine1 = "42 Rue de la Paix"
-		    seller.City = "Paris"
-		    seller.PostalCode = "75002"
-		    seller.CountryCode = "FR"
-		    seller.ContactName = "Jean-Yves Pochez"
-		    seller.ContactEmail = "contact@verynicesw.com"
-		    invoice.Seller = seller
-
-		    // Buyer
 		    Dim buyer As New VNSPDFEInvoiceParty
-		    buyer.Name = "Digital Trust AG"
-		    buyer.VATNumber = "DE123456789"
-		    buyer.AddressLine1 = "5 Bahnhofstrasse"
-		    buyer.City = "Zurich"
-		    buyer.PostalCode = "8001"
-		    buyer.CountryCode = "CH"
+
+		    Select Case countryCode
+		    Case "FR"
+		      invoice.IBAN = "FR7630006000011234567890189"
+		      invoice.BIC = "BNPAFRPPXXX"
+		      seller.Name = "VeryNiceSW SARL"
+		      seller.VATNumber = "FR12345678901"
+		      seller.LegalRegistrationID = "123456789"
+		      seller.LegalRegistrationScheme = "0002"
+		      seller.ElectronicAddress = "contact@verynicesw.com"
+		      seller.ElectronicAddressScheme = "EM"
+		      seller.AddressLine1 = "42 Rue de la Paix"
+		      seller.City = "Paris"
+		      seller.PostalCode = "75002"
+		      seller.CountryCode = "FR"
+		      seller.ContactName = "Jean-Yves Pochez"
+		      seller.ContactEmail = "contact@verynicesw.com"
+		      buyer.Name = "Digital Trust AG"
+		      buyer.VATNumber = "DE123456789"
+		      buyer.ElectronicAddress = "trust@digitaltrust.ch"
+		      buyer.ElectronicAddressScheme = "EM"
+		      buyer.AddressLine1 = "5 Bahnhofstrasse"
+		      buyer.City = "Zurich"
+		      buyer.PostalCode = "8001"
+		      buyer.CountryCode = "CH"
+		      invoice.AddNote("Digitally signed invoice - PAdES + XAdES test")
+		      // BR-FR-05: AAB note (discount/early payment terms) is mandatory in France
+		      invoice.AddNote("Pas d'escompte pour paiement anticipe.", "AAB")
+		      invoice.AddNote("Late payment penalties: 3x the legal interest rate.", "PMD")
+		      invoice.AddNote("Recovery costs for unpaid invoices: 40 EUR.", "PMT")
+
+		    Case "DE"
+		      invoice.IBAN = "DE89370400440532013000"
+		      invoice.BIC = "COBADEFFXXX"
+		      seller.Name = "Muster GmbH"
+		      seller.VATNumber = "DE123456789"
+		      seller.LegalRegistrationID = "HRB 12345"
+		      seller.LegalRegistrationScheme = "0002"
+		      seller.ElectronicAddress = "info@muster.de"
+		      seller.ElectronicAddressScheme = "EM"
+		      seller.AddressLine1 = "15 Hauptstrasse"
+		      seller.City = "Munich"
+		      seller.PostalCode = "80331"
+		      seller.CountryCode = "DE"
+		      seller.ContactName = "Klaus Schmidt"
+		      seller.ContactEmail = "info@muster.de"
+		      buyer.Name = "Digital Trust AG"
+		      buyer.VATNumber = "CHE123456789"
+		      buyer.ElectronicAddress = "trust@digitaltrust.ch"
+		      buyer.ElectronicAddressScheme = "EM"
+		      buyer.AddressLine1 = "5 Bahnhofstrasse"
+		      buyer.City = "Zurich"
+		      buyer.PostalCode = "8001"
+		      buyer.CountryCode = "CH"
+		      invoice.AddNote("Digitally signed invoice - PAdES + XAdES test")
+
+		    Else
+		      // Generic country
+		      invoice.IBAN = "GB29NWBK60161331926819"
+		      invoice.BIC = "NWBKGB2L"
+		      seller.Name = "Seller Company"
+		      seller.VATNumber = countryCode + "123456789"
+		      seller.ElectronicAddress = "seller@example.com"
+		      seller.ElectronicAddressScheme = "EM"
+		      seller.AddressLine1 = "1 Main Street"
+		      seller.City = "Capital City"
+		      seller.PostalCode = "10000"
+		      seller.CountryCode = countryCode
+		      seller.ContactName = "John Doe"
+		      seller.ContactEmail = "seller@example.com"
+		      buyer.Name = "Digital Trust AG"
+		      buyer.VATNumber = "CH123456789"
+		      buyer.ElectronicAddress = "trust@digitaltrust.ch"
+		      buyer.ElectronicAddressScheme = "EM"
+		      buyer.AddressLine1 = "5 Bahnhofstrasse"
+		      buyer.City = "Zurich"
+		      buyer.PostalCode = "8001"
+		      buyer.CountryCode = "CH"
+		      invoice.AddNote("Digitally signed invoice - PAdES + XAdES test")
+
+		    End Select
+
+		    invoice.Seller = seller
 		    invoice.Buyer = buyer
 
 		    // Line items
@@ -12864,6 +14176,12 @@ Protected Module VNSPDFExamplesModule
 		    Call pdf.Cell(0, 5, "  This PDF is signed with PAdES-B-B (PKCS#7 detached signature)", 0, 1)
 		    Call pdf.Cell(0, 5, "  The embedded CII XML is signed with XAdES-BES (enveloped XML signature)", 0, 1)
 		    Call pdf.Cell(0, 5, "  Signer: VNS PDF Test Signer | Algorithm: RSA-SHA256 | Key: 2048-bit", 0, 1)
+		    Call pdf.SetTextColor(0, 0, 0)
+		    Call pdf.Ln(4)
+		    Call pdf.SetFont("helvetica", "B", 8)
+		    Call pdf.SetTextColor(100, 100, 100)
+		    Call pdf.Cell(0, 5, "This invoice is Factur-X EN 16931 compliant (PDF/A-3b with embedded CII XML)", 0, 1, "C")
+		    Call pdf.Cell(0, 5, "Conforms to " + EInvoiceNormForCountry(countryCode), 0, 1, "C")
 		    Call pdf.SetTextColor(0, 0, 0)
 
 		    If pdf.Err() Then
@@ -12991,7 +14309,7 @@ Protected Module VNSPDFExamplesModule
 		    statusText = statusText + "or a qualified certificate (QES) for legal compliance." + EndOfLine
 
 		    result.Value("pdf") = signedPdf
-		    result.Value("filename") = "example32_digital_signatures.pdf"
+		    result.Value("filename") = "example32_digital_signatures_" + countryCode.Lowercase + ".pdf"
 		    result.Value("message") = statusText
 		    Return result
 
@@ -13399,6 +14717,31 @@ Protected Module VNSPDFExamplesModule
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h1, Description = 52657475726E7320746865206E616D65206F662074686520652D696E766F696365206E6F726D20666F72206120676976656E20636F756E74727920636F64652E
+		Protected Function EInvoiceNormForCountry(countryCode As String) As String
+		  Select Case countryCode.Uppercase
+		  Case "FR"
+		    Return "Factur-X (FNFE-MPE) French e-invoicing norms"
+		  Case "DE"
+		    Return "XRechnung (KoSIT) German e-invoicing norms"
+		  Case "IT"
+		    Return "FatturaPA / CIUS-IT (AgID) Italian e-invoicing norms"
+		  Case "NL"
+		    Return "NLCIUS Dutch e-invoicing norms"
+		  Case "ES"
+		    Return "FacturaE Spanish e-invoicing norms"
+		  Case "BE"
+		    Return "e-FFF / UBL.BE Belgian e-invoicing norms"
+		  Case "AT"
+		    Return "ebInterface Austrian e-invoicing norms"
+		  Case "PT"
+		    Return "CIUS-PT Portuguese e-invoicing norms"
+		  Else
+		    Return "EN 16931 European e-invoicing standard"
+		  End Select
+		End Function
+	#tag EndMethod
+
 
 	#tag Constant, Name = gkLanguageTest, Type = String, Dynamic = False, Default = \"Abkhaz: \xD0\x91\xD0\xB7\xD0\xB8\xD0\xB0 \xD0\xB7\xD0\xB1\xD0\xB0\xD1\x88\xD0\xB0\nAcehnese: Salam dunia\nAcholi: Oyaa lobo\nAfar: Salaam duniya\nAfrikaans: Hallo W\xC3\xAAreld\nAlbanian: P\xC3\xABrsh\xC3\xABndetje Bot\xC3\xAB\nAlur: Ot lobo\nAmharic: \xE1\x88\xB0\xE1\x88\x8B\xE1\x88\x9D \xE1\x88\x8D\xE1\x8B\x91\xE1\x88\x8D\nArabic: \xD9\x85\xD8\xB1\xD8\xAD\xD8\xA8\xD8\xA7 \xD8\xA8\xD8\xA7\xD9\x84\xD8\xB9\xD8\xA7\xD9\x84\xD9\x85\nArmenian: \xD4\xB2\xD5\xA1\xD6\x80\xD5\xA5\xD6\x82 \xD5\xA1\xD5\xB7\xD5\xAD\xD5\xA1\xD6\x80\xD5\xB0\nAzerbaijani: Salam d\xC3\xBCnya\nAssamese: \xE0\xA6\xA8\xE0\xA6\xAE\xE0\xA6\xB8\xE0\xA7\x8D\xE0\xA6\x95\xE0\xA6\xBE\xE0\xA7\xB0 \xE0\xA6\xAA\xE0\xA7\x83\xE0\xA6\xA5\xE0\xA6\xBF\xE0\xA7\xB1\xE0\xA7\x80\nAwadhi: \xE0\xA4\xAA\xE0\xA5\x8D\xE0\xA4\xB0\xE0\xA4\xA3\xE0\xA4\xBE\xE0\xA4\xAE \xE0\xA4\xA6\xE0\xA5\x81\xE0\xA4\xA8\xE0\xA4\xBF\xE0\xA4\xAF\xE0\xA4\xBE\nAvar: \xD0\xA1\xD0\xB0\xD0\xBB\xD0\xB0\xD0\xBC \xD0\xB4\xD1\x83\xD0\xBD\xD1\x8F\xD0\xBB\nAymara: Kamisaraki uraqpach\nBalinese: Halo jagat\nBambara: Aw ni tile di\xC9\xB2\xC9\x9B\nBaoul\xC3\xA9: Ilafia n\'goua\nBashkir: \xD0\xA1\xD3\x99\xD0\xBB\xD3\x99\xD0\xBC \xD0\xB4\xD0\xBE\xD0\xBD\xD1\x8A\xD1\x8F\nBasque: Kaixo Mundua\nBelarusian: \xD0\x9F\xD1\x80\xD1\x8B\xD0\xB2\xD1\x96\xD1\x82\xD0\xB0\xD0\xBD\xD0\xBD\xD0\xB5 \xD1\x81\xD0\xB2\xD0\xB5\xD1\x82\nBaluchi: \xD8\xB3\xD9\x84\xD8\xA7\xD9\x85 \xD8\xAF\xD9\x86\xDB\x8C\xD8\xA7\nBemba: Mwaiseni panshi\nBengali: \xE0\xA6\xB9\xE0\xA7\x8D\xE0\xA6\xAF\xE0\xA6\xBE\xE0\xA6\xB2\xE0\xA7\x8B \xE0\xA6\xAC\xE0\xA6\xBF\xE0\xA6\xB6\xE0\xA7\x8D\xE0\xA6\xAC\nBetawi: Halo dunia\nBhojpuri: \xE0\xA4\xAA\xE0\xA5\x8D\xE0\xA4\xB0\xE0\xA4\xA3\xE0\xA4\xBE\xE0\xA4\xAE \xE0\xA4\xA6\xE0\xA5\x81\xE0\xA4\xA8\xE0\xA4\xBF\xE0\xA4\xAF\xE0\xA4\xBE\nBikol: Kumusta mundo\nBurmese: \xE1\x80\x99\xE1\x80\x84\xE1\x80\xBA\xE1\x80\xB9\xE1\x80\x82\xE1\x80\x9C\xE1\x80\xAC\xE1\x80\x95\xE1\x80\xAB\xE1\x80\x80\xE1\x80\x99\xE1\x80\xB9\xE1\x80\x98\xE1\x80\xAC\xE1\x80\x9C\xE1\x80\xB1\xE1\x80\xAC\xE1\x80\x80\nBosnian: Zdravo svijete\nBreton: Demat bed\nBulgarian: \xD0\x97\xD0\xB4\xD1\x80\xD0\xB0\xD0\xB2\xD0\xB5\xD0\xB9 \xD1\x81\xD0\xB2\xD1\x8F\xD1\x82\nBuryat: \xD0\xA1\xD0\xB0\xD0\xB9\xD0\xBD \xD0\xB1\xD0\xB0\xD0\xB9\xD0\xBD\xD0\xB0 \xD1\x83\xD1\x83 \xD0\xB4\xD1\x8D\xD0\xBB\xD1\x85\xD1\x8D\xD0\xB9\nCebuano: Kumusta kalibutan\nChamorro: H\xC3\xA5fa adai t\xC3\xA5no\'\nChichewa: Moni dziko lapansi\nChinese (Traditional): \xE4\xBD\xA0\xE5\xA5\xBD\xE4\xB8\x96\xE7\x95\x8C\nChinese (Simplified): \xE4\xBD\xA0\xE5\xA5\xBD\xE4\xB8\x96\xE7\x95\x8C\nChuukese: Ran annim fonufan\nDanish: Hej Verden\nDari: \xD8\xB3\xD9\x84\xD8\xA7\xD9\x85 \xD8\xAF\xD9\x86\xDB\x8C\xD8\xA7\nGerman: Hallo Welt\nDhivehi: \xDE\x80\xDE\xA6\xDE\x8D\xDE\xAF \xDE\x8B\xDE\xAA\xDE\x82\xDE\xA8\xDE\x94\xDE\xAC\nDinka: Kudual alethe\nDyula: I ni tile di\xC9\xB2\xC9\x9B\nDogri: \xE0\xA4\xA8\xE0\xA4\xAE\xE0\xA4\xB8\xE0\xA5\x8D\xE0\xA4\x95\xE0\xA4\xBE\xE0\xA4\xB0 \xE0\xA4\xA6\xE0\xA5\x81\xE0\xA4\xA8\xE0\xA4\xBF\xE0\xA4\xAF\xE0\xA4\xBE\nDombe: Mhoro nyika\nDzongkha: \xE0\xBD\x80\xE0\xBD\xB4\xE0\xBC\x8B\xE0\xBD\x9F\xE0\xBD\xB4\xE0\xBD\x82\xE0\xBC\x8B \xE0\xBD\xA0\xE0\xBD\x9B\xE0\xBD\x98\xE0\xBC\x8B\xE0\xBD\x82\xE0\xBE\xB3\xE0\xBD\xB2\xE0\xBD\x84\nEnglish: Hello World\nEsperanto: Saluton Mondo\nEstonian: Tere maailm\nEwe: Mawu\xC9\x96e\xC9\x96e xexeame\nFaroese: Hall\xC3\xB3 heimur\nFijian: Bula vuravura\nFilipino: Kamusta mundo\nFinnish: Hei maailma\nFon: K\xC3\xBA n\'d\xC3\xA9\nFrench: Bonjour le monde\nFrench (Canada): Bonjour le monde\nFrisian: Hallo wr\xC3\xA2ld\nFula: Jam \xC9\x97u\xC9\x97al\nFriulian: Mandi mond\nGa: M\xC3\xAD\xC9\x96ek\xC3\xBA xexeame\nGalician: Ola mundo\nGeorgian: \xE1\x83\x92\xE1\x83\x90\xE1\x83\x9B\xE1\x83\x90\xE1\x83\xA0\xE1\x83\xAF\xE1\x83\x9D\xE1\x83\x91\xE1\x83\x90 \xE1\x83\x9B\xE1\x83\xA1\xE1\x83\x9D\xE1\x83\xA4\xE1\x83\x9A\xE1\x83\x98\xE1\x83\x9D\nGreek: \xCE\x93\xCE\xB5\xCE\xB9\xCE\xB1 \xCF\x83\xCE\xBF\xCF\x85 \xCE\xBA\xCF\x8C\xCF\x83\xCE\xBC\xCE\xB5\nGuarani: Mba\'\xC3\xA9ichapa ko yvy\nGujarati: \xE0\xAA\xB9\xE0\xAB\x87\xE0\xAA\xB2\xE0\xAB\x8B \xE0\xAA\xB5\xE0\xAA\xBF\xE0\xAA\xB6\xE0\xAB\x8D\xE0\xAA\xB5\nHaitian Creole: Bonjou mond\nHakha Chin: Chibai van\nHausa: Sannu duniya\nHawaiian: Aloha honua\nHebrew: \xD7\xA9\xD7\x9C\xD7\x95\xD7\x9D \xD7\xA2\xD7\x95\xD7\x9C\xD7\x9D\nHiligaynon: Kumusta kalibutan\nHindi: \xE0\xA4\xA8\xE0\xA4\xAE\xE0\xA4\xB8\xE0\xA5\x8D\xE0\xA4\xA4\xE0\xA5\x87 \xE0\xA4\xA6\xE0\xA5\x81\xE0\xA4\xA8\xE0\xA4\xBF\xE0\xA4\xAF\xE0\xA4\xBE\nHmong: Nyob zoo ntiaj teb\nIban: Hai dunya\nIgbo: Ndewo \xE1\xBB\xA5wa\nIlocano: Kumusta lubong\nIndonesian: Halo Dunia\nInuktitut (Latin): Ullaakkut maligaq\nInuktitut (Syllabics): \xE1\x90\x85\xE1\x93\xAA\xE1\x93\x9B\xE1\x92\x83\xE1\x91\xAF\xE1\x91\xA6 \xE1\x92\xAA\xE1\x93\x95\xE1\x92\x90\xE1\x96\x85\nIrish: Dia dhuit domhan\nIcelandic: Hall\xC3\xB3 heimur\nItalian: Ciao mondo\nYakut: \xD0\x94\xD0\xBE\xD1\x80\xD0\xBE\xD0\xBE\xD0\xB1\xD0\xBE \xD0\xB0\xD0\xB0\xD0\xBD \xD0\xB4\xD0\xBE\xD0\xB9\xD0\xB4\xD1\x83\nJamaican Patois: Wah gwaan worl\nJapanese: \xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF\xE4\xB8\x96\xE7\x95\x8C\nJavanese: Halo donya\nYiddish: \xD7\x94\xD7\xA2\xD7\x9C\xD7\x90 \xD7\x95\xD7\x95\xD7\xA2\xD7\x9C\xD7\x98\nJingpo: Chyeju gam\nGreenlandic: Aluu sila\nKannada: \xE0\xB2\xB9\xE0\xB2\xB2\xE0\xB3\x8B \xE0\xB2\x9C\xE0\xB2\x97\xE0\xB2\xA4\xE0\xB3\x8D\xE0\xB2\xA4\xE0\xB3\x81\nCantonese: \xE4\xBD\xA0\xE5\xA5\xBD\xE4\xB8\x96\xE7\x95\x8C\nKanuri: Sanni duniya\nKapampangan: Kumusta yatu\nKaro Batak: Horas donya\nKazakh: \xD0\xA1\xD3\x99\xD0\xBB\xD0\xB5\xD0\xBC \xD3\x99\xD0\xBB\xD0\xB5\xD0\xBC\nCatalan: Hola m\xC3\xB3n\nKekchi: Us li ruchich\xCB\x88och\nKhasi: Khublei sorkar\nKhmer: \xE1\x9E\x87\xE1\x9F\x86\xE1\x9E\x9A\xE1\x9E\xB6\xE1\x9E\x94\xE1\x9E\x9F\xE1\x9E\xBD\xE1\x9E\x9A\xE1\x9E\x96\xE1\x9E\xB7\xE1\x9E\x97\xE1\x9E\x96\xE1\x9E\x9B\xE1\x9F\x84\xE1\x9E\x80\nKiga: Oraire ensi\nKikongo: Mbote nza\nKinyarwanda: Muraho isi\nKyrgyz: \xD0\xA1\xD0\xB0\xD0\xBB\xD0\xB0\xD0\xBC \xD0\xB4\xD2\xAF\xD0\xB9\xD0\xBD\xD3\xA9\nKirundi: Bwakeye isi\nKituba: Mbote nza\nKokborok: Neokhai longbar\nKomi: \xD0\x92\xD0\xB8\xD0\xB4\xD0\xB7\xD0\xB0 \xD0\xBE\xD0\xBB\xD0\xB0\xD0\xBD \xD0\xBC\xD0\xB8\xD1\x80\nKonkani: \xE0\xA4\xB9\xE0\xA5\x85\xE0\xA4\xB2\xE0\xA5\x8B \xE0\xA4\xB8\xE0\xA4\x82\xE0\xA4\xB8\xE0\xA4\xBE\xE0\xA4\xB0\nKorean: \xEC\x95\x88\xEB\x85\x95\xED\x95\x98\xEC\x84\xB8\xEC\x9A\x94 \xEC\x84\xB8\xEA\xB3\x84\nCorsican: Bonghjornu mondu\nMauritian Creole: Bonzour lemonn\nCrimean Tatar (Cyrillic): \xD0\xA1\xD0\xB5\xD0\xBB\xD1\x8F\xD0\xBC \xD0\xB4\xD1\x8E\xD0\xBD\xD1\x8C\xD1\x8F\nCrimean Tatar (Latin): Sel\xC3\xA2m d\xC3\xBCnya\nKrio: Kush\xC9\x9B w\xC9\x94l\nCroatian: Pozdrav svijete\nKurdish (Kurmanji): Silav c\xC3\xAEhan\nKurdish (Sorani): \xD8\xB3\xDA\xB5\xD8\xA7\xD9\x88 \xD8\xAC\xDB\x8C\xD9\x87\xD8\xA7\xD9\x86\nLao: \xE0\xBA\xAA\xE0\xBA\xB0\xE0\xBA\x9A\xE0\xBA\xB2\xE0\xBA\x8D\xE0\xBA\x94\xE0\xBA\xB5\xE0\xBB\x82\xE0\xBA\xA5\xE0\xBA\x81\nLatin: Salve munde\nLatgalian: Vasals pasaule\nLatvian: Sveika pasaule\nLigurian: \xC3\x87ao mondo\nLimburgish: Hallo werreld\nLingala: Mbote mokili\nLithuanian: Sveikas pasauli\nLombard: Ciau mund\nLuganda: Nkulamusizza ensi\nLuo: Misawa piny\nLuxembourgish: Moien Welt\nMadurese: Halo donya\nMaithili: \xE0\xA4\xA8\xE0\xA4\xAE\xE0\xA4\xB8\xE0\xA5\x8D\xE0\xA4\x95\xE0\xA4\xBE\xE0\xA4\xB0 \xE0\xA4\xA6\xE0\xA5\x81\xE0\xA4\xA8\xE0\xA4\xBF\xE0\xA4\xAF\xE0\xA4\xBE\nMakassarese: Halo dunia\nMalagasy: Salama tontolo\nMalay (Jawi): \xD9\x87\xD8\xA7\xD9\x84\xD9\x88 \xD8\xAF\xD9\x86\xD9\x8A\xD8\xA7\nMalayalam: \xE0\xB4\xB9\xE0\xB4\xB2\xE0\xB5\x8B \xE0\xB4\xB2\xE0\xB5\x8B\xE0\xB4\x95\xE0\xB4\x82\nMalay: Hello dunia\nMaltese: Bongu dinja\nMam: K\'ulaj tx\xCA\xBCotx\xCA\xBC\nManx: Hallo seihll\nMaori: Kia ora ao\nMarathi: \xE0\xA4\xA8\xE0\xA4\xAE\xE0\xA4\xB8\xE0\xA5\x8D\xE0\xA4\x95\xE0\xA4\xBE\xE0\xA4\xB0 \xE0\xA4\x9C\xE0\xA4\x97\nMarshallese: Yokwe aolep\nMarwari: \xE0\xA4\xA8\xE0\xA4\xAE\xE0\xA4\xB8\xE0\xA5\x8D\xE0\xA4\x95\xE0\xA4\xBE\xE0\xA4\xB0 \xE0\xA4\xA6\xE0\xA5\x81\xE0\xA4\xA8\xE0\xA4\xBF\xE0\xA4\xAF\xE0\xA4\xBE\nYucatec Maya: Ma\'alob k\'iin y\xC3\xB3ok\'ol kaab\nMacedonian: \xD0\x97\xD0\xB4\xD1\x80\xD0\xB0\xD0\xB2\xD0\xBE \xD1\x81\xD0\xB2\xD0\xB5\xD1\x82\xD1\x83\nMeiteilon: \xEA\xAF\x8D\xEA\xAF\xA6\xEA\xAF\x82\xEA\xAF\xA3 \xEA\xAF\x83\xEA\xAF\xA5\xEA\xAF\x82\xEA\xAF\xA6\xEA\xAF\x9D\nMinangkabau: Halo dunia\nMizo: Chibai vantlang\nMongolian: \xD0\xA1\xD0\xB0\xD0\xB9\xD0\xBD \xD1\x83\xD1\x83 \xD0\xB4\xD1\x8D\xD0\xBB\xD1\x85\xD0\xB8\xD0\xB9\nN\'Ko: \xDF\x8C \xDF\xA3\xDF\x8C\xDF\xAB \xDF\x9B\xDF\x8F \xDF\x98\xDF\x8E\xDF\xA2\xDF\x8A\xDF\xAB\nNahuatl (Eastern Huasteca): Pia cemanahuac\nNdau: Mhoro nyika\nSouthern Ndebele: Sawubona mhlaba\nNepalbhasa: \xE0\xA4\x9C\xE0\xA4\xAF \xE0\xA4\x9C\xE0\xA4\x97\xE0\xA4\xA4\nNepali: \xE0\xA4\xA8\xE0\xA4\xAE\xE0\xA4\xB8\xE0\xA5\x8D\xE0\xA4\xA4\xE0\xA5\x87 \xE0\xA4\xB8\xE0\xA4\x82\xE0\xA4\xB8\xE0\xA4\xBE\xE0\xA4\xB0\nDutch: Hallo wereld\nNorthern Sotho: Thobela lefase\nNorwegian: Hei verden\nNuer: Mal n\xC9\x9B piny\nOdia: \xE0\xAC\xA8\xE0\xAC\xAE\xE0\xAC\xB8\xE0\xAD\x8D\xE0\xAC\x95\xE0\xAC\xBE\xE0\xAC\xB0 \xE0\xAC\xAC\xE0\xAC\xBF\xE0\xAC\xB6\xE0\xAD\x8D\xE0\xAD\xB1\nOccitan: Adiu mond\nOromo: Akkam addunyaa\nOssetian: \xD0\xA1\xD0\xB0\xD0\xBB\xD0\xB0\xD0\xBC \xD0\xB4\xD1\x83\xD0\xBD\xD0\xB5\nPangasinan: Maabig mundo\nPunjabi (Gurmukhi): \xE0\xA8\xB8\xE0\xA8\xA4 \xE0\xA8\xB8\xE0\xA9\x8D\xE0\xA8\xB0\xE0\xA9\x80 \xE0\xA8\x85\xE0\xA8\x95\xE0\xA8\xBE\xE0\xA8\xB2 \xE0\xA8\xA6\xE0\xA9\x81\xE0\xA8\xA8\xE0\xA9\x80\xE0\xA8\x86\xE0\xA8\x82\nPunjabi (Shahmukhi): \xDB\x81\xDB\x8C\xD9\x84\xD9\x88 \xD8\xAF\xD9\x86\xDB\x8C\xD8\xA7\nPapiamento: Bon bini mundo\nPashto: \xD8\xB3\xD9\x84\xD8\xA7\xD9\x85 \xD9\x86\xDA\x93\xDB\x8D\nPersian: \xD8\xB3\xD9\x84\xD8\xA7\xD9\x85 \xD8\xAF\xD9\x86\xDB\x8C\xD8\xA7\nPolish: Witaj \xC5\x9Bwiecie\nPortuguese (Brazil): Ol\xC3\xA1 Mundo\nPortuguese (Portugal): Ol\xC3\xA1 Mundo\nQuechua: Allinllachu kay pacha\nHunsrik: Hallo Welt\nRomani: Latcho dives luma\nRomanian: Salut lume\nRussian: \xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82 \xD0\xBC\xD0\xB8\xD1\x80\nNorthern Sami: Bures m\xC3\xA1ilbmi\nSamoan: Talofa lalolagi\nSango: Bala \xC3\xA2la\nSanskrit: \xE0\xA4\xA8\xE0\xA4\xAE\xE0\xA4\xB8\xE0\xA5\x8D\xE0\xA4\xA4\xE0\xA5\x87 \xE0\xA4\x9C\xE0\xA4\x97\xE0\xA4\xA4\xE0\xA5\x8D\nSantali (Latin): Johar dishom\nSantali (Ol Chiki): \xE1\xB1\xA1\xE1\xB1\x9A\xE1\xB1\xA6\xE1\xB1\x9F\xE1\xB1\xA8 \xE1\xB1\xAB\xE1\xB1\xA4\xE1\xB1\xA5\xE1\xB1\x9A\xE1\xB1\xA2\nSilesian: Witej \xC5\x9Bwiycie\nScottish Gaelic: Hal\xC3\xB2 saoghal\nSwedish: Hej v\xC3\xA4rlden\nSerbian: \xD0\x97\xD0\xB4\xD1\x80\xD0\xB0\xD0\xB2\xD0\xBE \xD1\x81\xD0\xB2\xD0\xB5\xD1\x82\xD0\xB5\nSesotho: Lumela lefatshe\nSetswana: Dumela lefatshe\nSeychellois Creole: Bonzour lemonn\nShan: \xE1\x82\x81\xE1\x82\x83\xE1\x82\x87\xE1\x80\x9C\xE1\x80\xB0\xE1\x80\x9D\xE1\x80\xBA\xE1\x82\x87\xE1\x80\x9C\xE1\x80\xB0\xE1\x80\x84\xE1\x80\xBA\xE1\x82\x87\nShona: Mhoro nyika\nSimalungun: Horas dunia\nSindhi: \xD9\x87\xD9\x8A\xD9\x84\xD9\x88 \xD8\xAF\xD9\x86\xD9\x8A\xD8\xA7\nSinhala: \xE0\xB7\x84\xE0\xB7\x99\xE0\xB6\xBD\xE0\xB7\x9D \xE0\xB6\xBD\xE0\xB7\x9D\xE0\xB6\x9A\xE0\xB6\xBA\nSwati: Sawubona lizwe\nSicilian: Ciau munnu\nSlovak: Ahoj svet\nSlovenian: Pozdravljeni svet\nSomali: Salaam adduunka\nSpanish: Hola Mundo\nSundanese: Halo dunya\nSusu: I kuma dunuya\nSwahili: Habari dunia\nTajik: \xD0\xA1\xD0\xB0\xD0\xBB\xD0\xBE\xD0\xBC \xD2\xB7\xD0\xB0\xD2\xB3\xD0\xBE\xD0\xBD\nTahitian: Ia ora na te ao\nTamazight: Azul ama\xE1\xB8\x8Dal\nTamazight (Tifinagh): \xE2\xB4\xB0\xE2\xB5\xA3\xE2\xB5\x93\xE2\xB5\x8D \xE2\xB4\xB0\xE2\xB5\x8E\xE2\xB4\xB0\xE2\xB4\xB9\xE2\xB4\xB0\xE2\xB5\x8D\nTamil: \xE0\xAE\xB5\xE0\xAE\xA3\xE0\xAE\x95\xE0\xAF\x8D\xE0\xAE\x95\xE0\xAE\xAE\xE0\xAF\x8D \xE0\xAE\x89\xE0\xAE\xB2\xE0\xAE\x95\xE0\xAE\xAE\xE0\xAF\x8D\nTatar: \xD0\xA1\xD3\x99\xD0\xBB\xD0\xB0\xD0\xBC \xD0\xB4\xD3\xA9\xD0\xBD\xD1\x8C\xD1\x8F\nTelugu: \xE0\xB0\xB9\xE0\xB0\xB2\xE0\xB1\x8B \xE0\xB0\xAA\xE0\xB1\x8D\xE0\xB0\xB0\xE0\xB0\xAA\xE0\xB0\x82\xE0\xB0\x9A\xE0\xB0\x82\nTetum: Bondia mundu\nThai: \xE0\xB8\xAA\xE0\xB8\xA7\xE0\xB8\xB1\xE0\xB8\xAA\xE0\xB8\x94\xE0\xB8\xB5\xE0\xB8\x8A\xE0\xB8\xB2\xE0\xB8\xA7\xE0\xB9\x82\xE0\xB8\xA5\xE0\xB8\x81\nTibetan: \xE0\xBD\x96\xE0\xBD\x80\xE0\xBE\xB2\xE0\xBC\x8B\xE0\xBD\xA4\xE0\xBD\xB2\xE0\xBD\xA6\xE0\xBC\x8B\xE0\xBD\x96\xE0\xBD\x91\xE0\xBD\xBA\xE0\xBC\x8B\xE0\xBD\xA3\xE0\xBD\xBA\xE0\xBD\x82\xE0\xBD\xA6\xE0\xBC\x8B\xE0\xBD\xA0\xE0\xBD\x9B\xE0\xBD\x98\xE0\xBC\x8B\xE0\xBD\x82\xE0\xBE\xB3\xE0\xBD\xB2\xE0\xBD\x84\nTigrinya: \xE1\x88\xB0\xE1\x88\x8B\xE1\x88\x9D \xE1\x8B\x93\xE1\x88\x88\xE1\x88\x9D\nTiv: Msugh u sha\nToba Batak: Horas dunia\nTok Pisin: Gude wol\nTongan: M\xC4\x81l\xC5\x8D m\xC4\x81mani\nCzech: Ahoj sv\xC4\x9Bte\nChechen: \xD0\x9C\xD0\xB0\xD1\x80\xD1\x88\xD0\xB0\xD0\xBB\xD0\xBB\xD0\xB0 \xD0\xB4\xD1\x83\xD1\x8C\xD0\xBD\xD0\xB5\nTshiluba: Muoyo wa mu nsi\nChuvash: \xD0\xA1\xD0\xB0\xD0\xBB\xD0\xB0\xD0\xBC \xD1\x82\xD3\x97\xD0\xBD\xD1\x87\xD0\xB5\nTsonga: Avuxeni misava\nTulu: \xE0\xB2\xB9\xE0\xB2\xB2\xE0\xB3\x8B \xE0\xB2\xAA\xE0\xB3\x8D\xE0\xB2\xB0\xE0\xB2\xAA\xE0\xB2\x82\xE0\xB2\x9A\nTumbuka: Moni chilambo\nTurkish: Merhaba D\xC3\xBCnya\nTurkmen: Salam d\xC3\xBCn\xC3\xBD\xC3\xA4\nTuvan: \xD0\xAD\xD0\xBA\xD0\xB8\xD0\xB8 \xD0\xB4\xD0\xB5\xD0\xBB\xD0\xB5\xD0\xB3\xD0\xB5\xD0\xB9\nTwi: Maaky\xC9\x9B ewiase\nUdmurt: \xD0\xA3\xD0\xBC\xD0\xBE\xD0\xB9 \xD0\xB4\xD1\x83\xD0\xBD\xD0\xBD\xD0\xB5\xD0\xB5\nUyghur: \xD8\xB3\xD8\xA7\xD9\x84\xD8\xA7\xD9\x85 \xD8\xAF\xDB\x87\xD9\x86\xD9\x8A\xD8\xA7\nUkrainian: \xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD1\x96\xD1\x82 \xD1\x81\xD0\xB2\xD1\x96\xD1\x82\nHungarian: Hell\xC3\xB3 vil\xC3\xA1g\nUrdu: \xDB\x81\xDB\x8C\xD9\x84\xD9\x88 \xD8\xAF\xD9\x86\xDB\x8C\xD8\xA7\nUzbek: Salom dunyo\nVenda: Ndaa mashango\nVenetian: Ciao mondo\nVietnamese: Xin ch\xC3\xA0o th\xE1\xBA\xBF gi\xE1\xBB\x9Bi\nWelsh: Helo byd\nWaray: Kumusta kalibutan\nMeadow Mari: \xD0\xA1\xD0\xB0\xD0\xBB\xD0\xB0\xD0\xBC \xD1\x82\xD3\xB1\xD0\xBD\xD1\x8F\nWolof: Salaam \xC3\xA0dduna\nXhosa: Molo lizwe\nYoruba: P\xE1\xBA\xB9l\xE1\xBA\xB9 o aiye\nZapotec: Napa ti guiexh\nZulu: Sawubona mhlaba", Scope = Public
 	#tag EndConstant
@@ -13506,6 +14849,9 @@ Protected Module VNSPDFExamplesModule
 	#tag EndConstant
 
 	#tag Constant, Name = kTestAES, Type = Double, Dynamic = False, Default = \"101", Scope = Public
+	#tag EndConstant
+
+	#tag Constant, Name = kEInvoiceCountryPrompt, Type = String, Dynamic = False, Default = \"Enter seller country code (2 letters):\x0AFR - France\x0ADE - Germany\x0AIT - Italy\x0AES - Spain\x0ABE - Belgium\x0ANL - Netherlands\x0AAT - Austria\x0APT - Portugal\x0AOther - Any 2-letter ISO code", Scope = Public, Description = 537570706f7274656420652d696e766f69636520636f756e74727920636f6465732077697468206465736372697074696f6e7320666f7220757365722070726f6d70742e
 	#tag EndConstant
 
 

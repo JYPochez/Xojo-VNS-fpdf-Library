@@ -405,7 +405,12 @@ Barcodes use premium VNSPDFBarcode (vector) when the E-Invoice module is availab
 | mAlternateRowColors | Boolean | True | Alternate row background colors |
 | mAlternateColor1 | Color | White | First alternating color |
 | mAlternateColor2 | Color | Light gray | Second alternating color |
-| mBorderStyle | String | "1" | Cell border style ("1"=all, "LR"=sides) |
+| mHeaderFillColor | Color | RGB(41,128,185) | Header background color |
+| mHeaderTextColor | Color | RGB(255,255,255) | Header text color |
+| mHeaderBorderColor | Color | RGB(52,73,94) | Header border/separator color |
+| mBorderColor | Color | Black | Border color for data rows, footer, and bottom border |
+| mBorderWidth | Double | 0.2 | Border line width in mm for all cell borders (headers, data, footer) |
+| mBorderStyle | String | "1" | Default cell border style ("1"=all, "0"=none, "LTRB"=specific sides) |
 | mDrawBottomBorder | Boolean | True | Draw bottom border line |
 | mDecimalSeparator | String | System locale | Decimal separator for footer calculations |
 | mThousandsSeparator | String | System locale | Thousands separator for footer calculations |
@@ -413,12 +418,19 @@ Barcodes use premium VNSPDFBarcode (vector) when the E-Invoice module is availab
 | mSubtotalFillColor | Color | RGB(220,220,220) | Background color for subtotal rows |
 | mSubtotalTextColor | Color | RGB(0,0,0) | Text color for subtotal rows |
 | mSubtotalFontStyle | String | "B" | Font style for subtotal rows (e.g. "B" for bold) |
+| mAutoRowHeight | Boolean | False | Auto-calculate row height from cell content (word-wrap instead of truncate) |
+| mCellPadding | Double | -1 | Horizontal cell padding on both sides (-1 = use document default) |
+| mRowPaddingTop | Double | 0 | Vertical padding above data row text |
+| mRowPaddingBottom | Double | 0 | Vertical padding below data row text |
+| mHeaderPaddingTop | Double | 1.0 | Vertical padding above header text (mm) |
+| mHeaderPaddingBottom | Double | 1.0 | Vertical padding below header text (mm) |
+| mHeaderVerticalAlignment | eVerticalAlignment | Top | Vertical alignment of header text: Top, Middle, Bottom |
 
 ### VNSPDFManualTable Methods
 
 | Method | Description |
 |--------|-------------|
-| AddColumn(text, width, alignment) | Add a column definition |
+| AddColumn(text, width, alignment) | Add a column definition (width=0 for auto-width) |
 | AddColumn(col) | Add a VNSPDFManualTableColumn object |
 | AddHeaderRow(cells()) | Add a header row with colspan support |
 | AddRow(values()) | Add a data row as string array |
@@ -426,12 +438,192 @@ Barcodes use premium VNSPDFBarcode (vector) when the E-Invoice module is availab
 | IsSubtotalRow(rowIdx) | Returns True if the row at the given index is a subtotal row |
 | SetFooterCells(cells()) | Set footer cells |
 | SetCellStyle(row, col, fontFamily, fontStyle, fontSize, textColor) | Per-cell font/color override (priority: cell > column > default) |
+| SetCellBorder(row, col, borderString) | Per-cell border override ("1", "0", "LTRB"). Priority: cell > row > column > table |
+| SetRowBorder(row, borderString) | Per-row border override. Priority: row > column > table |
+| SetCellPadding(row, col, left, right, top, bottom) | Per-cell padding override. Values < 0 = use column/table default |
 | SetCellPicture(row, col, pic, padX, padY) | Picture in data cell |
 | SetCellBarcode(row, col, type, value, padX, padY) | Barcode in data cell |
 | SetHeaderCellPicture(hdrRow, col, pic, padX, padY) | Picture in header cell |
 | SetFooterCellPicture(col, pic, padX, padY) | Picture in footer cell |
 | SetFooterCellBarcode(col, type, value, padX, padY) | Barcode in footer cell |
 | Render(doc) | Render the table into the PDF |
+
+### VNSPDFManualTableColumn Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| mHeaderText | String | "" | Column header text |
+| mWidth | Double | 0.0 | Column width in user units (0 = auto-width) |
+| mAlignment | eColumnAlignment | Left | Data cell alignment |
+| mHeaderAlignment | Integer | -1 | Header horizontal alignment override (-1 = use mAlignment) |
+| mHeaderVerticalAlignment | Integer | -1 | Header vertical alignment override (-1 = use table default). 0=Top, 1=Middle, 2=Bottom |
+| mFontFamily | String | "" | Column font family override (empty = use table default) |
+| mFontStyle | String | "" | Column font style override |
+| mFontSize | Double | 0.0 | Column font size override (0 = use table default) |
+| mTextColor | Color | Black | Column text color |
+| mCellPaddingTop | Double | -1 | Per-column vertical top padding override (-1 = use table mRowPaddingTop) |
+| mCellPaddingBottom | Double | -1 | Per-column vertical bottom padding override (-1 = use table mRowPaddingBottom) |
+| mFillColor | Color | White | Column fill color |
+| mUseFill | Boolean | False | Use column fill color |
+| mHeaderFillColor | Color | - | Per-column header background color (requires mUseHeaderFillColor = True) |
+| mUseHeaderFillColor | Boolean | False | Use per-column header fill color |
+| mHeaderTextColor | Color | - | Per-column header text color (requires mUseHeaderTextColor = True) |
+| mUseHeaderTextColor | Boolean | False | Use per-column header text color |
+| mBorderStyle | String | "" | Per-column border override (empty = use table default, "1"=all, "0"=none, "LTRB") |
+
+### Header Word Wrap & Vertical Alignment
+
+Column headers automatically word-wrap when text exceeds the column width. The header row height auto-expands to fit the tallest header text, with font-based line spacing (1.2x leading).
+
+```xojo
+// Center all headers vertically
+table.mHeaderVerticalAlignment = VNSPDFModule.eVerticalAlignment.Middle
+
+// Override a specific column to bottom-align
+col.mHeaderVerticalAlignment = CType(VNSPDFModule.eVerticalAlignment.Bottom, Integer)
+
+// Adjust vertical padding
+table.mHeaderPaddingTop = 2.0
+table.mHeaderPaddingBottom = 2.0
+
+// Customize header colors (table-level)
+table.mHeaderFillColor = Color.RGB(0, 100, 0)     // Dark green
+table.mHeaderTextColor = Color.RGB(255, 255, 200)  // Light yellow
+table.mHeaderBorderColor = Color.RGB(0, 50, 0)     // Darker green
+
+// Per-column header color override
+col.mHeaderFillColor = Color.RGB(200, 0, 0)  // Red for this column
+col.mUseHeaderFillColor = True
+col.mHeaderTextColor = Color.RGB(255, 255, 255)
+col.mUseHeaderTextColor = True
+```
+
+### Auto Column Width
+
+Set column width to `0` to auto-fill remaining page width. Multiple auto-width columns share the space equally.
+
+```xojo
+// First column fixed at 30mm, other 3 share the remaining width
+table.AddColumn("ID", 30.0, VNSPDFModule.eColumnAlignment.Left)
+table.AddColumn("Name", 0, VNSPDFModule.eColumnAlignment.Right)
+table.AddColumn("Source", 0, VNSPDFModule.eColumnAlignment.Right)
+table.AddColumn("Rating", 0, VNSPDFModule.eColumnAlignment.Right)
+```
+
+### Auto Row Height
+
+Set `mAutoRowHeight = True` to word-wrap cell content instead of truncating. Row height is calculated from the tallest cell.
+
+```xojo
+Dim table As New VNSPDFManualTable(6.0)
+table.mAutoRowHeight = True
+// mCellHeight becomes the line height within cells and minimum row height
+```
+
+### Header Alignment
+
+By default, header cells use the same alignment as data cells (`mAlignment`). Override per-column with `mHeaderAlignment`:
+
+```xojo
+// Header and data both right-aligned (default behavior)
+table.AddColumn("Amount", 40.0, VNSPDFModule.eColumnAlignment.Right)
+
+// Header centered, data right-aligned
+Dim col As New VNSPDFManualTableColumn("Amount", 40.0, VNSPDFModule.eColumnAlignment.Right)
+col.mHeaderAlignment = Integer(VNSPDFModule.eColumnAlignment.Center)
+table.AddColumn(col)
+```
+
+### Cell Padding
+
+Set `mCellPadding` on the table for global padding, or per-column via `VNSPDFManualTableColumn.mCellPadding`. Padding insets text on **both sides** of each cell while keeping the cell background and border at full column width. Column padding overrides table padding.
+
+```xojo
+// Global: 2mm padding on all cells
+table.mCellPadding = 2.0
+
+// Per-column: 4mm padding on "Source" column only
+Dim colSource As New VNSPDFManualTableColumn("Source", 0, VNSPDFModule.eColumnAlignment.Right)
+colSource.mCellPadding = 4.0
+table.AddColumn(colSource)
+```
+
+Priority: column `mCellPadding` > table `mCellPadding` > document default (~0.28mm).
+
+### Row Vertical Padding
+
+Control vertical spacing above/below data row text. Negative values tighten spacing.
+
+```xojo
+// Tighter row spacing (reduce 0.5mm from default)
+table.mRowPaddingTop = -0.5
+table.mRowPaddingBottom = -0.5
+
+// Looser row spacing
+table.mRowPaddingTop = 1.5
+table.mRowPaddingBottom = 1.0
+
+// Per-column vertical padding override
+col.mCellPaddingTop = 2.0    // -1 = use table default
+col.mCellPaddingBottom = 0.5
+```
+
+### Per-Cell Padding Override
+
+Override padding on individual cells (highest priority in the cascade):
+
+```xojo
+// Make a specific cell tighter
+table.SetCellPadding(rowIdx, colIdx, 1.0, 1.0, 0.0, 0.0)
+// Parameters: row, col, left, right, top, bottom
+// Values < 0 = use column/table default
+```
+
+Priority: per-cell `SetCellPadding` > column `mCellPadding`/`mCellPaddingTop`/`mCellPaddingBottom` > table `mCellPadding`/`mRowPaddingTop`/`mRowPaddingBottom` > document default.
+
+### Border Customization
+
+Control border appearance at four levels: table, column, row, and cell.
+
+**Border color and width** (applies to all borders):
+
+```xojo
+// Fine black borders (default)
+table.mBorderColor = Color.RGB(0, 0, 0)
+table.mBorderWidth = 0.1  // Very fine (default 0.2mm)
+
+// Header borders can use a different color
+table.mHeaderBorderColor = Color.RGB(0, 0, 0)
+```
+
+**Border style** controls which sides are drawn. Use `"1"` for all four sides, `"0"` for none, or any combination of `L` (left), `T` (top), `R` (right), `B` (bottom):
+
+```xojo
+// Table-level default: all borders
+table.mBorderStyle = "1"
+
+// Column-level override: only left and right borders
+Dim col As New VNSPDFManualTableColumn("Notes", 0, VNSPDFModule.eColumnAlignment.Left)
+col.mBorderStyle = "LR"
+table.AddColumn(col)
+
+// Row-level override: no borders on row 5
+table.SetRowBorder(5, "0")
+
+// Cell-level override: only bottom border on specific cell
+table.SetCellBorder(2, 3, "B")
+```
+
+**Priority**: cell > row > column > table. If a cell has a `SetCellBorder` override, it takes precedence over everything. If not, the row override is checked, then the column, then the table default.
+
+### Automatic Footer Height Detection
+
+When using `SetFooterFunc()` or `SetFooterFuncLpi()`, the page break trigger is automatically adjusted to leave room for the footer. The library dry-runs the footer callback once to measure its height (detecting the first `SetY()` call), then sets the bottom margin accordingly. No need to manually call `SetAutoPageBreak(True, margin)`.
+
+```xojo
+pdf.SetFooterFuncLpi(AddressOf AddFooter) // Auto-detects footer height
+// No SetAutoPageBreak needed — the page break trigger adjusts automatically
+```
 
 ### Footer Auto-Calculations
 
@@ -543,4 +735,4 @@ VNSPDFModule.eColumnAlignment.Right   // "R"
 
 ---
 
-*Last Updated: 2026-02-18*
+*Last Updated: 2026-03-11*

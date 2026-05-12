@@ -92,10 +92,11 @@ Protected Module VNSPDFModule
 		  // Platform-specific font directories (searched recursively)
 		  Dim searchDirs() As String
 		  
-		  #If TargetiOS Then
+		  #If TargetiOS Or TargetAndroid Then
 		    // iOS: no system font directories to search
 		    // Fonts must be bundled with the app
 		  #ElseIf TargetMacOS Then
+		    searchDirs.Add("/System/Library/Fonts/Supplemental")
 		    searchDirs.Add("/System/Library/Fonts")
 		    searchDirs.Add("/Library/Fonts")
 		    Dim userHome As String = SpecialFolder.UserHome.NativePath
@@ -139,7 +140,7 @@ Protected Module VNSPDFModule
 		  // iOS: Use Str() with manual formatting (API2 doesn't have Format)
 		  // Desktop: Use Format() function (API1)
 		  
-		  #If TargetiOS Then
+		  #If TargetiOS Or TargetAndroid Then
 		    // Simple formatting for iOS - handle common cases
 		    If format = "0" Then
 		      // Integer format - no decimals, avoid scientific notation
@@ -562,8 +563,1169 @@ Protected Module VNSPDFModule
 		Delegate Sub ProgressDelegate(percentage As Double)
 	#tag EndDelegateDeclaration
 
+	#tag Method, Flags = &h1, Description = 457874726163747320504E4720656D6F6A6920696D61676520646174612066726F6D20616E205342495820666F6E742066696C6520666F722074686520676976656E20636F6465706F696E7420616E642073697A652E0A
+		Protected Function ExtractEmojiPNG_SBIX(fontFilePath As String, emojiCodePoint As UInt32, desiredSize As Integer) As MemoryBlock
+		  // Extracts PNG bitmap data for an emoji from an SBIX (Standard Bitmap Graphics) font table.
+		  // Parses TTC/TrueType font, locates cmap and sbix tables, finds the glyph for the
+		  // codepoint, and returns the raw PNG data from the best-matching strike size.
+		  // Returns Nil on any failure (file not found, table missing, glyph not found).
+
+		  // Check cache first
+		  Dim cacheKey As String = fontFilePath + ":" + Str(emojiCodePoint) + ":" + Str(desiredSize)
+		  If mSBIXCache <> Nil And mSBIXCache.HasKey(cacheKey) Then
+		    Return MemoryBlock(mSBIXCache.Value(cacheKey))
+		  End If
+
+		  // Use cached font data if same file, otherwise read and cache
+		  Dim mb As MemoryBlock
+		  Dim cmapOffset As UInt32
+		  Dim cmapLength As UInt32
+		  Dim sbixOffset As UInt32
+		  Dim sbixLength As UInt32
+		  Dim maxpOffset As UInt32
+
+		  If mSBIXFontMB <> Nil And mSBIXFontPath = fontFilePath And mSBIXTableInfo <> Nil Then
+		    // Reuse cached font data and table info
+		    mb = mSBIXFontMB
+		    cmapOffset = mSBIXTableInfo.Value("cmapOffset")
+		    cmapLength = mSBIXTableInfo.Value("cmapLength")
+		    sbixOffset = mSBIXTableInfo.Value("sbixOffset")
+		    sbixLength = mSBIXTableInfo.Value("sbixLength")
+		    maxpOffset = mSBIXTableInfo.Value("maxpOffset")
+		  Else
+		    // Read and parse font file, then cache
+		    Dim f As FolderItem = New FolderItem(fontFilePath, FolderItem.PathModes.Native)
+		    If f = Nil Or Not f.Exists Then Return Nil
+
+		    Dim bs As BinaryStream
+		    Try
+		      bs = BinaryStream.Open(f, False)
+		    Catch e As IOException
+		      Return Nil
+		    End Try
+
+		    Dim fontFileSize As Integer = bs.Length
+		    If fontFileSize < 12 Then
+		      bs.Close
+		      Return Nil
+		    End If
+
+		    mb = bs.Read(fontFileSize)
+		    bs.Close
+		    mb.LittleEndian = False
+
+		    // Determine font offset (handle TTC collections)
+		    Dim fontOffset As UInt32 = 0
+		    If mb.StringValue(0, 4) = "ttcf" Then
+		      If mb.UInt32Value(8) < 1 Then Return Nil
+		      fontOffset = mb.UInt32Value(12)
+		      If fontOffset >= mb.Size Then Return Nil
+		    End If
+
+		    // Read table directory
+		    If fontOffset + 12 > mb.Size Then Return Nil
+		    Dim numTables As UInt16 = mb.UInt16Value(fontOffset + 4)
+		    Dim tableRecordStart As UInt32 = fontOffset + 12
+		    If tableRecordStart + (numTables * 16) > mb.Size Then Return Nil
+
+		    cmapOffset = 0
+		    cmapLength = 0
+		    sbixOffset = 0
+		    sbixLength = 0
+		    maxpOffset = 0
+
+		    Dim i As Integer
+		    For i = 0 To numTables - 1
+		      Dim recOffset As UInt32 = tableRecordStart + (i * 16)
+		      Dim tableTag As String = mb.StringValue(recOffset, 4)
+		      If tableTag = "cmap" Then
+		        cmapOffset = mb.UInt32Value(recOffset + 8)
+		        cmapLength = mb.UInt32Value(recOffset + 12)
+		      ElseIf tableTag = "sbix" Then
+		        sbixOffset = mb.UInt32Value(recOffset + 8)
+		        sbixLength = mb.UInt32Value(recOffset + 12)
+		      ElseIf tableTag = "maxp" Then
+		        maxpOffset = mb.UInt32Value(recOffset + 8)
+		      End If
+		    Next
+
+		    If cmapOffset = 0 Or sbixOffset = 0 Then Return Nil
+
+		    // Cache everything for next call
+		    mSBIXFontMB = mb
+		    mSBIXFontPath = fontFilePath
+		    mSBIXTableInfo = New Dictionary
+		    mSBIXTableInfo.Value("cmapOffset") = cmapOffset
+		    mSBIXTableInfo.Value("cmapLength") = cmapLength
+		    mSBIXTableInfo.Value("sbixOffset") = sbixOffset
+		    mSBIXTableInfo.Value("sbixLength") = sbixLength
+		    mSBIXTableInfo.Value("maxpOffset") = maxpOffset
+		  End If
+
+		  // Get numGlyphs from maxp table
+		  Dim numGlyphs As UInt32 = 0
+		  If maxpOffset > 0 And maxpOffset + 6 <= mb.Size Then
+		    numGlyphs = mb.UInt16Value(maxpOffset + 4)
+		  End If
+		  If numGlyphs = 0 Then
+		    System.DebugLog("ExtractEmojiPNG_SBIX: Cannot determine numGlyphs from maxp table")
+		    Return Nil
+		  End If
+
+		  // Look up glyph ID from cmap
+		  Dim glyphID As Integer = GetGlyphIDFromCmap(mb, cmapOffset, cmapLength, emojiCodePoint)
+		  If glyphID <= 0 Then
+		    System.DebugLog("ExtractEmojiPNG_SBIX: Glyph not found for codepoint " + Str(emojiCodePoint))
+		    Return Nil
+		  End If
+
+		  // Parse sbix table
+		  If sbixOffset + 8 > mb.Size Then
+		    System.DebugLog("ExtractEmojiPNG_SBIX: sbix header out of bounds")
+		    Return Nil
+		  End If
+
+		  // sbix header: version(UInt16) + flags(UInt16) + numStrikes(UInt32)
+		  Dim numStrikes As UInt32 = mb.UInt32Value(sbixOffset + 4)
+		  If numStrikes = 0 Then
+		    System.DebugLog("ExtractEmojiPNG_SBIX: No strikes in sbix table")
+		    Return Nil
+		  End If
+
+		  // Strike offset array starts at sbixOffset + 8
+		  Dim strikeOffsetsStart As UInt32 = sbixOffset + 8
+		  If strikeOffsetsStart + (numStrikes * 4) > mb.Size Then
+		    System.DebugLog("ExtractEmojiPNG_SBIX: Strike offsets array out of bounds")
+		    Return Nil
+		  End If
+
+		  // Find the strike with ppem closest to desiredSize
+		  Dim bestStrikeIdx As Integer = -1
+		  Dim bestPpem As Integer = 0
+		  Dim bestDiff As Integer = 2147483647  // Max Int32
+
+		  Dim i As Integer
+		  For i = 0 To numStrikes - 1
+		    Dim strikeRelOffset As UInt32 = mb.UInt32Value(strikeOffsetsStart + (i * 4))
+		    Dim strikeAbsOffset As UInt32 = sbixOffset + strikeRelOffset
+
+		    If strikeAbsOffset + 4 > mb.Size Then Continue
+
+		    Dim ppem As UInt16 = mb.UInt16Value(strikeAbsOffset)
+		    Dim diff As Integer = Abs(ppem - desiredSize)
+
+		    If diff < bestDiff Then
+		      bestDiff = diff
+		      bestPpem = ppem
+		      bestStrikeIdx = i
+		    End If
+		  Next
+
+		  If bestStrikeIdx < 0 Then
+		    System.DebugLog("ExtractEmojiPNG_SBIX: No valid strike found")
+		    Return Nil
+		  End If
+
+		  // Read glyph data from the best strike
+		  Dim bestStrikeRelOffset As UInt32 = mb.UInt32Value(strikeOffsetsStart + (bestStrikeIdx * 4))
+		  Dim bestStrikeAbsOffset As UInt32 = sbixOffset + bestStrikeRelOffset
+
+		  // Strike structure: ppem(UInt16) + ppi(UInt16) + glyphDataOffsets[numGlyphs+1] as UInt32
+		  Dim glyphDataOffsetsStart As UInt32 = bestStrikeAbsOffset + 4
+
+		  // Need glyphID and glyphID+1 offsets
+		  If glyphID >= numGlyphs Then
+		    System.DebugLog("ExtractEmojiPNG_SBIX: glyphID " + Str(glyphID) + " >= numGlyphs " + Str(numGlyphs))
+		    Return Nil
+		  End If
+
+		  Dim offsetEntryPos As UInt32 = glyphDataOffsetsStart + (glyphID * 4)
+		  Dim nextOffsetEntryPos As UInt32 = glyphDataOffsetsStart + ((glyphID + 1) * 4)
+
+		  If nextOffsetEntryPos + 4 > mb.Size Then
+		    System.DebugLog("ExtractEmojiPNG_SBIX: Glyph offset entries out of bounds")
+		    Return Nil
+		  End If
+
+		  Dim glyphDataRelOffset As UInt32 = mb.UInt32Value(offsetEntryPos)
+		  Dim nextGlyphDataRelOffset As UInt32 = mb.UInt32Value(nextOffsetEntryPos)
+
+		  // Both offsets are relative to the strike start
+		  Dim glyphDataAbsOffset As UInt32 = bestStrikeAbsOffset + glyphDataRelOffset
+		  Dim dataLength As Integer = nextGlyphDataRelOffset - glyphDataRelOffset
+
+		  If dataLength <= 8 Then
+		    // No image data (8-byte glyph header only, or empty)
+		    System.DebugLog("ExtractEmojiPNG_SBIX: No image data for glyphID " + Str(glyphID) + " (ppem=" + Str(bestPpem) + ")")
+		    Return Nil
+		  End If
+
+		  // Glyph data: originOffsetX(Int16) + originOffsetY(Int16) + graphicType(4 bytes) + image data
+		  Const kGlyphHeaderSize As Integer = 8
+
+		  If glyphDataAbsOffset + kGlyphHeaderSize > mb.Size Then
+		    System.DebugLog("ExtractEmojiPNG_SBIX: Glyph header out of bounds")
+		    Return Nil
+		  End If
+
+		  Dim graphicType As String = mb.StringValue(glyphDataAbsOffset + 4, 4)
+		  If graphicType <> "png " Then
+		    System.DebugLog("ExtractEmojiPNG_SBIX: Graphic type is not PNG: " + graphicType)
+		    Return Nil
+		  End If
+
+		  Dim pngDataOffset As UInt32 = glyphDataAbsOffset + kGlyphHeaderSize
+		  Dim pngDataLength As Integer = dataLength - kGlyphHeaderSize
+
+		  If pngDataOffset + pngDataLength > mb.Size Then
+		    System.DebugLog("ExtractEmojiPNG_SBIX: PNG data extends beyond file")
+		    Return Nil
+		  End If
+
+		  // Extract the PNG data
+		  Dim pngData As New MemoryBlock(pngDataLength)
+		  pngData.StringValue(0, pngDataLength) = mb.StringValue(pngDataOffset, pngDataLength)
+
+		  // Store in cache
+		  If mSBIXCache = Nil Then
+		    mSBIXCache = New Dictionary
+		  End If
+		  mSBIXCache.Value(cacheKey) = pngData
+
+		  Return pngData
+
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21, Description = 4C6F6F6B73207570206120676C7970682049442066726F6D206120636D6170207461626C6520666F722074686520676976656E20556E69636F646520636F6465706F696E742E0A
+		Private Function GetGlyphIDFromCmap(mb As MemoryBlock, cmapOffset As UInt32, cmapLength As UInt32, codePoint As UInt32) As Integer
+		  // Parses the cmap table to find a Format 12 segmented coverage subtable,
+		  // then looks up the glyph ID for the given Unicode codepoint.
+		  // Returns the glyph ID (>0) on success, or -1 if not found.
+		  #Pragma Unused cmapLength
+
+		  Dim fileSize As Integer = mb.Size
+
+		  If cmapOffset + 4 > mb.Size Then Return -1
+
+		  Dim numSubtables As UInt16 = mb.UInt16Value(cmapOffset + 2)
+
+		  // Each encoding record is 8 bytes: platformID(UInt16) + encodingID(UInt16) + subtableOffset(UInt32)
+		  Dim recordsStart As UInt32 = cmapOffset + 4
+
+		  If recordsStart + (numSubtables * 8) > mb.Size Then Return -1
+
+		  // Look for Format 12 subtable
+		  // Prefer: platform 3 encoding 10 (Windows UCS-4) or platform 0 encoding 4 (Unicode full)
+		  Dim format12Offset As UInt32 = 0
+
+		  Dim i As Integer
+		  For i = 0 To numSubtables - 1
+		    Dim recPos As UInt32 = recordsStart + (i * 8)
+		    Dim platformID As UInt16 = mb.UInt16Value(recPos)
+		    Dim encodingID As UInt16 = mb.UInt16Value(recPos + 2)
+		    Dim subtableRelOffset As UInt32 = mb.UInt32Value(recPos + 4)
+		    Dim subtableAbsOffset As UInt32 = cmapOffset + subtableRelOffset
+
+		    // Check if this is a Format 12 subtable
+		    If subtableAbsOffset + 2 > mb.Size Then Continue
+
+		    Dim format As UInt16 = mb.UInt16Value(subtableAbsOffset)
+
+		    If format = 12 Then
+		      // Accept platform 3 encoding 10, or platform 0 encoding 4
+		      If (platformID = 3 And encodingID = 10) Or (platformID = 0 And encodingID = 4) Then
+		        format12Offset = subtableAbsOffset
+		        Exit  // Use first matching Format 12
+		      End If
+		      // Also accept any Format 12 as fallback
+		      If format12Offset = 0 Then
+		        format12Offset = subtableAbsOffset
+		      End If
+		    End If
+		  Next
+
+		  If format12Offset = 0 Then
+		    System.DebugLog("GetGlyphIDFromCmap: No Format 12 subtable found")
+		    Return -1
+		  End If
+
+		  // Parse Format 12 subtable
+		  // Structure: format(UInt16) + reserved(UInt16) + length(UInt32) + language(UInt32) + numGroups(UInt32)
+		  // Then numGroups sequential map groups of 12 bytes each
+		  Const kFormat12HeaderSize As Integer = 16
+
+		  If format12Offset + kFormat12HeaderSize > mb.Size Then
+		    System.DebugLog("GetGlyphIDFromCmap: Format 12 header out of bounds")
+		    Return -1
+		  End If
+
+		  Dim numGroups As UInt32 = mb.UInt32Value(format12Offset + 12)
+		  Dim groupsStart As UInt32 = format12Offset + kFormat12HeaderSize
+
+		  If groupsStart + (numGroups * 12) > mb.Size Then
+		    System.DebugLog("GetGlyphIDFromCmap: Format 12 groups extend beyond file")
+		    Return -1
+		  End If
+
+		  // Binary search through the groups for the codepoint
+		  Dim lo As Integer = 0
+		  Dim hi As Integer = numGroups - 1
+
+		  While lo <= hi
+		    Dim mid As Integer = lo + Bitwise.ShiftRight(hi - lo, 1)
+		    Dim groupPos As UInt32 = groupsStart + (mid * 12)
+
+		    Dim startCharCode As UInt32 = mb.UInt32Value(groupPos)
+		    Dim endCharCode As UInt32 = mb.UInt32Value(groupPos + 4)
+		    Dim startGlyphID As UInt32 = mb.UInt32Value(groupPos + 8)
+
+		    If codePoint < startCharCode Then
+		      hi = mid - 1
+		    ElseIf codePoint > endCharCode Then
+		      lo = mid + 1
+		    Else
+		      // Found: glyphID = startGlyphID + (codePoint - startCharCode)
+		      Return startGlyphID + (codePoint - startCharCode)
+		    End If
+		  Wend
+
+		  Return -1
+
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1, Description = 457874726163747320504E4720656D6F6A6920696D61676520646174612066726F6D206120434244542F43424C4320666F6E742066696C6520666F722074686520676976656E20636F6465706F696E7420616E642073697A652E0A
+		Protected Function ExtractEmojiPNG_CBDT(fontFilePath As String, emojiCodePoint As UInt32, desiredSize As Integer) As MemoryBlock
+		  // Extracts PNG bitmap data for an emoji from a CBDT/CBLC (Color Bitmap Data Table) font.
+		  // Used primarily on Linux with NotoColorEmoji.ttf.
+		  // Parses CBLC table to locate bitmap strike and glyph index, then reads PNG from CBDT.
+		  // Returns Nil on any failure (file not found, table missing, glyph not found).
+
+		  // Check cache first
+		  Dim cacheKey As String = fontFilePath + ":" + Str(emojiCodePoint) + ":" + Str(desiredSize)
+		  If mSBIXCache <> Nil And mSBIXCache.HasKey(cacheKey) Then
+		    Return MemoryBlock(mSBIXCache.Value(cacheKey))
+		  End If
+
+		  // Use cached font data if same file, otherwise read and cache
+		  Dim mb As MemoryBlock
+		  Dim cmapOffset As UInt32
+		  Dim cmapLength As UInt32
+		  Dim cblcOffset As UInt32
+		  Dim cblcLength As UInt32
+		  Dim cbdtOffset As UInt32
+		  Dim cbdtLength As UInt32
+		  Dim maxpOffset As UInt32
+
+		  If mSBIXFontMB <> Nil And mSBIXFontPath = fontFilePath And mSBIXTableInfo <> Nil Then
+		    // Reuse cached font data and table info
+		    mb = mSBIXFontMB
+		    If Not mSBIXTableInfo.HasKey("cblcOffset") Then
+		      // Cached font was parsed for a different table set, re-parse
+		      mSBIXFontMB = Nil
+		      mSBIXFontPath = ""
+		      mSBIXTableInfo = Nil
+		    Else
+		      cmapOffset = mSBIXTableInfo.Value("cmapOffset")
+		      cmapLength = mSBIXTableInfo.Value("cmapLength")
+		      cblcOffset = mSBIXTableInfo.Value("cblcOffset")
+		      cblcLength = mSBIXTableInfo.Value("cblcLength")
+		      cbdtOffset = mSBIXTableInfo.Value("cbdtOffset")
+		      cbdtLength = mSBIXTableInfo.Value("cbdtLength")
+		      maxpOffset = mSBIXTableInfo.Value("maxpOffset")
+		    End If
+		  End If
+
+		  If mSBIXFontMB = Nil Or mSBIXFontPath <> fontFilePath Or mSBIXTableInfo = Nil Then
+		    // Read and parse font file, then cache
+		    Dim f As FolderItem = New FolderItem(fontFilePath, FolderItem.PathModes.Native)
+		    If f = Nil Or Not f.Exists Then Return Nil
+
+		    Dim bs As BinaryStream
+		    Try
+		      bs = BinaryStream.Open(f, False)
+		    Catch e As IOException
+		      Return Nil
+		    End Try
+
+		    Dim fontFileSize As Integer = bs.Length
+		    If fontFileSize < 12 Then
+		      bs.Close
+		      Return Nil
+		    End If
+
+		    mb = bs.Read(fontFileSize)
+		    bs.Close
+		    mb.LittleEndian = False
+
+		    // NotoColorEmoji.ttf is standard TTF (not TTC), but handle TTC just in case
+		    Dim fontOffset As UInt32 = 0
+		    If mb.StringValue(0, 4) = "ttcf" Then
+		      If mb.UInt32Value(8) < 1 Then Return Nil
+		      fontOffset = mb.UInt32Value(12)
+		      If fontOffset >= mb.Size Then Return Nil
+		    End If
+
+		    // Read table directory
+		    If fontOffset + 12 > mb.Size Then Return Nil
+		    Dim numTables As UInt16 = mb.UInt16Value(fontOffset + 4)
+		    Dim tableRecordStart As UInt32 = fontOffset + 12
+		    If tableRecordStart + (numTables * 16) > mb.Size Then Return Nil
+
+		    cmapOffset = 0
+		    cmapLength = 0
+		    cblcOffset = 0
+		    cblcLength = 0
+		    cbdtOffset = 0
+		    cbdtLength = 0
+		    maxpOffset = 0
+
+		    Dim i As Integer
+		    For i = 0 To numTables - 1
+		      Dim recOffset As UInt32 = tableRecordStart + (i * 16)
+		      Dim tableTag As String = mb.StringValue(recOffset, 4)
+		      If tableTag = "cmap" Then
+		        cmapOffset = mb.UInt32Value(recOffset + 8)
+		        cmapLength = mb.UInt32Value(recOffset + 12)
+		      ElseIf tableTag = "CBLC" Then
+		        cblcOffset = mb.UInt32Value(recOffset + 8)
+		        cblcLength = mb.UInt32Value(recOffset + 12)
+		      ElseIf tableTag = "CBDT" Then
+		        cbdtOffset = mb.UInt32Value(recOffset + 8)
+		        cbdtLength = mb.UInt32Value(recOffset + 12)
+		      ElseIf tableTag = "maxp" Then
+		        maxpOffset = mb.UInt32Value(recOffset + 8)
+		      End If
+		    Next
+
+		    If cmapOffset = 0 Or cblcOffset = 0 Or cbdtOffset = 0 Then
+		      System.DebugLog("ExtractEmojiPNG_CBDT: Required tables missing (cmap/CBLC/CBDT)")
+		      Return Nil
+		    End If
+
+		    // Cache everything for next call
+		    mSBIXFontMB = mb
+		    mSBIXFontPath = fontFilePath
+		    mSBIXTableInfo = New Dictionary
+		    mSBIXTableInfo.Value("cmapOffset") = cmapOffset
+		    mSBIXTableInfo.Value("cmapLength") = cmapLength
+		    mSBIXTableInfo.Value("cblcOffset") = cblcOffset
+		    mSBIXTableInfo.Value("cblcLength") = cblcLength
+		    mSBIXTableInfo.Value("cbdtOffset") = cbdtOffset
+		    mSBIXTableInfo.Value("cbdtLength") = cbdtLength
+		    mSBIXTableInfo.Value("maxpOffset") = maxpOffset
+		  End If
+
+		  // Get numGlyphs from maxp table
+		  Dim numGlyphs As UInt32 = 0
+		  If maxpOffset > 0 And maxpOffset + 6 <= mb.Size Then
+		    numGlyphs = mb.UInt16Value(maxpOffset + 4)
+		  End If
+		  If numGlyphs = 0 Then
+		    System.DebugLog("ExtractEmojiPNG_CBDT: Cannot determine numGlyphs from maxp table")
+		    Return Nil
+		  End If
+
+		  // Look up glyph ID from cmap
+		  Dim glyphID As Integer = GetGlyphIDFromCmap(mb, cmapOffset, cmapLength, emojiCodePoint)
+		  If glyphID <= 0 Then
+		    System.DebugLog("ExtractEmojiPNG_CBDT: Glyph not found for codepoint " + Str(emojiCodePoint))
+		    Return Nil
+		  End If
+
+		  // Parse CBLC table header
+		  // Header: majorVersion(UInt16) + minorVersion(UInt16) + numSizes(UInt32)
+		  Const kCBLCHeaderSize As Integer = 8
+		  If cblcOffset + kCBLCHeaderSize > mb.Size Then
+		    System.DebugLog("ExtractEmojiPNG_CBDT: CBLC header out of bounds")
+		    Return Nil
+		  End If
+
+		  Dim numSizes As UInt32 = mb.UInt32Value(cblcOffset + 4)
+		  If numSizes = 0 Then
+		    System.DebugLog("ExtractEmojiPNG_CBDT: No BitmapSize records in CBLC")
+		    Return Nil
+		  End If
+
+		  // BitmapSize record is 48 bytes each, starts after header
+		  Const kBitmapSizeRecordSize As Integer = 48
+		  Dim bitmapSizesStart As UInt32 = cblcOffset + kCBLCHeaderSize
+		  If bitmapSizesStart + (numSizes * kBitmapSizeRecordSize) > mb.Size Then
+		    System.DebugLog("ExtractEmojiPNG_CBDT: BitmapSize records out of bounds")
+		    Return Nil
+		  End If
+
+		  // Find best BitmapSize that contains our glyphID
+		  Dim bestSizeIdx As Integer = -1
+		  Dim bestPpem As Integer = 0
+		  Dim bestDiff As Integer = 2147483647
+		  Dim bestIndexSubTableArrayOffset As UInt32 = 0
+		  Dim bestNumberOfIndexSubTables As UInt32 = 0
+
+		  Dim sIdx As Integer
+		  For sIdx = 0 To numSizes - 1
+		    Dim sizeRecPos As UInt32 = bitmapSizesStart + (sIdx * kBitmapSizeRecordSize)
+
+		    // BitmapSize record layout:
+		    // 0: indexSubTableArrayOffset(UInt32)
+		    // 4: indexTablesSize(UInt32)
+		    // 8: numberOfIndexSubTables(UInt32)
+		    // 12: colorRef(UInt32)
+		    // 16: SbitLineMetrics hori (12 bytes)
+		    // 28: SbitLineMetrics vert (12 bytes)
+		    // 40: startGlyphIndex(UInt16)
+		    // 42: endGlyphIndex(UInt16)
+		    // 44: ppemX(UInt8)
+		    // 45: ppemY(UInt8)
+		    // 46: bitDepth(UInt8)
+		    // 47: flags(Int8)
+
+		    Dim startGlyphIndex As UInt16 = mb.UInt16Value(sizeRecPos + 40)
+		    Dim endGlyphIndex As UInt16 = mb.UInt16Value(sizeRecPos + 42)
+		    Dim ppemX As UInt8 = mb.UInt8Value(sizeRecPos + 44)
+
+		    // Check if our glyph is in range
+		    If glyphID >= startGlyphIndex And glyphID <= endGlyphIndex Then
+		      Dim diff As Integer = Abs(ppemX - desiredSize)
+		      If diff < bestDiff Then
+		        bestDiff = diff
+		        bestPpem = ppemX
+		        bestSizeIdx = sIdx
+		        bestIndexSubTableArrayOffset = mb.UInt32Value(sizeRecPos + 0)
+		        bestNumberOfIndexSubTables = mb.UInt32Value(sizeRecPos + 8)
+		      End If
+		    End If
+		  Next
+
+		  If bestSizeIdx < 0 Then
+		    System.DebugLog("ExtractEmojiPNG_CBDT: No BitmapSize contains glyphID " + Str(glyphID))
+		    Return Nil
+		  End If
+
+		  // Scan IndexSubTableArray to find the sub-table containing our glyphID
+		  // IndexSubTableArray entries are 8 bytes each:
+		  // firstGlyphIndex(UInt16) + lastGlyphIndex(UInt16) + additionalOffsetToIndexSubtable(UInt32)
+		  // The offset is relative to indexSubTableArrayOffset
+		  Dim indexArrayAbsOffset As UInt32 = cblcOffset + bestIndexSubTableArrayOffset
+
+		  Const kIndexSubTableArrayEntrySize As Integer = 8
+		  If indexArrayAbsOffset + (bestNumberOfIndexSubTables * kIndexSubTableArrayEntrySize) > mb.Size Then
+		    System.DebugLog("ExtractEmojiPNG_CBDT: IndexSubTableArray out of bounds")
+		    Return Nil
+		  End If
+
+		  Dim foundSubTable As Boolean = False
+		  Dim subTableFirstGlyph As UInt16 = 0
+		  Dim subTableIndexFormat As UInt16 = 0
+		  Dim subTableImageFormat As UInt16 = 0
+		  Dim subTableImageDataOffset As UInt32 = 0
+
+		  Dim stIdx As Integer
+		  For stIdx = 0 To bestNumberOfIndexSubTables - 1
+		    Dim entryPos As UInt32 = indexArrayAbsOffset + (stIdx * kIndexSubTableArrayEntrySize)
+		    Dim firstGlyph As UInt16 = mb.UInt16Value(entryPos)
+		    Dim lastGlyph As UInt16 = mb.UInt16Value(entryPos + 2)
+
+		    If glyphID >= firstGlyph And glyphID <= lastGlyph Then
+		      // Found the sub-table containing our glyph
+		      Dim additionalOffset As UInt32 = mb.UInt32Value(entryPos + 4)
+		      Dim subTableAbsOffset As UInt32 = indexArrayAbsOffset + additionalOffset
+
+		      // IndexSubTable header: indexFormat(UInt16) + imageFormat(UInt16) + imageDataOffset(UInt32)
+		      Const kIndexSubTableHeaderSize As Integer = 8
+		      If subTableAbsOffset + kIndexSubTableHeaderSize > mb.Size Then
+		        System.DebugLog("ExtractEmojiPNG_CBDT: IndexSubTable header out of bounds")
+		        Return Nil
+		      End If
+
+		      subTableFirstGlyph = firstGlyph
+		      subTableIndexFormat = mb.UInt16Value(subTableAbsOffset)
+		      subTableImageFormat = mb.UInt16Value(subTableAbsOffset + 2)
+		      subTableImageDataOffset = mb.UInt32Value(subTableAbsOffset + 4)
+
+		      // For indexFormat 1: array of UInt32 sbiOffsets follows header
+		      // sbiOffset[glyphID - firstGlyph] and sbiOffset[glyphID - firstGlyph + 1]
+		      If subTableIndexFormat = 1 Then
+		        Dim glyphIndex As Integer = glyphID - subTableFirstGlyph
+		        Dim offsetArrayStart As UInt32 = subTableAbsOffset + kIndexSubTableHeaderSize
+		        Dim offsetPos As UInt32 = offsetArrayStart + (glyphIndex * 4)
+		        Dim nextOffsetPos As UInt32 = offsetArrayStart + ((glyphIndex + 1) * 4)
+
+		        If nextOffsetPos + 4 > mb.Size Then
+		          System.DebugLog("ExtractEmojiPNG_CBDT: IndexFormat1 offset entries out of bounds")
+		          Return Nil
+		        End If
+
+		        Dim sbiOffset As UInt32 = mb.UInt32Value(offsetPos)
+		        Dim sbiNextOffset As UInt32 = mb.UInt32Value(nextOffsetPos)
+
+		        // Calculate absolute position in CBDT
+		        Dim glyphDataAbsPos As UInt32 = cbdtOffset + subTableImageDataOffset + sbiOffset
+		        Dim glyphDataLen As Integer = sbiNextOffset - sbiOffset
+
+		        If glyphDataLen <= 0 Then
+		          System.DebugLog("ExtractEmojiPNG_CBDT: No data for glyphID " + Str(glyphID) + " (ppem=" + Str(bestPpem) + ")")
+		          Return Nil
+		        End If
+
+		        If glyphDataAbsPos + glyphDataLen > mb.Size Then
+		          System.DebugLog("ExtractEmojiPNG_CBDT: Glyph data extends beyond file")
+		          Return Nil
+		        End If
+
+		        // Extract PNG based on imageFormat
+		        Dim pngData As MemoryBlock = ExtractPNGFromCBDTRecord(mb, glyphDataAbsPos, glyphDataLen, subTableImageFormat)
+		        If pngData <> Nil Then
+		          // Cache it
+		          If mSBIXCache = Nil Then
+		            mSBIXCache = New Dictionary
+		          End If
+		          mSBIXCache.Value(cacheKey) = pngData
+		          Return pngData
+		        End If
+		        Return Nil
+
+		      Else
+		        System.DebugLog("ExtractEmojiPNG_CBDT: Unsupported indexFormat " + Str(subTableIndexFormat))
+		        Return Nil
+		      End If
+		    End If
+		  Next
+
+		  System.DebugLog("ExtractEmojiPNG_CBDT: No IndexSubTable found for glyphID " + Str(glyphID))
+		  Return Nil
+
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21, Description = 457874726163747320504E4720646174612066726F6D2061204342445420676C7970682064617461207265636F7264206261736564206F6E20696D61676520666F726D61742E0A
+		Private Function ExtractPNGFromCBDTRecord(mb As MemoryBlock, dataPos As UInt32, dataLen As Integer, imageFormat As UInt16) As MemoryBlock
+		  // Extracts the PNG payload from a CBDT glyph data record.
+		  // Handles imageFormat 17 (SmallGlyphMetrics + PNG) and 18 (BigGlyphMetrics + PNG).
+		  // Returns the raw PNG MemoryBlock or Nil if format is unsupported.
+
+		  Dim metricsSize As Integer = 0
+
+		  If imageFormat = 17 Then
+		    // SmallGlyphMetrics: height(1) + width(1) + bearingX(1) + bearingY(1) + advance(1) = 5 bytes
+		    metricsSize = 5
+		  ElseIf imageFormat = 18 Then
+		    // BigGlyphMetrics: height(1) + width(1) + horiBearingX(1) + horiBearingY(1) + horiAdvance(1)
+		    //   + vertBearingX(1) + vertBearingY(1) + vertAdvance(1) = 8 bytes
+		    metricsSize = 8
+		  Else
+		    System.DebugLog("ExtractPNGFromCBDTRecord: Unsupported imageFormat " + Str(imageFormat))
+		    Return Nil
+		  End If
+
+		  // After metrics: dataLen(UInt32) + PNG data
+		  Const kDataLenFieldSize As Integer = 4
+		  Dim minRecordSize As Integer = metricsSize + kDataLenFieldSize
+
+		  If dataLen < minRecordSize Then
+		    System.DebugLog("ExtractPNGFromCBDTRecord: Record too small for format " + Str(imageFormat))
+		    Return Nil
+		  End If
+
+		  Dim pngLenPos As UInt32 = dataPos + metricsSize
+		  If pngLenPos + kDataLenFieldSize > mb.Size Then
+		    System.DebugLog("ExtractPNGFromCBDTRecord: PNG length field out of bounds")
+		    Return Nil
+		  End If
+
+		  Dim pngLen As UInt32 = mb.UInt32Value(pngLenPos)
+		  Dim pngStart As UInt32 = pngLenPos + kDataLenFieldSize
+
+		  If pngLen = 0 Then
+		    System.DebugLog("ExtractPNGFromCBDTRecord: PNG data length is zero")
+		    Return Nil
+		  End If
+
+		  If pngStart + pngLen > mb.Size Then
+		    System.DebugLog("ExtractPNGFromCBDTRecord: PNG data extends beyond file")
+		    Return Nil
+		  End If
+
+		  // Extract the PNG data
+		  Dim pngData As New MemoryBlock(pngLen)
+		  pngData.StringValue(0, pngLen) = mb.StringValue(pngStart, pngLen)
+
+		  Return pngData
+
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1, Description = 526173746572697A657320616E20656D6F6A692066726F6D206120434F4C522F4350414C20766563746F7220666F6E742066696C6520666F722074686520676976656E20636F6465706F696E7420616E642073697A652E0A
+		Protected Function RasterizeEmoji_COLR(fontFilePath As String, emojiCodePoint As UInt32, desiredSize As Integer) As Picture
+		  // Rasterizes an emoji from a COLR/CPAL (Color Layers) vector font.
+		  // Used primarily on Windows with seguiemj.ttf.
+		  // Strategy: Try platform Graphics API first (works on Windows), fall back to
+		  // parsed COLR layer data for simplified rendering.
+		  // Returns Nil on any failure.
+
+		  // Check cache first
+		  Dim cacheKey As String = "colr:" + fontFilePath + ":" + Str(emojiCodePoint) + ":" + Str(desiredSize)
+		  If mCOLRCache <> Nil And mCOLRCache.HasKey(cacheKey) Then
+		    Return Picture(mCOLRCache.Value(cacheKey))
+		  End If
+
+		  // Strategy 1: Try rendering via platform Graphics API
+		  // On Windows, the Graphics API can often render color emoji natively
+		  Dim apiResult As Picture = RasterizeEmoji_COLR_GraphicsAPI(emojiCodePoint, desiredSize)
+		  If apiResult <> Nil Then
+		    If mCOLRCache = Nil Then
+		      mCOLRCache = New Dictionary
+		    End If
+		    mCOLRCache.Value(cacheKey) = apiResult
+		    Return apiResult
+		  End If
+
+		  // Strategy 2: Parse COLR/CPAL tables and render simplified layers
+		  Dim colrResult As Picture = RasterizeEmoji_COLR_Parsed(fontFilePath, emojiCodePoint, desiredSize)
+		  If colrResult <> Nil Then
+		    If mCOLRCache = Nil Then
+		      mCOLRCache = New Dictionary
+		    End If
+		    mCOLRCache.Value(cacheKey) = colrResult
+		    Return colrResult
+		  End If
+
+		  Return Nil
+
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21, Description = 547269657320746F2072656E64657220616E20656D6F6A69207573696E672074686520706C6174666F726D20477261706869637320415049206469726563746C792E0A
+		Private Function RasterizeEmoji_COLR_GraphicsAPI(emojiCodePoint As UInt32, desiredSize As Integer) As Picture
+		  // Attempts to render an emoji using the platform Graphics API.
+		  // On Windows, DrawText with the emoji font may produce colored output.
+		  // Returns Nil if the emoji cannot be rendered (zero width or blank).
+
+		  #If TargetDesktop Then
+		    Try
+		      Dim emojiChar As String = Text.FromUnicodeCodepoint(emojiCodePoint)
+
+		      // Create a test picture to measure the emoji
+		      Dim scaleFactor As Integer = 2
+		      Dim picSize As Integer = desiredSize * scaleFactor
+		      If picSize < 16 Then picSize = 16
+
+		      Dim pic As New Picture(picSize, picSize)
+		      Dim g As Graphics = pic.Graphics
+
+		      // Try with the emoji font
+		      #If TargetWindows Then
+		        g.FontName = "Segoe UI Emoji"
+		      #Else
+		        // Unlikely to reach here for COLR on non-Windows, but try anyway
+		        g.FontName = "Apple Color Emoji"
+		      #EndIf
+
+		      g.FontSize = desiredSize
+
+		      // Check if the font can render this character
+		      Dim tw As Double = g.TextWidth(emojiChar)
+		      If tw <= 0 Then Return Nil
+
+		      // Draw the emoji centered
+		      Dim drawX As Double = (picSize - tw) / 2
+		      Dim drawY As Double = g.FontAscent + ((picSize - g.TextHeight) / 2)
+
+		      // Fill background with white
+		      g.DrawingColor = Color.White
+		      g.FillRectangle(0, 0, picSize, picSize)
+
+		      // Draw the emoji
+		      g.DrawingColor = Color.Black
+		      g.DrawText(emojiChar, drawX, drawY)
+
+		      // Check if the result is not blank (all white)
+		      // Sample a few pixels near center to see if anything was drawn
+		      Dim rgbPic As RGBSurface = pic.RGBSurface
+		      If rgbPic = Nil Then Return Nil
+
+		      Dim centerX As Integer = picSize \ 2
+		      Dim centerY As Integer = picSize \ 2
+		      Dim hasContent As Boolean = False
+
+		      // Sample a grid of points around center
+		      Dim sx As Integer
+		      Dim sy As Integer
+		      For sx = centerX - (picSize \ 4) To centerX + (picSize \ 4) Step 2
+		        For sy = centerY - (picSize \ 4) To centerY + (picSize \ 4) Step 2
+		          If sx >= 0 And sx < picSize And sy >= 0 And sy < picSize Then
+		            Dim c As Color = rgbPic.Pixel(sx, sy)
+		            If c.Red <> 255 Or c.Green <> 255 Or c.Blue <> 255 Then
+		              hasContent = True
+		              Exit
+		            End If
+		          End If
+		        Next
+		        If hasContent Then Exit
+		      Next
+
+		      If Not hasContent Then Return Nil
+
+		      // Crop to the desired size
+		      If picSize <> desiredSize Then
+		        Dim result As New Picture(desiredSize, desiredSize)
+		        Dim rg As Graphics = result.Graphics
+		        rg.DrawPicture(pic, 0, 0, desiredSize, desiredSize, 0, 0, picSize, picSize)
+		        Return result
+		      End If
+
+		      Return pic
+
+		    Catch e As RuntimeException
+		      System.DebugLog("RasterizeEmoji_COLR_GraphicsAPI: Exception: " + e.Message)
+		      Return Nil
+		    End Try
+		  #Else
+		    #Pragma Unused emojiCodePoint
+		    #Pragma Unused desiredSize
+		    Return Nil
+		  #EndIf
+
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21, Description = 50617273657320434F4C522F4350414C207461626C657320616E642072656E6465727320656D6F6A69206C617965727320746F20612050696374757265206F626A6563742E0A
+		Private Function RasterizeEmoji_COLR_Parsed(fontFilePath As String, emojiCodePoint As UInt32, desiredSize As Integer) As Picture
+		  // Parses COLR/CPAL tables from font file to render a simplified emoji.
+		  // Reads layer glyphs and their palette colors, then draws colored bounding
+		  // boxes for each layer as an approximation.
+		  // Returns Nil on any failure.
+
+		  // Use cached font data if same file, otherwise read and cache
+		  Dim mb As MemoryBlock
+		  Dim cmapOffset As UInt32
+		  Dim cmapLength As UInt32
+		  Dim colrOffset As UInt32
+		  Dim colrLength As UInt32
+		  Dim cpalOffset As UInt32
+		  Dim cpalLength As UInt32
+		  Dim glyfOffset As UInt32
+		  Dim glyfLength As UInt32
+		  Dim locaOffset As UInt32
+		  Dim locaLength As UInt32
+		  Dim headOffset As UInt32
+		  Dim maxpOffset As UInt32
+
+		  If mSBIXFontMB <> Nil And mSBIXFontPath = fontFilePath And mSBIXTableInfo <> Nil Then
+		    If Not mSBIXTableInfo.HasKey("colrOffset") Then
+		      // Cached font was parsed for a different table set, re-parse
+		      mSBIXFontMB = Nil
+		      mSBIXFontPath = ""
+		      mSBIXTableInfo = Nil
+		    Else
+		      mb = mSBIXFontMB
+		      cmapOffset = mSBIXTableInfo.Value("cmapOffset")
+		      cmapLength = mSBIXTableInfo.Value("cmapLength")
+		      colrOffset = mSBIXTableInfo.Value("colrOffset")
+		      colrLength = mSBIXTableInfo.Value("colrLength")
+		      cpalOffset = mSBIXTableInfo.Value("cpalOffset")
+		      cpalLength = mSBIXTableInfo.Value("cpalLength")
+		      glyfOffset = mSBIXTableInfo.Value("glyfOffset")
+		      glyfLength = mSBIXTableInfo.Value("glyfLength")
+		      locaOffset = mSBIXTableInfo.Value("locaOffset")
+		      locaLength = mSBIXTableInfo.Value("locaLength")
+		      headOffset = mSBIXTableInfo.Value("headOffset")
+		      maxpOffset = mSBIXTableInfo.Value("maxpOffset")
+		    End If
+		  End If
+
+		  If mSBIXFontMB = Nil Or mSBIXFontPath <> fontFilePath Or mSBIXTableInfo = Nil Then
+		    // Read and parse font file, then cache
+		    Dim f As FolderItem = New FolderItem(fontFilePath, FolderItem.PathModes.Native)
+		    If f = Nil Or Not f.Exists Then Return Nil
+
+		    Dim bs As BinaryStream
+		    Try
+		      bs = BinaryStream.Open(f, False)
+		    Catch e As IOException
+		      Return Nil
+		    End Try
+
+		    Dim fontFileSize As Integer = bs.Length
+		    If fontFileSize < 12 Then
+		      bs.Close
+		      Return Nil
+		    End If
+
+		    mb = bs.Read(fontFileSize)
+		    bs.Close
+		    mb.LittleEndian = False
+
+		    // Handle TTC collections
+		    Dim fontOffset As UInt32 = 0
+		    If mb.StringValue(0, 4) = "ttcf" Then
+		      If mb.UInt32Value(8) < 1 Then Return Nil
+		      fontOffset = mb.UInt32Value(12)
+		      If fontOffset >= mb.Size Then Return Nil
+		    End If
+
+		    // Read table directory
+		    If fontOffset + 12 > mb.Size Then Return Nil
+		    Dim numTables As UInt16 = mb.UInt16Value(fontOffset + 4)
+		    Dim tableRecordStart As UInt32 = fontOffset + 12
+		    If tableRecordStart + (numTables * 16) > mb.Size Then Return Nil
+
+		    cmapOffset = 0
+		    cmapLength = 0
+		    colrOffset = 0
+		    colrLength = 0
+		    cpalOffset = 0
+		    cpalLength = 0
+		    glyfOffset = 0
+		    glyfLength = 0
+		    locaOffset = 0
+		    locaLength = 0
+		    headOffset = 0
+		    maxpOffset = 0
+
+		    Dim i As Integer
+		    For i = 0 To numTables - 1
+		      Dim recOffset As UInt32 = tableRecordStart + (i * 16)
+		      Dim tableTag As String = mb.StringValue(recOffset, 4)
+		      If tableTag = "cmap" Then
+		        cmapOffset = mb.UInt32Value(recOffset + 8)
+		        cmapLength = mb.UInt32Value(recOffset + 12)
+		      ElseIf tableTag = "COLR" Then
+		        colrOffset = mb.UInt32Value(recOffset + 8)
+		        colrLength = mb.UInt32Value(recOffset + 12)
+		      ElseIf tableTag = "CPAL" Then
+		        cpalOffset = mb.UInt32Value(recOffset + 8)
+		        cpalLength = mb.UInt32Value(recOffset + 12)
+		      ElseIf tableTag = "glyf" Then
+		        glyfOffset = mb.UInt32Value(recOffset + 8)
+		        glyfLength = mb.UInt32Value(recOffset + 12)
+		      ElseIf tableTag = "loca" Then
+		        locaOffset = mb.UInt32Value(recOffset + 8)
+		        locaLength = mb.UInt32Value(recOffset + 12)
+		      ElseIf tableTag = "head" Then
+		        headOffset = mb.UInt32Value(recOffset + 8)
+		      ElseIf tableTag = "maxp" Then
+		        maxpOffset = mb.UInt32Value(recOffset + 8)
+		      End If
+		    Next
+
+		    If cmapOffset = 0 Or colrOffset = 0 Or cpalOffset = 0 Then
+		      System.DebugLog("RasterizeEmoji_COLR_Parsed: Required tables missing (cmap/COLR/CPAL)")
+		      Return Nil
+		    End If
+
+		    // Cache everything for next call
+		    mSBIXFontMB = mb
+		    mSBIXFontPath = fontFilePath
+		    mSBIXTableInfo = New Dictionary
+		    mSBIXTableInfo.Value("cmapOffset") = cmapOffset
+		    mSBIXTableInfo.Value("cmapLength") = cmapLength
+		    mSBIXTableInfo.Value("colrOffset") = colrOffset
+		    mSBIXTableInfo.Value("colrLength") = colrLength
+		    mSBIXTableInfo.Value("cpalOffset") = cpalOffset
+		    mSBIXTableInfo.Value("cpalLength") = cpalLength
+		    mSBIXTableInfo.Value("glyfOffset") = glyfOffset
+		    mSBIXTableInfo.Value("glyfLength") = glyfLength
+		    mSBIXTableInfo.Value("locaOffset") = locaOffset
+		    mSBIXTableInfo.Value("locaLength") = locaLength
+		    mSBIXTableInfo.Value("headOffset") = headOffset
+		    mSBIXTableInfo.Value("maxpOffset") = maxpOffset
+		  End If
+
+		  // Look up glyph ID from cmap
+		  Dim glyphID As Integer = GetGlyphIDFromCmap(mb, cmapOffset, cmapLength, emojiCodePoint)
+		  If glyphID <= 0 Then
+		    System.DebugLog("RasterizeEmoji_COLR_Parsed: Glyph not found for codepoint " + Str(emojiCodePoint))
+		    Return Nil
+		  End If
+
+		  // Parse COLR table header
+		  // version(UInt16) + numBaseGlyphRecords(UInt16) + baseGlyphRecordsOffset(UInt32)
+		  // + layerRecordsOffset(UInt32) + numLayerRecords(UInt16)
+		  Const kCOLRHeaderSize As Integer = 14
+		  If colrOffset + kCOLRHeaderSize > mb.Size Then
+		    System.DebugLog("RasterizeEmoji_COLR_Parsed: COLR header out of bounds")
+		    Return Nil
+		  End If
+
+		  Dim numBaseGlyphRecords As UInt16 = mb.UInt16Value(colrOffset + 2)
+		  Dim baseGlyphRecordsOff As UInt32 = mb.UInt32Value(colrOffset + 4)
+		  Dim layerRecordsOff As UInt32 = mb.UInt32Value(colrOffset + 8)
+		  Dim numLayerRecords As UInt16 = mb.UInt16Value(colrOffset + 12)
+
+		  Dim baseGlyphAbsOff As UInt32 = colrOffset + baseGlyphRecordsOff
+		  Dim layerAbsOff As UInt32 = colrOffset + layerRecordsOff
+
+		  // Find our glyphID in BaseGlyphRecords using binary search
+		  // BaseGlyphRecord: glyphID(UInt16) + firstLayerIndex(UInt16) + numLayers(UInt16) = 6 bytes
+		  Const kBaseGlyphRecordSize As Integer = 6
+		  If baseGlyphAbsOff + (numBaseGlyphRecords * kBaseGlyphRecordSize) > mb.Size Then
+		    System.DebugLog("RasterizeEmoji_COLR_Parsed: BaseGlyphRecords out of bounds")
+		    Return Nil
+		  End If
+
+		  Dim firstLayerIndex As Integer = -1
+		  Dim numLayers As Integer = 0
+
+		  // Binary search (BaseGlyphRecords are sorted by glyphID)
+		  Dim lo As Integer = 0
+		  Dim hi As Integer = numBaseGlyphRecords - 1
+		  While lo <= hi
+		    Dim mid As Integer = lo + Bitwise.ShiftRight(hi - lo, 1)
+		    Dim recPos As UInt32 = baseGlyphAbsOff + (mid * kBaseGlyphRecordSize)
+		    Dim recGlyphID As UInt16 = mb.UInt16Value(recPos)
+
+		    If glyphID < recGlyphID Then
+		      hi = mid - 1
+		    ElseIf glyphID > recGlyphID Then
+		      lo = mid + 1
+		    Else
+		      firstLayerIndex = mb.UInt16Value(recPos + 2)
+		      numLayers = mb.UInt16Value(recPos + 4)
+		      Exit
+		    End If
+		  Wend
+
+		  If firstLayerIndex < 0 Or numLayers = 0 Then
+		    System.DebugLog("RasterizeEmoji_COLR_Parsed: glyphID " + Str(glyphID) + " not found in BaseGlyphRecords")
+		    Return Nil
+		  End If
+
+		  // Validate layer records range
+		  Const kLayerRecordSize As Integer = 4
+		  If layerAbsOff + ((firstLayerIndex + numLayers) * kLayerRecordSize) > mb.Size Then
+		    System.DebugLog("RasterizeEmoji_COLR_Parsed: LayerRecords out of bounds")
+		    Return Nil
+		  End If
+
+		  // Parse CPAL table to get color palette
+		  // version(UInt16) + numPaletteEntries(UInt16) + numPalettes(UInt16)
+		  // + numColorRecords(UInt16) + colorRecordsArrayOffset(UInt32)
+		  Const kCPALHeaderSize As Integer = 12
+		  If cpalOffset + kCPALHeaderSize > mb.Size Then
+		    System.DebugLog("RasterizeEmoji_COLR_Parsed: CPAL header out of bounds")
+		    Return Nil
+		  End If
+
+		  Dim numColorRecords As UInt16 = mb.UInt16Value(cpalOffset + 6)
+		  Dim colorRecordsArrayOff As UInt32 = mb.UInt32Value(cpalOffset + 8)
+		  Dim colorRecordsAbsOff As UInt32 = cpalOffset + colorRecordsArrayOff
+
+		  // Each ColorRecord is 4 bytes: blue(UInt8) + green(UInt8) + red(UInt8) + alpha(UInt8)
+		  Const kColorRecordSize As Integer = 4
+		  If colorRecordsAbsOff + (numColorRecords * kColorRecordSize) > mb.Size Then
+		    System.DebugLog("RasterizeEmoji_COLR_Parsed: ColorRecords out of bounds")
+		    Return Nil
+		  End If
+
+		  // Get indexToLocFormat from head table to know how to read loca
+		  Dim indexToLocFormat As Integer = 0
+		  If headOffset > 0 And headOffset + 54 <= mb.Size Then
+		    indexToLocFormat = mb.Int16Value(headOffset + 50)
+		  End If
+
+		  // Get numGlyphs from maxp
+		  Dim numGlyphs As UInt32 = 0
+		  If maxpOffset > 0 And maxpOffset + 6 <= mb.Size Then
+		    numGlyphs = mb.UInt16Value(maxpOffset + 4)
+		  End If
+
+		  // Get unitsPerEm from head table for scaling
+		  Dim unitsPerEm As Double = 2048.0
+		  If headOffset > 0 And headOffset + 20 <= mb.Size Then
+		    unitsPerEm = mb.UInt16Value(headOffset + 18)
+		    If unitsPerEm = 0 Then unitsPerEm = 2048.0
+		  End If
+
+		  Dim scaleFactor As Double = desiredSize / unitsPerEm
+
+		  // Create the result picture
+		  Dim pic As New Picture(desiredSize, desiredSize)
+		  Dim g As Graphics = pic.Graphics
+
+		  // Fill background with white
+		  g.DrawingColor = Color.White
+		  g.FillRectangle(0, 0, desiredSize, desiredSize)
+
+		  // Render each layer
+		  Dim layerIdx As Integer
+		  For layerIdx = 0 To numLayers - 1
+		    Dim layerRecPos As UInt32 = layerAbsOff + ((firstLayerIndex + layerIdx) * kLayerRecordSize)
+		    Dim layerGlyphID As UInt16 = mb.UInt16Value(layerRecPos)
+		    Dim paletteIndex As UInt16 = mb.UInt16Value(layerRecPos + 2)
+
+		    // Get color from CPAL (special value 0xFFFF means use foreground color)
+		    Dim layerColor As Color
+		    If paletteIndex = &hFFFF Then
+		      layerColor = Color.Black
+		    ElseIf paletteIndex < numColorRecords Then
+		      Dim colorRecPos As UInt32 = colorRecordsAbsOff + (paletteIndex * kColorRecordSize)
+		      Dim cBlue As UInt8 = mb.UInt8Value(colorRecPos)
+		      Dim cGreen As UInt8 = mb.UInt8Value(colorRecPos + 1)
+		      Dim cRed As UInt8 = mb.UInt8Value(colorRecPos + 2)
+		      // alpha at colorRecPos + 3, we ignore transparency for simplified rendering
+		      layerColor = Color.RGB(cRed, cGreen, cBlue)
+		    Else
+		      layerColor = Color.Black
+		    End If
+
+		    // Get glyph bounding box from glyf table via loca
+		    If glyfOffset = 0 Or locaOffset = 0 Or numGlyphs = 0 Then Continue
+		    If layerGlyphID >= numGlyphs Then Continue
+
+		    Dim glyphOff As UInt32 = 0
+		    Dim nextGlyphOff As UInt32 = 0
+
+		    If indexToLocFormat = 0 Then
+		      // Short format: offsets are UInt16, multiply by 2
+		      Dim locaPos As UInt32 = locaOffset + (layerGlyphID * 2)
+		      If locaPos + 4 > mb.Size Then Continue
+		      glyphOff = mb.UInt16Value(locaPos) * 2
+		      nextGlyphOff = mb.UInt16Value(locaPos + 2) * 2
+		    Else
+		      // Long format: offsets are UInt32
+		      Dim locaPos As UInt32 = locaOffset + (layerGlyphID * 4)
+		      If locaPos + 8 > mb.Size Then Continue
+		      glyphOff = mb.UInt32Value(locaPos + 0)
+		      nextGlyphOff = mb.UInt32Value(locaPos + 4)
+		    End If
+
+		    // Skip empty glyphs (e.g., space)
+		    If glyphOff = nextGlyphOff Then Continue
+
+		    Dim glyphAbsOff As UInt32 = glyfOffset + glyphOff
+		    // Glyph header: numberOfContours(Int16) + xMin(Int16) + yMin(Int16) + xMax(Int16) + yMax(Int16)
+		    Const kGlyphHeaderSize As Integer = 10
+		    If glyphAbsOff + kGlyphHeaderSize > mb.Size Then Continue
+
+		    Dim xMin As Integer = mb.Int16Value(glyphAbsOff + 2)
+		    Dim yMin As Integer = mb.Int16Value(glyphAbsOff + 4)
+		    Dim xMax As Integer = mb.Int16Value(glyphAbsOff + 6)
+		    Dim yMax As Integer = mb.Int16Value(glyphAbsOff + 8)
+
+		    // Scale to pixel coordinates
+		    Dim pxLeft As Double = xMin * scaleFactor
+		    Dim pxRight As Double = xMax * scaleFactor
+		    Dim pxTop As Double = desiredSize - (yMax * scaleFactor)
+		    Dim pxBottom As Double = desiredSize - (yMin * scaleFactor)
+
+		    Dim rectW As Double = pxRight - pxLeft
+		    Dim rectH As Double = pxBottom - pxTop
+
+		    If rectW > 0 And rectH > 0 Then
+		      g.DrawingColor = layerColor
+		      g.FillRectangle(pxLeft, pxTop, rectW, rectH)
+		    End If
+		  Next
+
+		  Return pic
+
+		End Function
+	#tag EndMethod
+
 	#tag Method, Flags = &h1, Description = 52656E64657220656D6F6A69206173206120636F6C6F7220696D616765207573696E6720706C6174666F726D277320656D6F6A6920666F6E742E0A
-		Protected Function RenderEmojiToImage(emojiChar As String, sizeInPoints As Integer, webSession As Variant = Nil) As Picture
+		Protected Function RenderEmojiToImage(emojiChar As String, sizeInPoints As Integer, webSession As Variant = Nil, bgColor As Color = &cFFFFFF) As Picture
 		  #Pragma Unused webSession
 		  // Render an emoji character to a color image using platform's emoji font
 		  // Returns a Picture that can be saved and embedded in PDF
@@ -586,8 +1748,9 @@ Protected Module VNSPDFModule
 		    Dim pic As New Picture(picSize, picSize)
 		    Dim g As Graphics = pic.Graphics
 		    
-		    // Clear background to white (not transparent - some emoji have transparency)
-		    g.DrawingColor = &cFFFFFF
+		    // Clear background (not transparent - JPEG has no alpha channel)
+		    // Uses bgColor to match the parent block's background for seamless blending
+		    g.DrawingColor = bgColor
 		    g.FillRectangle(0, 0, picSize, picSize)
 		    
 		    // Set emoji font
@@ -699,101 +1862,93 @@ Protected Module VNSPDFModule
 		    End If
 		    
 		  #ElseIf TargetWeb Then
-		    // Web: Use Picture/Graphics API - same approach as Desktop
+		    // Web: Extract PNG from emoji font file (SBIX format on macOS)
+		    // Graphics API cannot access emoji fonts on Web servers, so we parse the font directly
 		    #Pragma Unused webSession
-		    
-		    // Create a Picture large enough for the emoji with extra padding
-		    // Use 4x size like Desktop to ensure no cropping
-		    Dim scaleFactor As Integer = 4
-		    Dim basePicSize As Integer = sizeInPoints * scaleFactor
-		    Dim padding As Integer = basePicSize * 0.3  // 30% padding on all sides
-		    Dim picSize As Integer = basePicSize + (padding * 2)
-		    
-		    // IMPORTANT: 32-bit depth required for emoji color
-		    Dim pic As New Picture(picSize, picSize)
-		    Dim g As Graphics = pic.Graphics
-		    
-		    If g = Nil Then
-		      System.DebugLog("  ✗ Picture.Graphics is Nil on Web")
-		      Return Nil
-		    End If
-		    
-		    System.DebugLog("  ✓ Picture.Graphics is available")
-		    
-		    // Clear background to white (not transparent - some emoji have transparency)
-		    g.DrawingColor = &cFFFFFF
-		    g.FillRectangle(0, 0, picSize, picSize)
-		    
-		    // Try to find emoji font file directly
-		    System.DebugLog("  Attempting to locate emoji font file...")
-		    
-		    Dim fontPath As String
-		    Dim fontFile As FolderItem
-		    
+
+		    // Find emoji font file path
+		    Dim fontPath As String = ""
 		    #If TargetMacOS Then
-		      // Try common macOS emoji font locations
 		      Dim paths() As String
 		      paths.Add("/System/Library/Fonts/Apple Color Emoji.ttc")
 		      paths.Add("/Library/Fonts/Apple Color Emoji.ttc")
 		      paths.Add("/System/Library/Fonts/AppleColorEmoji.ttc")
-		      
 		      For Each path As String In paths
-		        fontFile = New FolderItem(path, FolderItem.PathModes.Native)
+		        Dim fontFile As New FolderItem(path, FolderItem.PathModes.Native)
 		        If fontFile <> Nil And fontFile.Exists Then
 		          fontPath = path
-		          System.DebugLog("  ✓ Found emoji font: " + fontPath)
-		          System.DebugLog("  File size: " + Str(fontFile.Length) + " bytes")
 		          Exit For
 		        End If
 		      Next
+		    #ElseIf TargetLinux Then
+		      // Linux: Noto Color Emoji (CBDT/CBLC format)
+		      Dim linuxPaths() As String
+		      linuxPaths.Add("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf")
+		      linuxPaths.Add("/usr/share/fonts/noto-emoji/NotoColorEmoji.ttf")
+		      linuxPaths.Add("/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf")
+		      linuxPaths.Add("/usr/share/fonts/truetype/noto-color-emoji/NotoColorEmoji.ttf")
+		      For Each lpath As String In linuxPaths
+		        Dim lf As New FolderItem(lpath, FolderItem.PathModes.Native)
+		        If lf <> Nil And lf.Exists Then
+		          fontPath = lpath
+		          Exit For
+		        End If
+		      Next
+		    #ElseIf TargetWindows Then
+		      // Windows: Segoe UI Emoji (COLR/CPAL format)
+		      fontPath = "C:\Windows\Fonts\seguiemj.ttf"
+		      Dim wf As New FolderItem(fontPath, FolderItem.PathModes.Native)
+		      If wf = Nil Or Not wf.Exists Then fontPath = ""
 		    #EndIf
-		    
-		    If fontPath = "" Then
-		      System.DebugLog("  ✗ Could not find emoji font file")
+
+		    If fontPath = "" Then Return Nil
+
+		    // Get emoji Unicode codepoint
+		    Dim emojiStr As String = emojiChar.DefineEncoding(Encodings.UTF8)
+		    Dim cp As UInt32 = Asc(emojiStr)
+
+		    // Extract emoji image using platform-appropriate method
+		    Dim pngData As MemoryBlock = Nil
+		    #If TargetMacOS Then
+		      // macOS: SBIX table (PNG extraction)
+		      pngData = ExtractEmojiPNG_SBIX(fontPath, cp, sizeInPoints)
+		    #ElseIf TargetLinux Then
+		      // Linux: CBDT/CBLC table (PNG extraction)
+		      pngData = ExtractEmojiPNG_CBDT(fontPath, cp, sizeInPoints)
+		    #ElseIf TargetWindows Then
+		      // Windows: COLR/CPAL table (vector rasterization — returns Picture directly)
+		      Dim colrPic As Picture = RasterizeEmoji_COLR(fontPath, cp, sizeInPoints)
+		      If colrPic <> Nil Then Return colrPic
 		      Return Nil
-		    End If
-		    
-		    // Now try different approaches to use this font with Graphics API
-		    g.FontSize = sizeInPoints * scaleFactor
-		    g.DrawingColor = &c000000
-		    
-		    System.DebugLog("  Test 1: Try using full font file path")
-		    g.FontName = fontPath
-		    Dim test1Width As Double = g.TextWidth(emojiChar)
-		    System.DebugLog("    TextFont = '" + g.FontName + "'")
-		    System.DebugLog("    TextWidth = " + Str(test1Width))
-		    
-		    System.DebugLog("  Test 2: Try using just font filename")
-		    g.FontName = "Apple Color Emoji.ttc"
-		    Dim test2Width As Double = g.TextWidth(emojiChar)
-		    System.DebugLog("    TextFont = '" + g.FontName + "'")
-		    System.DebugLog("    TextWidth = " + Str(test2Width))
-		    
-		    System.DebugLog("  Test 3: Try using font name without extension")
-		    g.FontName = "Apple Color Emoji"
-		    Dim test3Width As Double = g.TextWidth(emojiChar)
-		    System.DebugLog("    TextFont = '" + g.FontName + "'")
-		    System.DebugLog("    TextWidth = " + Str(test3Width))
-		    
-		    // Use the best result
-		    Dim textWidth As Double = test1Width
-		    If test2Width > 0 Then textWidth = test2Width
-		    If test3Width > 0 Then textWidth = test3Width
-		    
-		    If textWidth = 0 Then
-		      System.DebugLog("  ✗ TextWidth returns 0 - emoji font not available to Graphics API on Web")
-		      Return Nil
-		    End If
-		    
-		    // Calculate centered position
-		    Dim x As Integer = (picSize - textWidth) / 2
-		    Dim y As Integer = padding + g.FontAscent + (basePicSize - g.TextHeight) / 2
-		    
-		    System.DebugLog("  Drawing at x=" + Str(x) + ", y=" + Str(y))
-		    g.DrawText(emojiChar, x, y)
-		    
-		    System.DebugLog("  ✓ Picture.Graphics emoji rendering complete")
-		    Return pic
+		    #EndIf
+
+		    If pngData = Nil Then Return Nil
+
+		    // Convert PNG to Picture and composite onto white background
+		    // (SBIX PNGs have transparency which becomes black when converted to JPEG for PDF)
+		    Dim emojiPic As Picture = Picture.FromData(pngData)
+		    If emojiPic = Nil Then Return Nil
+
+		    // Create white background at desired size with padding
+		    Dim scaleFactor As Integer = 4
+		    Dim basePicSize As Integer = sizeInPoints * scaleFactor
+		    Dim padding As Integer = basePicSize * 0.15
+		    Dim picSize As Integer = basePicSize + (padding * 2)
+
+		    Dim result As New Picture(picSize, picSize)
+		    Dim g As Graphics = result.Graphics
+		    If g = Nil Then Return emojiPic
+
+		    // Fill white background
+		    g.DrawingColor = &cFFFFFF
+		    g.FillRectangle(0, 0, picSize, picSize)
+
+		    // Draw emoji centered on white background
+		    Dim drawX As Integer = (picSize - basePicSize) / 2
+		    Dim drawY As Integer = (picSize - basePicSize) / 2
+		    g.DrawPicture(emojiPic, drawX, drawY, basePicSize, basePicSize, 0, 0, emojiPic.Width, emojiPic.Height)
+
+		    Return result
 		    
 		  #Else
 		    // Console has no graphics rendering capability
@@ -814,7 +1969,7 @@ Protected Module VNSPDFModule
 		  Dim argIndex As Integer = 0
 		  Dim i As Integer = 0
 		  
-		  #If TargetiOS Then
+		  #If TargetiOS Or TargetAndroid Then
 		    // iOS: 0-based string indexing
 		    While i < format.Length
 		      If format.Middle(i, 1) = "%" And i + 1 < format.Length Then
@@ -990,7 +2145,7 @@ Protected Module VNSPDFModule
 		  // iOS: Use .AscByte (API2)
 		  // Desktop: Use AscB() function (API1)
 		  
-		  #If TargetiOS Then
+		  #If TargetiOS Or TargetAndroid Then
 		    If s.Length > 0 Then
 		      Return s.MiddleBytes(0, 1).AscByte
 		    Else
@@ -1008,7 +2163,7 @@ Protected Module VNSPDFModule
 		  // iOS: Use MemoryBlock (ChrB doesn't exist in API2)
 		  // Desktop: Use ChrB() function (API1)
 		  
-		  #If TargetiOS Then
+		  #If TargetiOS Or TargetAndroid Then
 		    Dim mb As New MemoryBlock(1)
 		    mb.Byte(0) = byteValue
 		    Return mb.StringValue(0, 1)
@@ -1054,7 +2209,7 @@ Protected Module VNSPDFModule
 		  // iOS: Use .MiddleBytes() with 0-based index (API2)
 		  // Desktop: Use MidB() with 1-based index (API1)
 		  
-		  #If TargetiOS Then
+		  #If TargetiOS Or TargetAndroid Then
 		    Return s.MiddleBytes(start - 1, length)  // Convert to 0-based
 		  #Else
 		    Return s.MiddleBytes(start - 1, length)  // Convert to 0-based
@@ -1093,37 +2248,37 @@ Protected Module VNSPDFModule
 		      Return 0
 		    End If
 		    
-		    Dim b1 As UInt32 = firstByte And &h07
-		    Dim b2 As UInt32 = Asc(utf8Str.MiddleBytes(offset + 1, 1)) And &h3F
-		    Dim b3 As UInt32 = Asc(utf8Str.MiddleBytes(offset + 2, 1)) And &h3F
-		    Dim b4 As UInt32 = Asc(utf8Str.MiddleBytes(offset + 3, 1)) And &h3F
+		    Dim b1 As Integer = firstByte Mod 8
+		    Dim b2 As Integer = Asc(utf8Str.MiddleBytes(offset + 1, 1)) Mod 64
+		    Dim b3 As Integer = Asc(utf8Str.MiddleBytes(offset + 2, 1)) Mod 64
+		    Dim b4 As Integer = Asc(utf8Str.MiddleBytes(offset + 3, 1)) Mod 64
 		    bytesRead = 4
-		    Return (b1 * &h40000) Or (b2 * &h1000) Or (b3 * &h40) Or b4
-		    
+		    Return (b1 * &h40000) + (b2 * &h1000) + (b3 * &h40) + b4
+
 		  ElseIf (firstByte And &hF0) = &hE0 Then
 		    // 3-byte UTF-8 sequence (0xE0-0xEF)
 		    If offset + 2 >= utf8Str.Bytes Then
 		      bytesRead = 0
 		      Return 0
 		    End If
-		    
-		    Dim b1 As UInt32 = firstByte And &h0F
-		    Dim b2 As UInt32 = Asc(utf8Str.MiddleBytes(offset + 1, 1)) And &h3F
-		    Dim b3 As UInt32 = Asc(utf8Str.MiddleBytes(offset + 2, 1)) And &h3F
+
+		    Dim b1 As Integer = firstByte Mod 16
+		    Dim b2 As Integer = Asc(utf8Str.MiddleBytes(offset + 1, 1)) Mod 64
+		    Dim b3 As Integer = Asc(utf8Str.MiddleBytes(offset + 2, 1)) Mod 64
 		    bytesRead = 3
-		    Return (b1 * &h1000) Or (b2 * &h40) Or b3
-		    
+		    Return (b1 * &h1000) + (b2 * &h40) + b3
+
 		  ElseIf (firstByte And &hE0) = &hC0 Then
 		    // 2-byte UTF-8 sequence (0xC0-0xDF)
 		    If offset + 1 >= utf8Str.Bytes Then
 		      bytesRead = 0
 		      Return 0
 		    End If
-		    
-		    Dim b1 As UInt32 = firstByte And &h1F
-		    Dim b2 As UInt32 = Asc(utf8Str.MiddleBytes(offset + 1, 1)) And &h3F
+
+		    Dim b1 As Integer = firstByte Mod 32
+		    Dim b2 As Integer = Asc(utf8Str.MiddleBytes(offset + 1, 1)) Mod 64
 		    bytesRead = 2
-		    Return (b1 * &h40) Or b2
+		    Return (b1 * &h40) + b2
 		    
 		  Else
 		    // 1-byte sequence (ASCII 0x00-0x7F)
@@ -1139,6 +2294,26 @@ Protected Module VNSPDFModule
 		
 	#tag EndNote
 
+
+	#tag Property, Flags = &h21
+		Private mSBIXCache As Dictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mSBIXFontMB As MemoryBlock
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mSBIXFontPath As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mSBIXTableInfo As Dictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mCOLRCache As Dictionary
+	#tag EndProperty
 
 	#tag Property, Flags = &h21
 		Private mSystemFontCache As Dictionary
@@ -1265,6 +2440,13 @@ Protected Module VNSPDFModule
 		Left = 0
 		  Center = 1
 		Right = 2
+	#tag EndEnum
+
+	#tag Enum, Name = eVerticalAlignment, Type = Integer, Flags = &h0
+		Top = 0
+		  Middle = 1
+		Bottom = 2
+		Baseline = 3
 	#tag EndEnum
 
 	#tag Enum, Name = eFooterCalcType, Type = Integer, Flags = &h0, Description = 466F6F7465722063616C63756C6174696F6E2074797065733A204E6F6E652C2053756D2C20417665726167652C204D696E696D756D2C204D6178696D756D2C20436F756E742E

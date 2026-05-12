@@ -108,10 +108,11 @@ pdf.SetProtection( _
     True, _              // Allow extraction for accessibility
     True, _              // Allow page assembly
     True, _              // Allow high-quality printing
-    VNSPDFModule.gkEncryptionAES_128)  // Encryption type
+    VNSPDFModule.gkEncryptionAES128)  // Encryption type
 
 // Save
-pdf.Save("encrypted_aes128.pdf")
+Dim outFile As FolderItem = SpecialFolder.Desktop.Child("encrypted_aes128.pdf")
+pdf.Save(outFile)
 ```
 
 ### Checking Module Availability
@@ -119,7 +120,7 @@ pdf.Save("encrypted_aes128.pdf")
 ```xojo
 If hasPremiumVNSEncryptionModule Then
     // Premium encryption available
-    pdf.SetProtection(..., VNSPDFModule.gkEncryptionAES_128)
+    pdf.SetProtection(..., VNSPDFModule.gkEncryptionAES128)
 Else
     // Fallback to FREE version (RC4-40)
     pdf.SetProtection(..., VNSPDFModule.gkEncryptionRC4_40)
@@ -132,15 +133,15 @@ End If
 // Available in VNSPDFModule:
 gkEncryptionRC4_40    // FREE - Revision 2 (WEAK)
 gkEncryptionRC4_128   // PREMIUM - Revision 3
-gkEncryptionAES_128   // PREMIUM - Revision 4 (RECOMMENDED)
-gkEncryptionAES_256   // PREMIUM - Revisions 5-6 (BEST)
+gkEncryptionAES128   // PREMIUM - Revision 4 (RECOMMENDED)
+gkEncryptionAES256   // PREMIUM - Revisions 5-6 (BEST)
 ```
 
 ---
 
 ## API Reference
 
-### Module Functions
+### Module Functions (VNSPDFEncryptionPremium)
 
 ```xojo
 // RC4 encryption
@@ -149,10 +150,8 @@ Function EncryptRC4(data As String, key As String) As String
 // AES-CBC encryption (no padding - data must be block-aligned)
 Function EncryptAESCBCNoPadding(data As String, key As String, iv As String) As String
 
-// SHA hashing
-Function SHA256(data As String) As String
+// SHA hashing (only SHA384 is public; SHA256 and SHA512 are internal helpers)
 Function SHA384(data As String) As String
-Function SHA512(data As String) As String
 
 // Algorithm 2.B for Revision 6
 Function ComputeHashR6(password As String, salt As String, userKey As String) As String
@@ -161,6 +160,58 @@ Function ComputeHashR6(password As String, salt As String, userKey As String) As
 Function GenerateRandomIV() As String
 Function PKCS7Pad(data As String, blockSize As Integer) As String
 Function GetVersionString() As String
+```
+
+### VNSAESCore Class (Direct AES Operations)
+
+```xojo
+// Constructor - key length: 16 (AES-128), 24 (AES-192), or 32 (AES-256)
+Sub Constructor(keyLength As Integer)
+Sub SetKey(key As String)
+
+// ECB Mode (Electronic Codebook)
+Function EncryptECB(plaintext As String) As String
+Function DecryptECB(ciphertext As String) As String
+
+// CBC Mode (Cipher Block Chaining)
+Sub SetIV(iv As String)
+Function EncryptCBC(plaintext As String, iv As String) As String
+Function DecryptCBC(ciphertext As String, iv As String) As String
+
+// GCM Mode (Galois/Counter Mode - Authenticated Encryption)
+Function EncryptGCM(plaintext As String, iv As String, aad As String, ByRef tag As String) As String
+Function DecryptGCM(ciphertext As String, iv As String, aad As String, tag As String) As String
+
+// PKCS7 Padding Helpers (for CBC mode)
+Function PKCS7Pad(data As String) As String
+Function PKCS7Unpad(data As String) As String
+
+// Single Block Encryption
+Function EncryptBlock(block As String) As String
+
+// Error Handling
+Function Ok() As Boolean
+Function GetError() As VNSAESConstants.eAESError
+```
+
+### VNSAESConstants
+
+```xojo
+// Key lengths
+kAESKeyLength128 = 16
+kAESKeyLength192 = 24
+kAESKeyLength256 = 32
+kAESBlockLength = 16
+kAESGCMIVLength = 12    // Standard GCM IV size
+kAESGCMTagLength = 16   // Authentication tag size (128 bits)
+
+// Modes
+Enum eAESMode: ECB, CBC, GCM
+
+// Error codes
+Enum eAESError: None, InvalidKeyLength, InvalidBlockSize, InvalidIV,
+                EncryptionFailed, DecryptionFailed, AuthenticationFailed,
+                InvalidTagLength, InvalidPadding
 ```
 
 ---
@@ -176,10 +227,16 @@ Function GetVersionString() As String
 
 ### AES Implementation
 
-- Based on Tiny AES-C reference implementation
+- Based on Tiny AES-C reference implementation + NIST SP 800-38D (GCM)
 - Pure Xojo code - no Declares required
 - Works on all platforms including iOS
 - Avoids Xojo Crypto.AES PKCS7 padding issues
+- **ECB**: Electronic Codebook (encrypt/decrypt individual blocks)
+- **CBC**: Cipher Block Chaining (encrypt/decrypt with IV, PKCS7 padding helpers)
+- **GCM**: Galois/Counter Mode (authenticated encryption with AAD, 128-bit tag)
+- Full inverse cipher: InvSubBytes, InvShiftRows, InvMixColumns (FIPS 197)
+- GF(2^128) multiplication for GHASH (NIST SP 800-38D)
+- Constant-time tag comparison for GCM decryption (timing-attack resistant)
 
 ### Algorithm 2.B (Revision 6)
 

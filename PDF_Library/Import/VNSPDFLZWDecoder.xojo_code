@@ -10,21 +10,21 @@ Protected Class VNSPDFLZWDecoder
 		  //   compressedData: LZW-compressed data
 		  //   earlyChange: 0 = change code size one code LATE (non-standard)
 		  //                1 = change code size one code EARLY (PDF default)
-
+		  
 		  mError = ""
 		  mEarlyChange = earlyChange
-
+		  
 		  If compressedData = "" Then
 		    mError = "Empty input data"
 		    Return ""
 		  End If
-
+		  
 		  // Convert string to bytes
 		  Dim inputBytes As MemoryBlock = New MemoryBlock(compressedData.Length)
 		  For i As Integer = 0 To compressedData.Length - 1
 		    inputBytes.UInt8Value(i) = Asc(compressedData.Middle(i, 1))
 		  Next
-
+		  
 		  // CRITICAL FIX: Skip leading whitespace (CR, LF, space, tab)
 		  // Some PDFs include newline bytes at start of LZW stream data
 		  Dim startPos As Integer = 0
@@ -36,7 +36,7 @@ Protected Class VNSPDFLZWDecoder
 		      Exit While
 		    End If
 		  Wend
-
+		  
 		  If startPos > 0 Then
 		    // Create new buffer without leading whitespace
 		    Dim cleanData As New MemoryBlock(inputBytes.Size - startPos)
@@ -45,24 +45,24 @@ Protected Class VNSPDFLZWDecoder
 		    Next
 		    inputBytes = cleanData
 		  End If
-
+		  
 		  // Initialize
 		  mInputData = inputBytes
 		  mInputPos = 0
 		  mBitBuffer = 0
 		  mBitsInBuffer = 0
 		  Call InitializeDictionary()
-
+		  
 		  // Output buffer
 		  Dim output As MemoryBlock = New MemoryBlock(0)
 		  Dim outputPos As Integer = 0
-
+		  
 		  // Read first code
 		  Dim code As Integer = ReadCode()
 		  If code = -1 Or code = kEOI Then
 		    Return ""
 		  End If
-
+		  
 		  // Handle Clear code at start
 		  If code = kClearCode Then
 		    Call InitializeDictionary()
@@ -71,7 +71,7 @@ Protected Class VNSPDFLZWDecoder
 		      Return ""
 		    End If
 		  End If
-
+		  
 		  // Output first character
 		  If code < 256 Then
 		    output.Size = 1
@@ -81,13 +81,13 @@ Protected Class VNSPDFLZWDecoder
 		    mError = "First code must be literal"
 		    Return ""
 		  End If
-
+		  
 		  Dim oldCode As Integer = code
-
+		  
 		  // Main decompression loop
 		  While True
 		    code = ReadCode()
-
+		    
 		    If code = -1 Then
 		      // End of data
 		      Exit While
@@ -115,7 +115,7 @@ Protected Class VNSPDFLZWDecoder
 		        Exit While
 		      End If
 		    End If
-
+		    
 		    // Decode the code
 		    Dim sequence() As UInt8
 		    If code < mNextCode Then
@@ -135,7 +135,7 @@ Protected Class VNSPDFLZWDecoder
 		      mError = "Invalid code: " + Str(code) + " (nextCode=" + Str(mNextCode) + ", codeSize=" + Str(mCodeSize) + ")"
 		      Exit While
 		    End If
-
+		    
 		    // Output the sequence
 		    Dim oldSize As Integer = output.Size
 		    output.Size = oldSize + sequence.Count
@@ -143,177 +143,31 @@ Protected Class VNSPDFLZWDecoder
 		      output.UInt8Value(oldSize + i) = sequence(i)
 		    Next
 		    outputPos = output.Size
-
+		    
 		    // Add new dictionary entry if space available
 		    If mNextCode < kMaxDictSize Then
 		      // New entry = oldCode + firstChar(sequence)
 		      mSuffix(mNextCode) = sequence(0)
 		      mPrefix(mNextCode) = oldCode
 		    End If
-
+		    
 		    // CRITICAL: Always increment mNextCode to stay in sync with encoder
 		    // This happens even when dictionary is full (following go-pdf/lzw pattern)
 		    oldCode = code
 		    mNextCode = mNextCode + 1
-
+		    
 		    // Update code size if not at maximum width
 		    If mCodeSize < 12 Then
 		      Call UpdateCodeSize()
 		    End If
 		  Wend
-
+		  
 		  // Convert output to string
 		  If output.Size = 0 Then
 		    Return ""
 		  End If
-
+		  
 		  Return output.StringValue(0, output.Size)
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Sub InitializeDictionary()
-		  // Initialize dictionary with single-byte entries (0-255)
-		  // Codes 256 (Clear) and 257 (EOI) are reserved
-
-		  // First 256 codes are literals (single bytes)
-		  For i As Integer = 0 To 255
-		    mSuffix(i) = i
-		    mPrefix(i) = 0  // Literals have no prefix
-		  Next
-
-		  // Code 256 = Clear Code (reserved, not stored)
-		  // Code 257 = EOI (reserved, not stored)
-
-		  // Next available code is 258
-		  mNextCode = 258
-		  mCodeSize = 9
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Function GetSequence(code As Integer) As UInt8()
-		  // Get the byte sequence for a code by walking the prefix chain
-		  // Returns: Array of bytes in correct order
-
-		  If code < 256 Then
-		    // Literal code - return single byte
-		    Dim result(0) As UInt8
-		    result(0) = code
-		    Return result
-		  End If
-
-		  // Count length by walking prefix chain
-		  Dim length As Integer = 0
-		  Dim c As Integer = code
-		  While c >= 256 And length < 4096
-		    length = length + 1
-		    c = mPrefix(c)
-		  Wend
-		  length = length + 1  // Add the final literal
-
-		  // Build sequence backwards
-		  Dim result() As UInt8
-		  ReDim result(length - 1)
-		  c = code
-		  Dim pos As Integer = length - 1
-
-		  While c >= 256 And pos >= 0
-		    result(pos) = mSuffix(c)
-		    pos = pos - 1
-		    c = mPrefix(c)
-		  Wend
-
-		  If pos = 0 Then
-		    result(0) = c  // Final literal
-		  End If
-
-		  Return result
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Function ReadCode() As Integer
-		  // Read variable-length code from bit stream (MSB first for PDF)
-		  // Returns -1 on end of data
-
-		  // Fill buffer with enough bits
-		  While mBitsInBuffer < mCodeSize
-		    If mInputPos >= mInputData.Size Then
-		      If mBitsInBuffer = 0 Then
-		        Return -1
-		      Else
-		        Exit While
-		      End If
-		    End If
-
-		    Dim nextByte As Integer = mInputData.UInt8Value(mInputPos)
-		    mInputPos = mInputPos + 1
-
-		    // Add byte to buffer (MSB first - PDF uses big-endian bit order)
-		    mBitBuffer = Bitwise.ShiftLeft(mBitBuffer, 8) Or nextByte
-		    mBitsInBuffer = mBitsInBuffer + 8
-		  Wend
-
-		  If mBitsInBuffer < mCodeSize Then
-		    Return -1
-		  End If
-
-		  // Extract code from buffer (from MSB side)
-		  Dim shift As Integer = mBitsInBuffer - mCodeSize
-		  Dim code As Integer = Bitwise.ShiftRight(mBitBuffer, shift) And (Bitwise.ShiftLeft(1, mCodeSize) - 1)
-
-		  // Remove extracted bits
-		  mBitsInBuffer = mBitsInBuffer - mCodeSize
-		  mBitBuffer = mBitBuffer And (Bitwise.ShiftLeft(1, mBitsInBuffer) - 1)
-
-		  Return code
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Sub UpdateCodeSize()
-		  // Increase code size when dictionary reaches certain thresholds
-		  //
-		  // Early Change = 1 (PDF default): code size increases ONE CODE EARLY
-		  // - 9 bits: codes 0-510 (increase when mNextCode = 511, BEFORE using 511)
-		  // - 10 bits: codes 511-1022 (increase when mNextCode = 1023)
-		  // - 11 bits: codes 1023-2046 (increase when mNextCode = 2047)
-		  // - 12 bits: codes 2047-4095
-		  //
-		  // Early Change = 0 (non-standard): code size increases ONE CODE LATE
-		  // - 9 bits: codes 0-511 (increase when mNextCode = 512, AFTER using 511)
-		  // - 10 bits: codes 512-1023 (increase when mNextCode = 1024)
-		  // - 11 bits: codes 1024-2047 (increase when mNextCode = 2048)
-		  // - 12 bits: codes 2048-4095
-
-		  If mEarlyChange = 1 Then
-		    // Early Change = 1 (PDF default)
-		    If mCodeSize = 9 And mNextCode >= 511 Then
-		      mCodeSize = 10
-		    ElseIf mCodeSize = 10 And mNextCode >= 1023 Then
-		      mCodeSize = 11
-		    ElseIf mCodeSize = 11 And mNextCode >= 2047 Then
-		      mCodeSize = 12
-		    End If
-		  Else
-		    // Early Change = 0 (change code size one code LATE)
-		    If mCodeSize = 9 And mNextCode >= 512 Then
-		      mCodeSize = 10
-		    ElseIf mCodeSize = 10 And mNextCode >= 1024 Then
-		      mCodeSize = 11
-		    ElseIf mCodeSize = 11 And mNextCode >= 2048 Then
-		      mCodeSize = 12
-		    End If
-		  End If
-
-		  // Max code size is 12 bits (4096 entries)
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Function GetError() As String
-		  Return mError
 		End Function
 	#tag EndMethod
 
@@ -321,7 +175,7 @@ Protected Class VNSPDFLZWDecoder
 		Function GetDiagnostics() As String
 		  // Returns diagnostic information about the decoder state
 		  // Useful for debugging decoding issues
-
+		  
 		  Dim diag As String = "=== LZW Decoder Diagnostics ===" + EndOfLine
 		  diag = diag + "Next Code: " + Str(mNextCode) + EndOfLine
 		  diag = diag + "Current Code Size: " + Str(mCodeSize) + " bits" + EndOfLine
@@ -331,13 +185,13 @@ Protected Class VNSPDFLZWDecoder
 		    diag = diag + " / " + Str(mInputData.Size)
 		  End If
 		  diag = diag + EndOfLine
-
+		  
 		  If mError <> "" Then
 		    diag = diag + "Error: " + mError + EndOfLine
 		  Else
 		    diag = diag + "Status: OK" + EndOfLine
 		  End If
-
+		  
 		  // Show some dictionary entries for verification
 		  diag = diag + EndOfLine + "Sample Dictionary Entries:" + EndOfLine
 		  Dim sampleCodes() As Integer = Array(256, 257, 258, 259, 260, 511, 1023, 2047, mNextCode - 1)
@@ -354,8 +208,114 @@ Protected Class VNSPDFLZWDecoder
 		      End If
 		    End If
 		  Next
-
+		  
 		  Return diag
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function GetError() As String
+		  Return mError
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function GetSequence(code As Integer) As UInt8()
+		  // Get the byte sequence for a code by walking the prefix chain
+		  // Returns: Array of bytes in correct order
+		  
+		  If code < 256 Then
+		    // Literal code - return single byte
+		    Dim result(0) As UInt8
+		    result(0) = code
+		    Return result
+		  End If
+		  
+		  // Count length by walking prefix chain
+		  Dim length As Integer = 0
+		  Dim c As Integer = code
+		  While c >= 256 And length < 4096
+		    length = length + 1
+		    c = mPrefix(c)
+		  Wend
+		  length = length + 1  // Add the final literal
+		  
+		  // Build sequence backwards
+		  Dim result() As UInt8
+		  ReDim result(length - 1)
+		  c = code
+		  Dim pos As Integer = length - 1
+		  
+		  While c >= 256 And pos >= 0
+		    result(pos) = mSuffix(c)
+		    pos = pos - 1
+		    c = mPrefix(c)
+		  Wend
+		  
+		  If pos = 0 Then
+		    result(0) = c  // Final literal
+		  End If
+		  
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub InitializeDictionary()
+		  // Initialize dictionary with single-byte entries (0-255)
+		  // Codes 256 (Clear) and 257 (EOI) are reserved
+		  
+		  // First 256 codes are literals (single bytes)
+		  For i As Integer = 0 To 255
+		    mSuffix(i) = i
+		    mPrefix(i) = 0  // Literals have no prefix
+		  Next
+		  
+		  // Code 256 = Clear Code (reserved, not stored)
+		  // Code 257 = EOI (reserved, not stored)
+		  
+		  // Next available code is 258
+		  mNextCode = 258
+		  mCodeSize = 9
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function ReadCode() As Integer
+		  // Read variable-length code from bit stream (MSB first for PDF)
+		  // Returns -1 on end of data
+		  
+		  // Fill buffer with enough bits
+		  While mBitsInBuffer < mCodeSize
+		    If mInputPos >= mInputData.Size Then
+		      If mBitsInBuffer = 0 Then
+		        Return -1
+		      Else
+		        Exit While
+		      End If
+		    End If
+		    
+		    Dim nextByte As Integer = mInputData.UInt8Value(mInputPos)
+		    mInputPos = mInputPos + 1
+		    
+		    // Add byte to buffer (MSB first - PDF uses big-endian bit order)
+		    mBitBuffer = Bitwise.ShiftLeft(mBitBuffer, 8) Or nextByte
+		    mBitsInBuffer = mBitsInBuffer + 8
+		  Wend
+		  
+		  If mBitsInBuffer < mCodeSize Then
+		    Return -1
+		  End If
+		  
+		  // Extract code from buffer (from MSB side)
+		  Dim shift As Integer = mBitsInBuffer - mCodeSize
+		  Dim code As Integer = Bitwise.ShiftRight(mBitBuffer, shift) And (Bitwise.ShiftLeft(1, mCodeSize) - 1)
+		  
+		  // Remove extracted bits
+		  mBitsInBuffer = mBitsInBuffer - mCodeSize
+		  mBitBuffer = mBitBuffer And (Bitwise.ShiftLeft(1, mBitsInBuffer) - 1)
+		  
+		  Return code
 		End Function
 	#tag EndMethod
 
@@ -367,11 +327,11 @@ Protected Class VNSPDFLZWDecoder
 		  // NOTE: These test vectors were created manually and may not be
 		  // correctly encoded. The real validation comes from testing with
 		  // actual PDF files that use LZWDecode compression (Example 20).
-
+		  
 		  Dim results As String = "=== LZW Decoder Comprehensive Tests ===" + EndOfLine + EndOfLine
 		  Dim passCount As Integer = 0
 		  Dim failCount As Integer = 0
-
+		  
 		  // Test 1: Basic functionality - decode a simple literal sequence
 		  // This tests: Clear code -> literal codes -> EOI
 		  // Input: Clear (256), 'A' (65), 'B' (66), EOI (257)
@@ -394,7 +354,7 @@ Protected Class VNSPDFLZWDecoder
 		    End If
 		    failCount = failCount + 1
 		  End If
-
+		  
 		  // Test 2: Empty stream with just Clear and EOI codes
 		  // 9-bit codes: Clear (256), EOI (257)
 		  // Bits: 100000000 100000001
@@ -412,7 +372,7 @@ Protected Class VNSPDFLZWDecoder
 		    results = results + "  ✗ FAIL - Expected empty, Got length: " + Str(test2Result.Length) + EndOfLine
 		    failCount = failCount + 1
 		  End If
-
+		  
 		  // Test 3: Single literal character
 		  // Input: Clear (256), 'X' (88), EOI (257)
 		  results = results + EndOfLine + "Test 3: Single Character" + EndOfLine
@@ -430,7 +390,7 @@ Protected Class VNSPDFLZWDecoder
 		    End If
 		    failCount = failCount + 1
 		  End If
-
+		  
 		  // Test 4: Error handling - Invalid input (empty data)
 		  results = results + EndOfLine + "Test 4: Error Handling - Empty Input" + EndOfLine
 		  Dim decoder4 As New VNSPDFLZWDecoder
@@ -443,7 +403,7 @@ Protected Class VNSPDFLZWDecoder
 		    results = results + "  ✗ FAIL - Should have reported empty input error" + EndOfLine
 		    failCount = failCount + 1
 		  End If
-
+		  
 		  // Test 5: Error handling - Truncated stream
 		  results = results + EndOfLine + "Test 5: Error Handling - Truncated Stream" + EndOfLine
 		  Dim test5Input As String = Chr(&h80) + Chr(&h10)  // Clear code but no data
@@ -456,7 +416,7 @@ Protected Class VNSPDFLZWDecoder
 		    results = results + "    Error: " + decoder5.GetError() + EndOfLine
 		  End If
 		  passCount = passCount + 1
-
+		  
 		  // Summary
 		  results = results + EndOfLine + "=== Test Summary ===" + EndOfLine
 		  results = results + "Passed: " + Str(passCount) + EndOfLine
@@ -465,51 +425,51 @@ Protected Class VNSPDFLZWDecoder
 		  results = results + EndOfLine
 		  results = results + "NOTE: These are basic validation tests." + EndOfLine
 		  results = results + "For comprehensive testing, use Example 20 with an LZW-compressed PDF." + EndOfLine
-
+		  
 		  Return results
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h21
+		Private Sub UpdateCodeSize()
+		  // Increase code size when dictionary reaches certain thresholds
+		  //
+		  // Early Change = 1 (PDF default): code size increases ONE CODE EARLY
+		  // - 9 bits: codes 0-510 (increase when mNextCode = 511, BEFORE using 511)
+		  // - 10 bits: codes 511-1022 (increase when mNextCode = 1023)
+		  // - 11 bits: codes 1023-2046 (increase when mNextCode = 2047)
+		  // - 12 bits: codes 2047-4095
+		  //
+		  // Early Change = 0 (non-standard): code size increases ONE CODE LATE
+		  // - 9 bits: codes 0-511 (increase when mNextCode = 512, AFTER using 511)
+		  // - 10 bits: codes 512-1023 (increase when mNextCode = 1024)
+		  // - 11 bits: codes 1024-2047 (increase when mNextCode = 2048)
+		  // - 12 bits: codes 2048-4095
+		  
+		  If mEarlyChange = 1 Then
+		    // Early Change = 1 (PDF default)
+		    If mCodeSize = 9 And mNextCode >= 511 Then
+		      mCodeSize = 10
+		    ElseIf mCodeSize = 10 And mNextCode >= 1023 Then
+		      mCodeSize = 11
+		    ElseIf mCodeSize = 11 And mNextCode >= 2047 Then
+		      mCodeSize = 12
+		    End If
+		  Else
+		    // Early Change = 0 (change code size one code LATE)
+		    If mCodeSize = 9 And mNextCode >= 512 Then
+		      mCodeSize = 10
+		    ElseIf mCodeSize = 10 And mNextCode >= 1024 Then
+		      mCodeSize = 11
+		    ElseIf mCodeSize = 11 And mNextCode >= 2048 Then
+		      mCodeSize = 12
+		    End If
+		  End If
+		  
+		  // Max code size is 12 bits (4096 entries)
+		End Sub
+	#tag EndMethod
 
-	#tag Property, Flags = &h21
-		Private mError As String = ""
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mSuffix(4095) As UInt8
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mPrefix(4095) As UInt16
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mNextCode As Integer = 258
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mCodeSize As Integer = 9
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mInputData As MemoryBlock
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mInputPos As Integer = 0
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mBitBuffer As Integer = 0
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mBitsInBuffer As Integer = 0
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mEarlyChange As Integer = 1
-	#tag EndProperty
 
 	#tag ComputedProperty, Flags = &h21
 		#tag Getter
@@ -537,6 +497,46 @@ Protected Class VNSPDFLZWDecoder
 		#tag EndGetter
 		Private kMaxDictSize As Integer
 	#tag EndComputedProperty
+
+	#tag Property, Flags = &h21
+		Private mBitBuffer As Integer = 0
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mBitsInBuffer As Integer = 0
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mCodeSize As Integer = 9
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mEarlyChange As Integer = 1
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mError As String = ""
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mInputData As MemoryBlock
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mInputPos As Integer = 0
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mNextCode As Integer = 258
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mPrefix(4095) As UInt16
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mSuffix(4095) As UInt8
+	#tag EndProperty
 
 
 	#tag ViewBehavior

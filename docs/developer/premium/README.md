@@ -13,6 +13,7 @@ This folder contains detailed documentation for each premium module in the VNS P
 | **Forms** | 05-forms-module.md | 🔔 Coming Soon (Q2-Q3 2026) | Interactive PDF AcroForms |
 | **HTML/Markdown** | [05-html-markdown-module.md](05-html-markdown-module.md) | ✅ Available (€50) | HTML and Markdown to PDF conversion |
 | **E-Invoice** | [07-einvoice-module.md](07-einvoice-module.md) | ✅ Available (€50) | Factur-X/ZUGFeRD create + read + validate |
+| **Peppol** | [08-peppol-module.md](08-peppol-module.md) | ✅ Included with E-Invoice | Peppol network send/receive (Storecove) |
 
 ## Quick Start
 
@@ -59,6 +60,7 @@ VNSPDFDocument (Core)
 ├── VNSPDFTablePremium (PREMIUM)
 ├── VNSPDFAPremium (PREMIUM)
 └── VNSPDFEInvoicePremium (PREMIUM)
+    └── VNSPDFPeppol (PREMIUM — Peppol network integration)
 ```
 
 ## See Also
@@ -69,4 +71,4 @@ VNSPDFDocument (Core)
 
 ---
 
-*Last Updated: 2026-02-14*
+*Last Updated: 2026-04-07*

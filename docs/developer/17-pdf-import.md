@@ -6,6 +6,61 @@
 
 ---
 
+## Zlib Requirement for PDF Import
+
+Almost all real-world PDFs use **FlateDecode** (zlib/deflate) compression on their content streams. PDF import must decompress these streams to extract page content, which means zlib availability is critical.
+
+### Platform Availability
+
+| Platform | Zlib Source | Status |
+|----------|------------|--------|
+| **macOS** | `/usr/lib/libz.dylib` (system) | Always available |
+| **Linux** | `/usr/lib/libz.so.1` (system) | Always available |
+| **Windows** | `ZLIB1.DLL` (not included with Windows) | Must be provided by the app |
+| **iOS** | System Declares blocked (sandboxing) | Requires Premium Zlib module |
+| **Android** | System Declares blocked (sandboxing) | Requires Premium Zlib module |
+
+### Windows: ZLIB1.DLL Not Found
+
+Windows does **not** ship with `ZLIB1.DLL`. If the DLL is missing, PDF import will fail silently on older library versions, or report an error on v1.4+:
+
+```
+PDF import: FlateDecode failed: ZLIB1.DLL not found. Place ZLIB1.DLL
+next to your .exe, or use the premium Zlib module for DLL-free decompression.
+```
+
+**Solutions (choose one):**
+
+1. **Place `ZLIB1.DLL` next to the .exe** (free) — Download the 64-bit DLL from [winimage.com/zLibDll](http://www.winimage.com/zLibDll/index.html) and copy it to the same folder as your application. This is the simplest fix for Windows-only apps.
+
+2. **Use the Premium Zlib module** (recommended) — Pure Xojo implementation, works on all platforms without any DLLs. Set `hasPremiumVNSZlibModule = True` after adding the module files.
+
+### iOS / Android: No System Declares
+
+Mobile platforms block Declares to system libraries due to sandboxing. The **Premium Zlib module** is the only option for PDF import on iOS and Android.
+
+### Error Propagation (v1.4+)
+
+When decompression fails, the error propagates through the full chain:
+
+```
+VNSZlibModule.Uncompress()          → sets kZ_ERRNO, logs to DebugLog
+  ↓
+VNSPDFStreamDecoder.DecodeFlateDecode() → sets specific error message
+  ↓
+VNSPDFStream.GetDecodedData()        → stores error in mLastError
+  ↓
+VNSPDFImportedPage.GetDecodedContents() → captures stream error
+  ↓
+VNSPDFDocument.CreateXObjectFromPage()  → calls SetError()
+  ↓
+pdf.GetError()                       → returns clear message to user
+```
+
+Check `pdf.Err()` after `ImportPage()` or `UseTemplate()` to detect decompression failures.
+
+---
+
 ## Overview
 
 VNS PDF includes a complete PDF parser that allows importing pages from existing PDF files and using them as XObject Form templates in new documents. This is equivalent to go-fpdf's gofpdi contrib package, but implemented as a pure Xojo solution with no external dependencies.
@@ -177,16 +232,18 @@ End If
 1. **Cross-Reference Table (xref) Parsing**
    - Locates xref table at end of PDF file
    - Builds map of object IDs to byte offsets
-   - Supports both traditional xref and compressed xref streams
+   - Supports both traditional xref tables and cross-reference streams (PDF 1.5+)
+   - Supports object streams (`/Type/ObjStm`) — compressed objects extracted via `GetObject()`
 
 2. **Document Catalog Resolution**
    - Reads trailer dictionary to find /Root (catalog)
-   - Resolves catalog object to get document structure
+   - Resolves catalog object via `GetObject()` (handles both regular and compressed objects)
 
 3. **Page Tree Traversal**
    - Navigates hierarchical page tree (/Pages nodes)
    - Handles MediaBox inheritance from parent nodes
    - Builds flat list of all pages with correct dimensions
+   - All indirect references resolved via `GetObject()` for PDF 1.5+ object stream support
 
 4. **Page Content Extraction**
    - Extracts /Contents stream(s) for requested page
@@ -537,11 +594,7 @@ Extracts a specific page with all its resources.
    - Only supports single-revision PDFs
    - Incremental updates (appended changes) may not be fully parsed
 
-5. **Compressed Object Streams**
-   - Object streams (/ObjStm) not yet supported
-   - Most PDFs don't use this feature (PDF 1.5+)
-
-6. **Exotic Filters**
+5. **Exotic Filters**
    - JPXDecode (JPEG2000), JBIG2Decode not supported
    - Rare in typical PDFs
 
@@ -606,11 +659,7 @@ Extracts a specific page with all its resources.
    - Copy comments, highlights, and annotations
    - Maintain annotation positions and properties
 
-4. **Compressed Object Streams**
-   - Support PDF 1.5+ compressed object streams (/ObjStm)
-   - Reduce memory usage for large PDFs
-
-5. **Incremental Update Support**
+4. **Incremental Update Support**
    - Parse PDFs with multiple revisions
    - Extract latest version of modified objects
 
@@ -646,8 +695,11 @@ Extracts a specific page with all its resources.
 **Solution:** Check ImportPage() returned non-zero value
 
 #### "Blank page after import"
-**Cause:** Stream decompression silently failed (predictor required)
+**Cause 1:** Stream decompression silently failed (predictor required)
 **Solution:** Enable Premium Zlib module for PNG Predictor support
+
+**Cause 2:** PDF uses object streams (PDF 1.5+) — fixed in v1.4. Update VNSPDFReader.xojo_code.
+**Solution:** Ensure you have the latest VNSPDFReader which uses `GetObject()` for all indirect reference resolution.
 
 ### Debug Logging
 
@@ -753,5 +805,5 @@ End Function
 
 ---
 
-*Last Updated: January 2026*
-*VNS PDF v1.1.1*
+*Last Updated: April 2026*
+*VNS PDF v1.4*

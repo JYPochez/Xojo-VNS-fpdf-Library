@@ -67,6 +67,14 @@ Sub LoadHTML(doc As VNSPDFDocument, html As String, maxWidth As Double = 0, imag
 Sub LoadMarkdown(doc As VNSPDFDocument, markdown As String, maxWidth As Double = 0, imageFolder As FolderItem = Nil)
 ```
 
+**Configurable base font size**: Set the font on the document before calling `LoadHTML()` to control the base size. All CSS `em`/`%` font sizes, heading sizes, and line heights derive from this base:
+
+```xojo
+doc.SetFont("Helvetica", "", 9)  // 9pt base (default would be 12pt)
+doc.LoadHTML(html, 0, imageFolder)
+// p { font-size: 0.8em } = 7.2pt, h1 { font-size: 2em } = 18pt
+```
+
 **Merge Field Utilities (standalone, no VNSPDFDocument needed):**
 
 ```xojo
@@ -156,14 +164,31 @@ Protected Sub ApplyInlineStyle(doc As VNSPDFDocument, token As VNSPDFHTMLToken)
 **Table rendering:**
 
 ```xojo
-Protected Function ParseTable(tokens() As VNSPDFHTMLToken, ByRef idx As Integer) As Dictionary()
+Protected Function ParseTable(tokens() As VNSPDFHTMLToken, ByRef idx As Integer, ...) As Dictionary()
 // Parses <table> tokens into row/cell data structure
-// Each row: Dictionary with "cells" (Dictionary array) and "isHeader" (Boolean)
-// Each cell: Dictionary with "content", "isHeader", "align"
+// Each row: Dictionary with "cells", "isHeader", "hidden" (display:none)
+// Each cell: Dictionary with "content", "isHeader", "align", "colspan",
+//   "widthPercent", "bold", "italic", "spanStyle", border info
 
-Protected Sub RenderTable(doc As VNSPDFDocument, rows() As Dictionary, lineHeight As Double)
-// Renders parsed table with equal-width columns, borders, gray header fill
+Protected Sub RenderTable(doc As VNSPDFDocument, rows() As Dictionary, lineHeight As Double, drawBorders As Boolean = True)
+// Renders parsed table with proportional column widths (from CSS/attribute percentages),
+// colspan support, CSS class styles on cells, display:none row skipping,
+// bold/italic from inline tags, CSS border styles (solid, dotted, dashed, double),
+// border="0" suppresses default borders and header fill
 ```
+
+**Table features:**
+- Column width percentages from `style="width: 48%"`, `width` attribute, or CSS classes
+- Colspan: `colspan="4"` spans cell across multiple column widths
+- CSS class resolution: `.thCurrency`, `.tdText` etc. resolve text-align, width, borders
+- `display:none` on `<tr>` skips entire row
+- `border="0"` on `<table>` suppresses cell borders and header fill
+- Bold/italic from `<b>`, `<strong>`, `<i>`, `<em>` inside cells
+- CSS borders: `border-bottom: 1px dotted #CCCCCC` drawn with proper dash patterns
+- Emoji in cells: inline emoji images with vertical centering (via `RenderCellWithEmoji`)
+- Emoji in `<pre>` code blocks: rendered with `FlushTextWithEmoji`, no double line spacing
+- Non-visual elements skipped: `<title>`, `<head>`, `<style>`, `<script>` content not rendered
+- Layout table detection: single-column borderless tables render inner content as normal flow (float layout preserved)
 
 **Image rendering:**
 
@@ -283,7 +308,9 @@ Public Const hasPremiumVNSHTMLModule As Boolean = False  // Set to True when mod
 | `width`, `max-width` | px, %, constrains block content area |
 | `margin` | Shorthand (1-4 values) and individual sides. `margin: 0 auto` centering with `max-width` |
 | `padding` | Shorthand (1-4 values) and individual sides. Font-metrics-based vertical centering |
-| `border` | `border: 1px solid #333` shorthand, individual sides (top, right, bottom, left). Requires explicit style (`solid`, `dashed`, etc.) per CSS spec. Width keywords `thin`/`medium`/`thick` supported. `border: medium;` without style correctly renders no border. |
+| `border` | `border: 1px solid #333` shorthand, individual sides (top, right, bottom, left). Styles: `solid`, `dotted`, `dashed`, `double`. Width keywords `thin`/`medium`/`thick` supported. `border: medium;` without style correctly renders no border. |
+| `float` | `left`, `right` — floated blocks render side-by-side with specified width |
+| `clear` | `both`, `left`, `right` — ends float context, moves Y past active floats |
 | `background-color` | Block-level background fill behind content and borders |
 | `line-height` | Unitless multiplier, px, normal |
 | `display` | `none` to hide elements |
@@ -292,7 +319,7 @@ Public Const hasPremiumVNSHTMLModule As Boolean = False  // Set to True when mod
 ### CSS Box Model Rendering
 Block-level elements with borders, backgrounds, or padding render a complete CSS box model:
 - **Background**: Filled rectangle behind all content, inserted before borders in PDF stream
-- **Borders**: All 4 sides drawn independently with individual color and width
+- **Borders**: All 4 sides drawn independently with individual color, width, and style (solid, dotted, dashed, double)
 - **Padding**: Controls visual space between content and borders using font metrics (ascent/descent from `GetFontDesc()`) for precise vertical centering
 - **Margin collapsing**: Last child trailing gap collapsed inside styled parent blocks
 - **Centered blocks**: `margin: 0 auto` with `max-width` properly centers the box and constrains text wrapping
@@ -334,6 +361,7 @@ CSS custom properties defined in `:root` blocks are fully supported:
 
 | Selector | Example | Supported |
 |----------|---------|-----------|
+| Universal | `* { ... }` | Yes (lowest specificity) |
 | Class | `.content { ... }` | Yes |
 | Element | `p { ... }` | Yes |
 | Element.class | `div.card { ... }` | Yes |
@@ -664,8 +692,10 @@ CSS `margin-bottom` values are enforced with a minimum of `1.5 * mLineHeight`:
 
 ## Known Limitations
 
-- Table columns are equal-width (no colspan/rowspan support yet)
+- Table rowspan is not supported (colspan works)
 - Images from file paths must be accessible at render time
-- CSS `float` and `position` properties are not supported
-- Nested tables are not supported
+- CSS `float: right` positions content but does not wrap non-floated content around it
+- CSS `position` (absolute, relative, fixed) is not supported
+- Single-column borderless tables are auto-detected as layout wrappers (inner content flows normally); nested multi-column tables inside layout wrappers render correctly as grids
+- CSS `height` property parsed but not enforced (used for `position: absolute` layout hacks)
 - `<font>` tag support is legacy (prefer `<span style="...">`)

@@ -551,6 +551,15 @@ End
 		End Sub
 	#tag EndEvent
 
+	#tag Event
+		Sub Resizing()
+		  // When the window is resized, re-render the current page at new dimensions
+		  If mRenderer <> Nil And mCurrentPage > 0 And mCurrentPage <= mTotalPages Then
+		    ApplyZoom()
+		  End If
+		End Sub
+	#tag EndEvent
+
 
 	#tag Method, Flags = &h21
 		Private Sub ApplyZoom()
@@ -727,7 +736,7 @@ End
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Shared Sub ShowPreview(pdfData As String, suggestedFilename As String = "document.pdf")
+		Shared Sub ShowPreview(pdfData As String, suggestedFilename As String = "document.pdf", initialFolder As FolderItem = Nil)
 		  // Create and show the preview window with the given PDF data.
 		  // Uses native rendering (PDFKit on macOS, Windows.Data.Pdf on Windows, Poppler on Linux)
 		  // to display pages in a Canvas with thumbnail navigation.
@@ -735,12 +744,14 @@ End
 		  // Parameters:
 		  //   pdfData - The raw PDF binary data (from VNSPDFDocument.Output())
 		  //   suggestedFilename - Default filename for save dialog
+		  //   initialFolder - Optional folder to start the save dialog in (contributed by Geoff Bridges)
 		  
 		  If pdfData = "" Then Return
 		  
 		  Dim w As New VNSPDFPreviewWindow
 		  w.mPDFData = pdfData
 		  w.mSuggestedFilename = suggestedFilename
+		  w.mInitialSaveFolder = initialFolder
 		  w.LoadPDF()
 		  w.ShowModal()
 		End Sub
@@ -854,6 +865,10 @@ End
 
 	#tag Property, Flags = &h21
 		Private mCurrentPagePicture As Picture
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mInitialSaveFolder As FolderItem = Nil
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
@@ -1253,6 +1268,9 @@ End
 		  Dim dlg As New SaveFileDialog
 		  dlg.Title = "Save PDF"
 		  dlg.SuggestedFileName = mSuggestedFilename
+		  If mInitialSaveFolder <> Nil And mInitialSaveFolder.Exists Then
+		    dlg.InitialFolder = mInitialSaveFolder
+		  End If
 		  
 		  Dim targetFile As FolderItem = dlg.ShowModal()
 		  
