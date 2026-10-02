@@ -1,7 +1,8 @@
 # go-fpdf vs VNS PDF FREE Version - Feature Comparison
 
-**Last Updated:** 2025-11-28
-**VNS PDF Version:** 1.0.0 FREE (No Premium Modules)
+**Last Updated:** 2026-10-02
+**VNS PDF Version:** 1.4 FREE (No Premium Modules)
+**Platforms:** Desktop, Web, iOS, Console, **Android** (same `PDF_Library` source on all five)
 **go-fpdf Reference:** v2.0+
 
 ---
@@ -14,26 +15,31 @@ This document compares the **FREE version** of VNS PDF against go-fpdf. The FREE
 - ❌ **RC4-128 encryption** (128-bit) - Requires premium Encryption module
 - ❌ **AES encryption** (128/256-bit) - Requires premium Encryption module
 - ❌ **PDF/A output intents** - Requires premium PDF/A module
-- ❌ **iOS compression** - Blocked in FREE version, requires premium Zlib module for pure Xojo implementation
-- ✅ **iOS compression with Premium** - Pure Xojo zlib implementation works on all platforms including iOS
+- ❌ **iOS / Android compression and Flate import** - No system zlib on mobile: requires the premium Zlib module (pure Xojo)
+- ✅ **Mobile compression with Premium** - Pure Xojo zlib implementation works on all platforms including iOS and Android
 - ❌ **Table generation** - Requires premium Table module - **FULLY WORKING in Premium**
-- ❌ **E-Invoice generation** - Requires premium E-Invoice module - **PLANNED** (Factur-X, ZUGFeRD, EN 16931)
+- ❌ **E-Invoice generation** - Requires premium E-Invoice module (Factur-X, ZUGFeRD, EN 16931, 3-level validation, barcodes)
+- ❌ **HTML / Markdown import** - Requires premium HTML/Markdown module (`LoadHTML()`, `LoadMarkdown()`)
+- ❌ **Decryption of encrypted source PDFs on import** - Not available yet (clear error since 1.4); planned: RC4 in FREE, AES with the Encryption module
 
 **What IS Available in FREE:**
 - ✅ **RC4-40 encryption** (40-bit) - DEPRECATED and WEAK, but available
 - ✅ All core PDF features (text, graphics, images, fonts, links, etc.)
-- ✅ Basic compression (FlateDecode/zlib on Desktop/Web/Console only; **iOS blocked**)
-- ✅ Full Unicode/TrueType font support
+- ✅ Basic compression (FlateDecode/zlib via system libraries on Desktop/Web/Console; Windows needs `ZLIB1.DLL` next to the app; **iOS/Android need premium Zlib**)
+- ✅ Full Unicode/TrueType font support, Arabic shaping, Hebrew and Arabic right-to-left display
+- ✅ Color emoji (image-based), including skin-tone, ZWJ, flag and keycap sequences
+- ✅ PDF import (pages as templates, PDF 1.5+ object streams, clone constructors)
 - ✅ Document metadata, headers/footers, bookmarks
 
 For premium features, see `FEATURE_COMPARISON_PREMIUM.md`.
 
 **💡 Premium Modules Can Be Purchased Separately** - You don't need to buy all premium modules! Purchase only what you need:
-- 🔐 **Encryption Module** - RC4-128, AES-128, AES-256 encryption *(Ready)*
+- 🔐 **Encryption Module** - RC4-128, AES-128, AES-256, AES-GCM, PAdES-B-B digital signatures *(Ready)*
 - 📊 **Table Module** - Professional table generation with headers, footers, pagination *(Ready)*
 - 🗜️ **Zlib Module** - Pure Xojo compression for iOS support *(Ready)*
 - 🔮 **PDF/A Module** - Archival compliance and ICC profiles *(Planned)*
-- 🧾 **E-Invoice Module** - Factur-X/ZUGFeRD hybrid PDF/XML invoices, EN 16931 compliance *(Planned)*
+- 🧾 **E-Invoice Module** - Factur-X/ZUGFeRD hybrid PDF/XML invoices, EN 16931 compliance, barcodes *(Ready)*
+- 🌐 **HTML/Markdown Import Module** - `LoadHTML()` / `LoadMarkdown()` with CSS engine *(Ready)*
 
 Mix and match based on your requirements!
 
@@ -61,7 +67,7 @@ Mix and match based on your requirements!
 | Set subject | SetSubject() | SetSubject() | ✅ | UTF-16BE encoding |
 | Set keywords | SetKeywords() | SetKeywords() | ✅ | UTF-16BE encoding |
 | Set creator | SetCreator() | SetCreator() | ✅ | UTF-16BE encoding |
-| Set producer | SetProducer() | | ⚠️ | Auto-set in Constructor |
+| Set producer | SetProducer() | SetProducer() | ✅ | PDF producer metadata |
 | Set language | SetLang() | SetLang() | ✅ | |
 | XMP metadata | SetXmpMetadata() | SetXmpMetadata() | ✅ | XML-based metadata |
 | Get XMP metadata | GetXmpMetadata() | GetXmpMetadata() | ✅ | Retrieve XMP metadata stream |
@@ -83,6 +89,9 @@ Mix and match based on your requirements!
 | Page boxes | SetPageBox() | SetPageBox() | ✅ | TrimBox, CropBox, BleedBox, ArtBox |
 | Auto page break | SetAutoPageBreak() | SetAutoPageBreak() | ✅ | |
 | Get auto page break | GetAutoPageBreak() | GetAutoPageBreak() | ✅ | Returns enable state and margin |
+| Single page mode | | SetSinglePageMode() | ✅ | Render all content on one long page, no page breaks (v1.4) |
+| Get single page mode | | GetSinglePageMode() | ✅ | Returns the single page mode flag (v1.4) |
+| Finalize single page | | FinalizeSinglePage() | ✅ | Trim the page to the content height (v1.4) |
 
 ## 3. Margins & Positioning
 
@@ -100,7 +109,7 @@ Mix and match based on your requirements!
 | Set XY position | SetXY() | SetXY() | ✅ | |
 | Get X position | GetX() | GetX() | ✅ | |
 | Get Y position | GetY() | GetY() | ✅ | |
-| Get XY position | GetXY() | | ⚠️ | Separate GetX/GetY |
+| Get XY position | GetXY() | GetXY() | ✅ | Returns Dictionary with x,y |
 | Set home XY | SetHomeXY() | SetHomeXY() | ✅ | Sets position to top-left margins |
 | Line break | Ln() | Ln() | ✅ | |
 
@@ -135,16 +144,17 @@ Mix and match based on your requirements!
 | Get underline thickness | GetUnderlineThickness() | GetUnderlineThickness() | ✅ | Returns thickness multiplier |
 | Font subsetting | SubsetFont() | SetFontSubsetting(), GetFontSubsetting() | ✅ | Sparse glyph ID subsetting (98% size reduction) |
 | RTL text | RTL() | RTL() | ✅ | Enable right-to-left text direction (flag only) |
+| Hebrew right-to-left display | | Cell(), MultiCell(), GetStringWidth() | ✅ | Hebrew runs reversed automatically for display (v1.4) |
 | LTR text | LTR() | LTR() | ✅ | Enable left-to-right text direction (default) |
-| Arabic text shaping | | ShapeArabicText() | ✅ | Automatic contextual forms (isolated, initial, medial, final) with RTL reversal |
+| Arabic text shaping | | ShapeArabicText() | ✅ | Automatic contextual forms (isolated, initial, medial, final) with RTL reversal; brackets mirrored, digits kept left-to-right (v1.4) |
 
 ## 5. Text Output
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
 | Simple text | Text() | Text() | ✅ | |
-| Cell | Cell() | Cell() | ✅ | Full border support, fill, alignment |
-| Cell with format | CellFormat() | | ⚠️ | Part of Cell() |
+| Cell | Cell() | Cell() | ✅ | Full border support, fill, alignment, vertical alignment (`eVerticalAlignment`: Top, Middle, Bottom, Baseline) |
+| Cell with format | CellFormat() | CellFormat() | ✅ | Wrapper for Cell() with explicit parameters |
 | Formatted cell | Cellf() | Cellf() | ✅ | Printf-style formatting (%s, %d, %f) |
 | Multi-cell | MultiCell() | MultiCell() | ✅ | Text wrapping with alignment |
 | Write | Write() | Write() | ✅ | Flowing text with automatic wrapping |
@@ -168,7 +178,7 @@ Mix and match based on your requirements!
 | Polygon | Polygon() | Polygon() | ✅ | Multi-point polygon |
 | Beziergon | Beziergon() | Beziergon() | ✅ | Closed shape with Bezier curves |
 | Bezier curve | Curve() | Curve() | ✅ | Quadratic Bezier curves |
-| Cubic curve | CurveCubic() | | 🔄 | Use CurveBezierCubic() instead |
+| Cubic curve | CurveCubic() | CurveCubic() | ✅ | Legacy wrapper with nonstandard parameter order |
 | Cubic bezier curve | CurveBezierCubic() | CurveBezierCubic() | ✅ | Cubic Bezier curves |
 | Arrow line | | Arrow() | ✅ | Lines with arrowheads (not in go-fpdf) |
 
@@ -191,14 +201,39 @@ Mix and match based on your requirements!
 | Get alpha | GetAlpha() | GetAlpha() | ✅ | Returns current alpha value |
 | Get blend mode | GetBlendMode() | GetBlendMode() | ✅ | Returns current blend mode |
 
-## 8. Gradients
+## 8. Transformations
+
+| Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
+|---------|---------------|--------------|--------|-------|
+| Transform begin | TransformBegin() | TransformBegin() | ✅ | Start transformation context |
+| Transform end | TransformEnd() | TransformEnd() | ✅ | End transformation context |
+| Rotate | TransformRotate() | TransformRotate() | ✅ | Rotate text/graphics around point |
+| Transform matrix | Transform() | Transform() | ✅ | Apply transformation matrix |
+| Scale X | TransformScaleX() | TransformScaleX() | ✅ | Scale width only at point |
+| Scale Y | TransformScaleY() | TransformScaleY() | ✅ | Scale height only at point |
+| Scale XY | TransformScaleXY() | TransformScaleXY() | ✅ | Scale width & height equally |
+| Scale | TransformScale() | TransformScale() | ✅ | Scale width & height at point |
+| Mirror horizontal | TransformMirrorHorizontal() | TransformMirrorHorizontal() | ✅ | Flip horizontally at X axis |
+| Mirror vertical | TransformMirrorVertical() | TransformMirrorVertical() | ✅ | Flip vertically at Y axis |
+| Mirror point | TransformMirrorPoint() | TransformMirrorPoint() | ✅ | 180° flip at point |
+| Mirror line | TransformMirrorLine() | TransformMirrorLine() | ✅ | Mirror along angled line |
+| Translate X | TransformTranslateX() | TransformTranslateX() | ✅ | Translate along X axis |
+| Translate Y | TransformTranslateY() | TransformTranslateY() | ✅ | Translate along Y axis |
+| Translate | TransformTranslate() | TransformTranslate() | ✅ | Translate along both axes |
+| Skew X | TransformSkewX() | TransformSkewX() | ✅ | Skew along X axis at point |
+| Skew Y | TransformSkewY() | TransformSkewY() | ✅ | Skew along Y axis at point |
+| Skew | TransformSkew() | TransformSkew() | ✅ | Skew along both axes at point |
+
+## 9. Gradients
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
 | Linear gradient | LinearGradient() | LinearGradient() | ✅ | Full PDF shading patterns |
 | Radial gradient | RadialGradient() | RadialGradient() | ✅ | Dual-circle radial gradients |
+| Multi-stop linear gradient | N/A | LinearGradientMultiStop() | ✅ | FunctionType 3 stitching for rainbow gradients |
+| Brush-based gradients | N/A | VNSPDFGraphicsUTF.Brush | ✅ | LinearGradientBrush/RadialGradientBrush support |
 
-## 9. Clipping
+## 10. Clipping
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
@@ -211,21 +246,21 @@ Mix and match based on your requirements!
 | Clip polygon | ClipPolygon() | ClipPolygon() | ✅ | Multi-point polygon clipping |
 | End clipping | ClipEnd() | ClipEnd() | ✅ | Restores graphics state |
 
-## 10. Images
+## 11. Images
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
 | Add image | Image() | Image() | ✅ | JPEG (DCTDecode) and PNG (FlateDecode) - All platforms ✅ |
-| Image from Picture | | ImageFromPicture() | ✅ | Embed Xojo Picture objects - **Desktop: PNG, iOS: JPEG** |
-| Image with options | ImageOptions() | | ❌ | Not implemented |
+| Image from Picture | | ImageFromPicture() | ✅ | Embed Xojo Picture objects - JPEG on all platforms (no alpha channel issues) |
+| Image with options | ImageOptions() | ImageOptions() | ✅ | Dictionary-based options (imageType, readDpi, allowNegativePosition) |
 | Register image | RegisterImage() | RegisterImage() | ✅ | Pre-register images for reuse |
 | Register from bytes | RegisterImageFromBytes() | RegisterImageFromBytes() | ✅ | Register from MemoryBlock (PNG/JPEG) |
-| Register image options | RegisterImageOptions() | | ❌ | Not implemented |
-| Register from reader | RegisterImageReader() | | ❌ | Not implemented |
-| Register with options | RegisterImageOptionsReader() | | ❌ | Not implemented |
+| Register image options | RegisterImageOptions() | RegisterImageOptions() | ✅ | Pre-register with options Dictionary |
+| Register from reader | RegisterImageReader() | RegisterImageReader() | ✅ | DEPRECATED wrapper for RegisterImageOptionsReader() |
+| Register with options | RegisterImageOptionsReader() | RegisterImageOptionsReader() | ✅ | Pre-register from MemoryBlock with options |
 | Get image info | GetImageInfo() | | ✅ | Via VNSPDFImage class methods |
 | Image type from MIME | ImageTypeFromMime() | ImageTypeFromMime() | ✅ | Converts MIME strings to types |
-| Color emoji | | Emoji() | ⚠️ | Desktop ✅, iOS ✅ (UIKit), **Web ❌ (not yet implemented - see docs/EMOJI_FONT_PARSING.md)**, Console ❌ |
+| Color emoji | | Emoji() | ✅ | Desktop ✅, iOS ✅ (UIKit), Android ✅ (Noto Color Emoji), Web ✅ (sbix / CBDT / COLR font parsing), Console ❌ (no graphics). Skin-tone, ZWJ, flag and keycap sequences drawn as one emoji (v1.4) |
 
 **iOS Image Support Notes**:
 - ✅ **All image features working on iOS** - Fixed RGBA→RGB conversion issue
@@ -237,6 +272,12 @@ Mix and match based on your requirements!
 - Emoji rendered to UIImage, converted to PNG data, then to Picture via `Picture.FromData()`
 - Proper memory management: UIImage→PNG NSData→MemoryBlock→Picture (avoids ARC issues)
 
+**Android Notes** (v1.4):
+- ✅ **All FREE examples run on Android** (demo app `Xojo_fpdf_android`, same example list as iOS)
+- Bundled files (fonts, data) need a **Copy Files build step to the Resources folder, placed before the Build step**; `SpecialFolder.Resource()` raises an exception for a missing name
+- Color emoji drawn with the system Noto Color Emoji font
+- Large fonts are slow to read in a debug build on the emulator (23 MB Arial Unicode: ~25 s)
+
 **iOS Font Loading Notes**:
 - ✅ **TrueType font parsing working on iOS** - Fixed MemoryBlock.StringValue() crash
 - iOS crashes when using `MemoryBlock.StringValue(position, length)` on large buffers (>20MB) at high offsets
@@ -244,7 +285,7 @@ Mix and match based on your requirements!
 - Performance impact: Negligible (only 42 bytes total extracted for font name parsing)
 - Successfully loads 23MB font files (Arial Unicode) with 98% subsetting reduction
 
-## 11. Links & Bookmarks
+## 12. Links & Bookmarks
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
@@ -255,7 +296,7 @@ Mix and match based on your requirements!
 | Bookmark | Bookmark() | Bookmark() | ✅ | Hierarchical outline/sidebar navigation |
 | Alias nb pages | AliasNbPages() | AliasNbPages() | ✅ | Text substitution for page count |
 
-## 12. Headers & Footers
+## 13. Headers & Footers
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
@@ -263,13 +304,15 @@ Mix and match based on your requirements!
 | Set header with mode | SetHeaderFuncMode() | SetHeaderFuncMode() | ✅ | With homeMode to reset X/Y |
 | Set footer function | SetFooterFunc() | SetFooterFunc() | ✅ | VNSPDFModule.HeaderFooterDelegate |
 | Set footer with LPI | SetFooterFuncLpi() | SetFooterFuncLpi() | ✅ | With lastPage indicator |
+| Automatic footer height | | (automatic) | ✅ | Footer callbacks are measured; no manual bottom margin needed (v1.4) |
+| Header on page 1 | | SetHeaderFunc() | ✅ | Header also drawn on the already-open first page (v1.4) |
 | Accept page break func | SetAcceptPageBreakFunc() | SetAcceptPageBreakFunc() | ✅ | Custom page break logic callback |
 | Get page number | PageNo() | PageNo() | ✅ | For use in callbacks |
 | Get font family | | FontFamily() | ✅ | For state management in callbacks |
 | Get font style | | FontStyle() | ✅ | For state management in callbacks |
 | Get font size | | FontSizePt() | ✅ | For state management in callbacks |
 
-## 13. Templates & Objects
+## 14. Templates & Objects
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
@@ -278,17 +321,17 @@ Mix and match based on your requirements!
 | Use imported template | UseImportedTemplate() | | ❌ | Not implemented |
 | Import templates | ImportTemplates() | | ❌ | Not implemented |
 
-## 14. Output & Display
+## 15. Output & Display
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
 | Output to writer | Output() | Output() | ✅ | Returns string |
-| Output and close | OutputAndClose() | | ❌ | Not implemented |
+| Output and close | OutputAndClose() | OutputAndClose() | ✅ | Combines Output() and Close() |
 | Output file and close | OutputFileAndClose() | | ⚠️ | SaveToFile() |
-| Display mode | SetDisplayMode() | | ❌ | Not implemented |
-| Get display mode | GetDisplayMode() | | ❌ | Not implemented |
+| Display mode | SetDisplayMode() | SetDisplayMode() | ✅ | Set zoom and layout mode |
+| Get display mode | GetDisplayMode() | GetDisplayMode() | ✅ | Returns Dictionary with zoom, layout |
 
-## 15. Security & Encryption (FREE VERSION)
+## 16. Security & Encryption (FREE VERSION)
 
 ### go-fpdf Security Implementation
 **go-fpdf has very limited security support:**
@@ -342,7 +385,7 @@ All stronger encryption requires the **premium Encryption module**:
 
 **FREE VERSION Security Verdict**: ⚠️ **RC4-40 ONLY (DEPRECATED)** - Only 40-bit RC4 encryption available, which is cryptographically broken and unsuitable for protecting sensitive documents. For stronger encryption, upgrade to the premium Encryption module.
 
-## 16. Table Generation
+## 17. Table Generation
 
 ⚠️ **Table generation requires the premium Table module (not available in FREE version).**
 
@@ -357,11 +400,11 @@ The FREE version requires manual table creation using Cell() calls, similar to g
 | Auto alternating rows | ❌ | | 🔒 | **PREMIUM TABLE MODULE** |
 | Auto page breaks | ❌ | | 🔒 | **PREMIUM TABLE MODULE** |
 
-## 17. PDF Import (NEW in v1.0.0)
+## 18. PDF Import (NEW in v1.0.0, extended in v1.4)
 
 ✅ **PDF Import is FULLY IMPLEMENTED - All phases complete (Example 20 working)**
 
-⚠️ **IMPORTANT: Most PDFs require premium Zlib module for import** - PDFs using FlateDecode with PNG predictors (very common) need advanced decompression that only the premium zlib module provides.
+ℹ️ **When the premium Zlib module is needed for import**: on **iOS and Android** (no system zlib), for streams stored as **raw DEFLATE** (no zlib header), and on **Windows when `ZLIB1.DLL` is not shipped** with the app. PNG/TIFF predictors are decoded in the FREE version.
 
 | Feature | go-fpdf | VNS PDF FREE | Status | Notes |
 |---------|---------|--------------|--------|-------|
@@ -370,6 +413,10 @@ The FREE version requires manual table creation using Cell() calls, similar to g
 | Parse cross-reference table | ❌ | ✅ | ✅ | VNSPDFXrefReader |
 | Parse PDF objects | ❌ | ✅ | ✅ | 12 PDF type classes (VNSPDFType subclasses) |
 | Navigate page tree | ❌ | ✅ | ✅ | Hierarchical page tree support |
+| PDF 1.5+ xref & object streams | ❌ | ✅ | ✅ | Cross-reference streams and object streams (macOS Quartz, wkhtmltopdf, invoice tools) (v1.4) |
+| Clone constructors | ❌ | New VNSPDFDocument(folderItem) / (pdfData, True) | ✅ | All pages imported at their original size (v1.4) |
+| Imported page size | ❌ | GetImportedPageSize() | ✅ | Original dimensions of an imported template (v1.4) |
+| Encrypted source PDFs | ❌ | | ❌ | Clear error since v1.4; decryption planned (RC4 FREE, AES premium) |
 | **Page Extraction** | | | | |
 | Get page count | ❌ | ✅ | ✅ | VNSPDFReader.GetPageCount() |
 | Extract page | ❌ | ✅ | ✅ | VNSPDFReader.GetPage(pageNum) returns VNSPDFImportedPage |
@@ -378,7 +425,8 @@ The FREE version requires manual table creation using Cell() calls, similar to g
 | Extract contents | ❌ | ✅ | ✅ | Page content streams |
 | **Stream Decompression** | | | | |
 | FlateDecode (basic) | ❌ | ✅ | ✅ | Simple deflate/inflate via system libs (Desktop/Web/Console only) |
-| FlateDecode with PNG Predictors | ❌ | | 🔒 | **PREMIUM ZLIB MODULE REQUIRED** - Predictor 2, 10-15 support |
+| FlateDecode with PNG/TIFF Predictors | ❌ | ✅ | ✅ | Predictor 2 and 10-15 decoded in FREE (system zlib on Desktop/Web/Console) |
+| Raw DEFLATE / mobile Flate | ❌ | | 🔒 | **PREMIUM ZLIB MODULE REQUIRED** - pure Xojo inflate (iOS, Android, raw DEFLATE streams) |
 | LZWDecode | ❌ | ✅ | ✅ | VNSPDFLZWDecoder for legacy PDFs |
 | ASCII85Decode | ❌ | ✅ | ✅ | Base-85 decoding |
 | ASCIIHexDecode | ❌ | ✅ | ✅ | Hexadecimal decoding |
@@ -395,7 +443,8 @@ The FREE version requires manual table creation using Cell() calls, similar to g
 - ✅ Stream decompression working (FlateDecode basic, LZWDecode, ASCII85Decode, ASCIIHexDecode)
 - ✅ Full integration with VNSPDFDocument via ImportPage() and UseTemplate()
 - ✅ Example 20 demonstrates 4-page PDF import with 2x2 miniature grid
-- ⚠️ **Most PDFs need premium Zlib** - PDFs with FlateDecode+Predictors require premium module
+- ✅ PNG/TIFF predictors decoded in FREE; premium Zlib only for mobile, raw DEFLATE, or Windows without `ZLIB1.DLL`
+- ❌ Encrypted source PDFs: clear error (decryption planned)
 
 **Platform-Specific File Selection (Example 20):**
 - **Desktop**: Multi-location search for `pdf_examples/example12_custom_formats.pdf`
@@ -413,14 +462,13 @@ The FREE version requires manual table creation using Cell() calls, similar to g
   - Temporary file path passed to GenerateExample20()
 - **Result Dictionary**: All platforms return `result.Value("pdf") = pdfBytes` for display
 
-**Why Premium Zlib is Often Required:**
-- Most modern PDFs use **FlateDecode with PNG Predictors** (Predictor 15) for images and large content streams
-- FREE version only supports basic FlateDecode (simple deflate without predictors)
-- Premium zlib module adds **PNG Predictor reversal** (Predictors 2, 10-15) needed for advanced compression
-- Without premium zlib: Can parse PDF structure but **cannot decompress predictor-encoded streams**
-- Example: `/Filter /FlateDecode /DecodeParms << /Predictor 15 /Colors 3 /Columns 1859 >>` requires premium
+**When Premium Zlib is Required for Import:**
+- **iOS and Android**: no system zlib can be called from a sandboxed mobile app, so every FlateDecode stream needs the pure Xojo inflater
+- **Raw DEFLATE streams** (no zlib header, produced by some generators): the system zlib rejects them; the premium module decodes them
+- **Windows without `ZLIB1.DLL`**: Windows ships no zlib; place `ZLIB1.DLL` next to the app (free) or use the premium module
+- PNG/TIFF predictor reversal (Predictors 2, 10-15) is part of the FREE decoder
 
-## 18. Error Handling
+## 19. Error Handling & Debugging
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
@@ -428,10 +476,17 @@ The FREE version requires manual table creation using Cell() calls, similar to g
 | Check error | Err() | Err() | ✅ | Returns true if error |
 | Get error | Error() | GetError() | ✅ | Different name |
 | Set error | SetError() | SetError() | ✅ | First error wins |
-| Set error formatted | SetErrorf() | | ❌ | Not implemented |
+| Set error formatted | SetErrorf() | SetErrorf() | ✅ | Printf-style formatting (%s, %d, %f) |
 | Clear error | ClearError() | ClearError() | ✅ | Resets error state |
+| Bounds checking | N/A | CheckBounds() | ✅ | Warns when drawing outside page bounds |
+| Raise on out-of-bounds | N/A | gkRaiseExceptionOnOutOfBounds | ✅ | Optional exception on bounds violation |
 
-## 19. Utilities
+**Bounds Checking:**
+- `CheckBounds()` is called internally by drawing methods (Rect, Line, Ellipse, Image, Text, Cell, MultiCell, AddTextAnnotation, AddAttachmentAnnotation)
+- Logs warning to console via `System.DebugLog` when content is placed outside page dimensions
+- Set `VNSPDFModule.gkRaiseExceptionOnOutOfBounds = True` to raise `RuntimeException` instead of just logging
+
+## 20. Utilities
 
 | Feature | go-fpdf Method | VNS PDF FREE | Status | Notes |
 |---------|---------------|--------------|--------|-------|
@@ -443,6 +498,90 @@ The FREE version requires manual table creation using Cell() calls, similar to g
 | JSON serialization | N/A | ToJSON() | ✅ | Serialize document state |
 | JSON deserialization | N/A | FromJSON() | ✅ | Deserialize document state |
 
+## 21. PDFGraphics Compatibility Wrapper (NEW in v1.0.0)
+
+✅ **VNSPDFGraphicsUTF - Full Xojo PDFGraphics API Compatibility**
+
+The VNSPDFGraphicsUTF wrapper class provides a drop-in replacement for Xojo's native PDFGraphics class, allowing the same code to work with both VNS PDF and Xojo's built-in PDF generation.
+
+| Feature | Xojo PDFGraphics | VNSPDFGraphicsUTF | Status | Notes |
+|---------|-----------------|-------------------|--------|-------|
+| **Properties** | | | | |
+| Bold, Italic, Underline | ✅ | ✅ | ✅ | Font styling |
+| FontName, FontSize | ✅ | ✅ | ✅ | Font properties |
+| DrawingColor | ✅ | ✅ | ✅ | Sets draw, fill, text color |
+| PenSize | ✅ | ✅ | ✅ | Line width |
+| LineCap, LineJoin | ✅ | ✅ | ✅ | Uses Xojo's Graphics.LineCapTypes/LineJoinTypes enums! |
+| LineDash | ✅ | ✅ | ✅ | Identical syntax: `= Array(...)` or `= Nil` |
+| CharacterSpacing | ✅ | ✅ | ✅ | Letter spacing |
+| Width, Height | ✅ | ✅ | ✅ | Page dimensions (read-only) |
+| **Drawing Methods** | | | | |
+| DrawLine | ✅ | ✅ | ✅ | Line drawing |
+| DrawRectangle, FillRectangle | ✅ | ✅ | ✅ | Rectangle drawing |
+| DrawOval, FillOval | ✅ | ✅ | ✅ | Ellipse drawing |
+| DrawRoundRectangle, FillRoundRectangle | ✅ | ✅ | ✅ | Rounded rectangles |
+| DrawPolygon, FillPolygon | ✅ | ✅ | ✅ | Polygon drawing |
+| DrawPath, FillPath | ✅ | ✅ | ✅ | GraphicsPath support with autoClose parameter |
+| DrawPicture | ✅ | ✅ | ✅ | Image rendering |
+| **Text Methods** | | | | |
+| DrawText | ✅ | ✅ | ✅ | With rotation support |
+| DrawTextBlock | ✅ | ✅ | ✅ | Word-wrap, alignment, CJK support |
+| TextWidth, TextHeight | ✅ | ✅ | ✅ | Text measurement |
+| TextBlockSize | ✅ | ✅ | ✅ | Block size calculation |
+| **Object2D Support** | | | | |
+| DrawObject (RectShape) | ✅ | ✅ | ✅ | With rotation via Transform |
+| DrawObject (OvalShape) | ✅ | ✅ | ✅ | Correct bounding box |
+| DrawObject (RoundRectShape) | ✅ | ✅ | ✅ | Correct corner radius |
+| DrawObject (ArcShape) | ✅ | ✅ | ✅ | Arc rendering |
+| DrawObject (CurveShape) | ✅ | ✅ | ✅ | Bezier curves |
+| DrawObject (FigureShape) | ✅ | ✅ | ✅ | Complex paths |
+| DrawObject (TextShape) | ✅ | ✅ | ✅ | With HorizontalAlignment |
+| DrawObject (PixmapShape) | ✅ | ✅ | ✅ | Image shapes |
+| DrawObject (Group2D) | ✅ | ✅ | ✅ | With rotation support |
+| **Transformations** | | | | |
+| Rotate | ✅ | ✅ | ✅ | Both angle and angle+point variants |
+| Translate | ✅ | ✅ | ✅ | Position offset |
+| Scale | ✅ | ✅ | ✅ | Size scaling |
+| Transform | ✅ | ✅ | ✅ | Raw matrix |
+| **State Management** | | | | |
+| SaveState, RestoreState | ✅ | ✅ | ✅ | Graphics state stack |
+| ResetState | ✅ | ✅ | ✅ | Reset to defaults |
+| **Clipping** | | | | |
+| Clip, ClipToRectangle | ✅ | ✅ | ✅ | Rectangular clipping |
+| ClipToPath | ✅ | ✅ | ✅ | Path-based clipping |
+| ClipEnd | ✅ | ✅ | ✅ | End clipping region |
+| **Navigation** | | | | |
+| NextPage | ✅ | ✅ | ✅ | Add page with optional dimensions |
+| **Extensions (VNS Only)** | | | | |
+| AddAnnotation | N/A | ✅ | ✅ | Text annotations (sticky notes) |
+| AddEmbeddedFile | N/A | ✅ | ✅ | Document-level attachments |
+| AddAttachmentAnnotation | N/A | ✅ | ✅ | Page annotation attachments |
+| Full UTF-8/Unicode | Limited | ✅ | ✅ | Arabic, Chinese, Japanese, Korean |
+
+**Implementation Notes:**
+- RectShape rotation uses Xojo's Transform approach (transform to position, draw at origin)
+- Group2D children have pre-calculated rotated positions - no group-wide transform needed
+- TextShape respects HorizontalAlignment (Left/Center/Right)
+- OvalShape X,Y interpreted as top-left of bounding box
+- RoundRectShape corner radius divided by 4 to match Xojo
+- BorderWidth scaled by 0.5 to match Xojo PDFGraphics rendering
+
+**Usage Example:**
+```xojo
+// Same code works with both Xojo PDFGraphics and VNSPDFGraphicsUTF
+Dim g As Graphics  // or VNSPDFGraphicsUTF
+g.DrawingColor = Color.Blue
+g.FillRectangle(100, 100, 200, 50)
+g.DrawText("Hello World", 100, 200)
+g.DrawObject(myRectShape, 0, 0)
+
+// Line styling - IDENTICAL syntax!
+g.LineCap = Graphics.LineCapTypes.Round
+g.LineJoin = Graphics.LineJoinTypes.Bevel
+g.LineDash = Array(5.0, 5.0)  // Dashed line
+g.LineDash = Nil              // Reset to solid
+```
+
 ---
 
 ## Summary Statistics (FREE VERSION)
@@ -451,31 +590,33 @@ The FREE version requires manual table creation using Cell() calls, similar to g
 
 | Category | Total Features | Implemented | Partial | Premium Only | Not Implemented | % Complete |
 |----------|---------------|-------------|---------|--------------|-----------------|-----------|
-| Document Setup | 15 | 13 | 1 | 1 | 0 | 86.7% |
-| Page Management | 10 | 10 | 0 | 0 | 0 | 100.0% |
-| Margins & Position | 15 | 14 | 1 | 0 | 0 | 93.3% |
-| Fonts & Text | 28 | 24 | 0 | 0 | 4 | 85.7% |
-| Text Output | 11 | 10 | 0 | 0 | 1 | 90.9% |
-| Graphics Primitives | 13 | 12 | 0 | 0 | 1 | 92.3% |
+| Document Setup | 15 | 14 | 0 | 1 | 0 | 93.3% |
+| Page Management | 13 | 13 | 0 | 0 | 0 | 100.0% |
+| Margins & Position | 15 | 15 | 0 | 0 | 0 | 100.0% |
+| Fonts & Text | 29 | 25 | 0 | 0 | 4 | 86.2% |
+| Text Output | 11 | 11 | 0 | 0 | 0 | 100.0% |
+| Graphics Primitives | 13 | 13 | 0 | 0 | 0 | 100.0% |
 | Colors & Graphics | 14 | 14 | 0 | 0 | 0 | 100.0% |
-| Gradients | 2 | 2 | 0 | 0 | 0 | 100.0% |
+| Transformations | 18 | 18 | 0 | 0 | 0 | 100.0% |
+| Gradients | 4 | 4 | 0 | 0 | 0 | 100.0% |
 | Clipping | 8 | 8 | 0 | 0 | 0 | 100.0% |
-| Images | 9 | 5 | 0 | 0 | 4 | 55.6% |
+| Images | 9 | 9 | 0 | 0 | 0 | 100.0% |
 | Links & Bookmarks | 6 | 6 | 0 | 0 | 0 | 100.0% |
-| Headers & Footers | 9 | 9 | 0 | 0 | 0 | 100.0% |
+| Headers & Footers | 11 | 11 | 0 | 0 | 0 | 100.0% |
 | Templates | 4 | 0 | 0 | 0 | 4 | 0.0% |
-| Output & Display | 5 | 1 | 1 | 0 | 3 | 40.0% |
+| Output & Display | 5 | 3 | 1 | 0 | 1 | 80.0% |
 | Security | 40 | 16 | 0 | 24 | 0 | 40.0% |
 | Table Generation | 6 | 0 | 0 | 6 | 0 | 0.0% |
-| PDF Import | 19 | 18 | 0 | 1 | 0 | 94.7% |
+| PDF Import | 24 | 22 | 0 | 1 | 1 | 91.7% |
 | Error Handling | 6 | 5 | 0 | 0 | 1 | 83.3% |
 | Utilities | 7 | 7 | 0 | 0 | 0 | 100.0% |
-| **TOTAL** | **227** | **174** | **3** | **32** | **19** | **76.7%** |
+| PDFGraphics Wrapper | 41 | 41 | 0 | 0 | 0 | 100.0% |
+| **TOTAL** | **299** | **255** | **1** | **32** | **12** | **85.3%** |
 
 ### Completion Summary (Excluding Premium Features)
-- **Fully Implemented:** 89.2% (174/195 non-premium features)
-- **Partially Implemented:** 1.5% (3/195)
-- **Not Implemented:** 9.2% (18/195)
+- **Fully Implemented:** 95.5% (255/267 non-premium features)
+- **Partially Implemented:** 0.4% (1/267)
+- **Not Implemented:** 4.5% (12/267)
 - **Premium Only:** 32 features require premium modules
 
 ---
@@ -485,14 +626,15 @@ The FREE version requires manual table creation using Cell() calls, similar to g
 - 🔒 **Complete Encryption Suite** - RC4-128, AES-128, AES-256 (Revisions 2-6, Algorithm 2.B) - **ALL FULLY WORKING**
 - 🔒 **PDF/A Output Intents** - ICC color profiles for archival compliance - **MINIMAL (5-10% complete, no validation)**
 - 🔒 **Table Generation** - High-level automatic table API (premium Table module) - **FULLY WORKING**
-- 🔒 **iOS Compression** - Pure Xojo zlib implementation (premium Zlib module - **FULLY WORKING**)
-- 🔒 **E-Invoice Generation** - Factur-X/ZUGFeRD hybrid PDF/XML invoices, EN 16931 compliance - **PLANNED**
+- 🔒 **iOS / Android Compression** - Pure Xojo zlib implementation (premium Zlib module - **FULLY WORKING**)
+- 🔒 **E-Invoice Generation** - Factur-X/ZUGFeRD hybrid PDF/XML invoices, EN 16931 compliance, 3-level validation, barcodes - **FULLY WORKING**
+- 🔒 **HTML / Markdown Import** - `LoadHTML()` / `LoadMarkdown()` with CSS engine - **FULLY WORKING**
 
-**💡 Each premium module can be purchased separately** - You only pay for the features you need! Buy individual modules (Encryption, Table, Zlib, PDF/A, E-Invoice) based on your specific requirements.
+**💡 Each premium module can be purchased separately** - You only pay for the features you need! Buy individual modules (Encryption, Table, Zlib, PDF/A, E-Invoice, HTML/Markdown) based on your specific requirements.
 
 See `FEATURE_COMPARISON_PREMIUM.md` for complete premium feature list.
 
 ---
 
-*Last Updated: 2025-11-28*
-*VNS PDF FREE Version 1.0.0*
+*Last Updated: 2026-10-02*
+*VNS PDF FREE Version 1.4 - Desktop | Web | iOS | Console | Android*

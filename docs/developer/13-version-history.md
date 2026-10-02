@@ -4,6 +4,9 @@
 
 **Tested with Xojo 2026r2.1 API2** (earlier API2 versions should work)
 
+- **Android support**: the free core library compiles and runs on Android (tested on the emulator, API 36): text and UTF-8 TrueType fonts, CJK, Arabic/Hebrew, color emoji (Noto Color Emoji), shapes, images, tables, links, RC4 encryption, PDF import, barcodes. New demo app `Xojo_fpdf_android` with the same examples as iOS (PDFs opened with the "Open with" sheet). Kotlin transpiler quirks are handled inside the library; bundled fonts ship with a Copy Files step to Resources placed before Build. Premium modules not yet tested on Android
+- Encrypted source PDFs: import stops with a clear "Encrypted PDF…" message instead of a zlib error (decryption on import planned: RC4 free, AES premium)
+- iOS free project: `RenderEmojiToImage` compile error fixed; emoji in colored blocks now blend in on iOS
 - Table border customization: `mBorderColor` (default black), `mBorderWidth` (default 0.2mm), per-column `mBorderStyle`, per-row `SetRowBorder()`, per-cell `SetCellBorder()` with cascade priority: cell > row > column > table
 - Cell vertical alignment (v1.3 Geoff Bridges): `eVerticalAlignment.Top/Middle/Bottom/Baseline` in Cell() method
 - Border.IsNumeric fix (v1.3): Cell/MultiCell border parameter accepts both numeric and string values
