@@ -977,6 +977,7 @@ Protected Class VNSPDFDocument
 		  End If
 		  
 		  // Width of 0 means extend to right margin
+		  Var wWasAuto As Boolean = (w = 0)
 		  If w = 0 Then
 		    w = mPageWidth - mRightMargin - mCurrentX
 		  End If
@@ -1090,8 +1091,13 @@ Protected Class VNSPDFDocument
 		    Dim availableWidth As Double = w - (2 * mCellMargin)
 		    Dim strWidth As Double = GetStringWidth(txt)
 		    Dim displayText As String = txt
-		    
-		    If strWidth > availableWidth Then
+
+		    // Only truncate fixed-width cells (e.g. table cells). Auto-width
+		    // cells (caller passed w=0 -> "extend to right margin") must never
+		    // truncate: the justify renderer calls Cell(0,...) after positioning
+		    // X itself, and when X sits near the right margin availableWidth
+		    // collapses to <= 0, which would replace every word with "...".
+		    If strWidth > availableWidth And Not wWasAuto Then
 		      // Text is too wide - truncate with ellipsis
 		      Dim ellipsis As String = "..."
 		      Dim ellipsisWidth As Double = GetStringWidth(ellipsis)
@@ -1116,9 +1122,9 @@ Protected Class VNSPDFDocument
 		    
 		    // Check if current font is UTF8
 		    Dim isUTF8 As Boolean = False
-		    Dim ttf As VNSPDFTrueTypeFont = Nil
+		    Dim ttf As VNSPDFTrueTypeFont
 		    Dim encodedText As String = ""
-		    Dim glyphMapping As Dictionary = Nil  // Declare at outer scope
+		    Dim glyphMapping As Dictionary  // Declare at outer scope
 		    
 		    If mFonts.HasKey(mCurrentFont) Then
 		      Dim fontInfo As Dictionary = mFonts.Value(mCurrentFont)
@@ -1892,7 +1898,9 @@ Protected Class VNSPDFDocument
 		    End If
 		  Next
 		  
-		  Return mb.StringValue(0, pos)
+		  // Mark the result as UTF-8: without an encoding, Android treats each byte as one
+		  // Latin-1 character (Hebrew/Arabic came out as "×©×…" in the PDF)
+		  Return mb.StringValue(0, pos, Encodings.UTF8)
 		End Function
 	#tag EndMethod
 
@@ -3588,7 +3596,7 @@ Protected Class VNSPDFDocument
 		      Next
 		    End If
 
-		    Dim glyphMapping As Dictionary = Nil
+		    Dim glyphMapping As Dictionary
 		    If fontInfo.HasKey("glyphMapping") Then
 		      glyphMapping = fontInfo.Value("glyphMapping")
 		    End If
@@ -4551,21 +4559,21 @@ Protected Class VNSPDFDocument
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F206765742074686520666F726D206669656C647320617272C61792E
+	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F206765742074686520666F726D206669656C64732061727261792E
 		Function InternalGetFormFields() As Dictionary()
 		  // Internal method to get form fields array for PDF generation
 		  Return mFormFields
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F20676574C70616765206865696768742C696E2070C6F696E74732E
+	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F206765742074686520706167652068656967687420696E20706F696E74732E
 		Function InternalGetPageHeightPt() As Double
 		  // Internal method to get page height in points for coordinate conversion
 		  Return mPageHeightPt
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F20676574C7061676520C6F626A656374207265666572656E63652E
+	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F20676574207468652070616765206F626A656374207265666572656E63652E
 		Function InternalGetPageObjectRef(pageNum As Integer) As String
 		  // Internal method to get page object reference for form field annotations
 		  // Returns reference like "3 0 R" for the specified page number
@@ -4575,7 +4583,7 @@ Protected Class VNSPDFDocument
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F20C637265617465206E6577206F626A65637420616E642072657475726E2069747320C6E756D6265722E
+	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F206372656174652061206E6577206F626A65637420616E642072657475726E20697473206E756D6265722E
 		Function InternalNewObj() As Integer
 		  // Internal method to create a new PDF object and return its number
 		  // Used by premium modules to generate form field objects
@@ -4584,7 +4592,7 @@ Protected Class VNSPDFDocument
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F20C77726974652C746F205044462062756666C65722E
+	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F20777269746520746F2074686520504446206275666665722E
 		Sub InternalPut(s As String)
 		  // Internal method to write a line to the PDF buffer
 		  // Used by premium modules for PDF generation
@@ -4592,7 +4600,7 @@ Protected Class VNSPDFDocument
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 526573657276652061C6E206F626A656374206E756D62C65722077697468C6F757420777269746696E67207468C6520C6F626A656374C2E0A
+	#tag Method, Flags = &h0, Description = 5265736572766520616E206F626A656374206E756D62657220776974686F75742077726974696E6720746865206F626A6563742E
 		Function InternalReserveObjNum() As Integer
 		  // Reserve an object number without writing the object header
 		  // Used by premium modules when they need to reference an object before creating it
@@ -4603,7 +4611,7 @@ Protected Class VNSPDFDocument
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 577269746520C6120506466206F626A65637420C77697468206120666F726365C64206F626A656374206E756D6265722E
+	#tag Method, Flags = &h0, Description = 5772697465206120504446206F626A6563742077697468206120666F72636564206F626A656374206E756D6265722E
 		Sub InternalNewObjAt(objNum As Integer)
 		  // Create a new PDF object at a specific (reserved) object number
 		  // Used by premium modules after reserving an object number
@@ -4611,7 +4619,7 @@ Protected Class VNSPDFDocument
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F2077726974C6520726177206461746120746F2050444620627566666572C2E
+	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F20777269746520726177206461746120746F2074686520504446206275666665722E
 		Sub InternalPutRaw(s As String)
 		  // Internal method to write raw data to PDF buffer (no newline)
 		  // Used by premium modules for stream content
@@ -4619,21 +4627,21 @@ Protected Class VNSPDFDocument
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F2073657420416372C6F466F726D206F626A656374206E756D6265722E
+	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F2073657420746865204163726F466F726D206F626A656374206E756D6265722E
 		Sub InternalSetAcroFormObjectNumber(objNum As Integer)
 		  // Internal method to set the AcroForm object number for catalog reference
 		  mAcroFormObjectNumber = objNum
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F206368656B6B2069662C666F726D73206578697374C2E
+	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F20636865636B20696620666F726D732065786973742E
 		Function InternalHasAcroForm() As Boolean
 		  // Internal method to check if document has form fields
 		  Return mHasAcroForm
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F206765C74C416372C6F466F726D C6F626A656374C206E756D6265722E
+	#tag Method, Flags = &h0, Description = 496E7465726E616C206D6574686F6420746F2067657420746865204163726F466F726D206F626A656374206E756D6265722E
 		Function InternalGetAcroFormObjectNumber() As Integer
 		  // Internal method to get AcroForm object number for catalog
 		  Return mAcroFormObjectNumber
@@ -5669,7 +5677,7 @@ Protected Class VNSPDFDocument
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h0, Description = 4472617773206120706F6C79676F6E2077697468207374726169676874206C696E6573206265747765656E20706F696E74732E0A
+	#tag Method, Flags = &h0, CompatibilityFlags = (TargetConsole and (Target32Bit or Target64Bit)) or  (TargetWeb and (Target32Bit or Target64Bit)) or  (TargetDesktop and (Target32Bit or Target64Bit)) or  (TargetiOS and (Target32Bit or Target64Bit)), Description = 4472617773206120706F6C79676F6E2077697468207374726169676874206C696E6573206265747765656E20706F696E74732E0A
 		Sub Polygon(points() As Pair, style As String = "D")
 		  // Draws a closed polygon with straight lines connecting the specified points
 		  // points: array of Pair objects representing (x, y) coordinates
@@ -5834,19 +5842,19 @@ Protected Class VNSPDFDocument
 		    Call Put("<</Title " + TextString(o.Value("text")))
 		    Call Put("/Parent " + Str(nStart + o.Value("parent")) + " 0 R")
 		    
-		    If o.HasKey("prev") And o.Value("prev") <> -1 Then
+		    If o.HasKey("prev") And o.Value("prev").IntegerValue <> -1 Then
 		      Call Put("/Prev " + Str(nStart + o.Value("prev")) + " 0 R")
 		    End If
 		    
-		    If o.HasKey("next") And o.Value("next") <> -1 Then
+		    If o.HasKey("next") And o.Value("next").IntegerValue <> -1 Then
 		      Call Put("/Next " + Str(nStart + o.Value("next")) + " 0 R")
 		    End If
 		    
-		    If o.HasKey("first") And o.Value("first") <> -1 Then
+		    If o.HasKey("first") And o.Value("first").IntegerValue <> -1 Then
 		      Call Put("/First " + Str(nStart + o.Value("first")) + " 0 R")
 		    End If
 		    
-		    If o.HasKey("last") And o.Value("last") <> -1 Then
+		    If o.HasKey("last") And o.Value("last").IntegerValue <> -1 Then
 		      Call Put("/Last " + Str(nStart + o.Value("last")) + " 0 R")
 		    End If
 		    
@@ -6375,7 +6383,30 @@ Protected Class VNSPDFDocument
 		  If mCreator <> "" Then
 		    Call Put("/Creator " + EncryptString(mCreator, infoObjNum))
 		  End If
-		  
+
+		  // Pending-signature placeholders (custom key for VNSPDFLateSignature)
+		  ' Serializes mPendingSignaturePlaceholders as base64-encoded JSON so the
+		  ' string is PDF-safe (no parens/backslashes/binary bytes). Late signing
+		  ' reads this key, decodes, and stamps actual signature images at the
+		  ' recorded mm coordinates.
+		  If mPendingSignaturePlaceholders.Count > 0 Then
+		    Var arr As New JSONItem("[]")
+		    For Each entry As Dictionary In mPendingSignaturePlaceholders
+		      Var item As New JSONItem
+		      item.Value("name") = entry.Value("name").StringValue
+		      item.Value("page") = entry.Value("page").IntegerValue
+		      item.Value("xMM") = entry.Value("xMM").DoubleValue
+		      item.Value("yMM") = entry.Value("yMM").DoubleValue
+		      item.Value("wMM") = entry.Value("wMM").DoubleValue
+		      item.Value("hMM") = entry.Value("hMM").DoubleValue
+		      item.Value("opacity") = entry.Value("opacity").DoubleValue
+		      arr.Add(item)
+		    Next
+		    Var json As String = arr.ToString
+		    Var b64 As String = EncodeBase64(json, 0)
+		    Call Put("/VNSSignaturePlaceholders (" + b64 + ")")
+		  End If
+
 		  // Creation date (current date/time in PDF format)
 		  Dim now As DateTime = DateTime.Now
 		  Dim dateStr As String = "D:" + now.Year.ToString("0000") + _
@@ -7272,6 +7303,10 @@ Protected Class VNSPDFDocument
 		          End If
 		        End If
 		        
+		        // GID 0 is .notdef (character missing from the font): it has no Unicode meaning,
+		        // and mapping it would let every missing character overwrite the others
+		        If glyphID = 0 Then Continue
+		        
 		        gidToUnicode.Value(Str(glyphID)) = unicode
 		      Next
 		      
@@ -7282,25 +7317,43 @@ Protected Class VNSPDFDocument
 		      Next
 		      sortedGIDs.Sort
 		      
-		      // Output bfchar mapping (GID → Unicode)
-		      toUnicode = toUnicode + Str(sortedGIDs.Count) + " beginbfchar" + EndOfLine.UNIX
-		      For Each gid As Integer In sortedGIDs
-		        Dim unicode As Integer = gidToUnicode.Value(Str(gid))
-		        
-		        // Format as 4-digit hex
-		        Dim gidHex As String = Hex(gid)
-		        While gidHex.Length < 4
-		          gidHex = "0" + gidHex
-		        Wend
-		        
-		        Dim unicodeHex As String = Hex(unicode)
-		        While unicodeHex.Length < 4
-		          unicodeHex = "0" + unicodeHex
-		        Wend
-		        
-		        toUnicode = toUnicode + "<" + gidHex + "> <" + unicodeHex + ">" + EndOfLine.UNIX
-		      Next
-		      toUnicode = toUnicode + "endbfchar" + EndOfLine.UNIX
+		      // Output bfchar mapping (GID → Unicode), at most 100 entries per block
+		      // (PDF 32000-1 §9.10.3; viewers may reject or crash on larger blocks)
+		      Const kMaxBfcharEntries = 100
+		      Dim blockStart As Integer = 0
+		      While blockStart <= sortedGIDs.LastIndex
+		        Dim blockEnd As Integer = blockStart + kMaxBfcharEntries - 1
+		        If blockEnd > sortedGIDs.LastIndex Then blockEnd = sortedGIDs.LastIndex
+		        toUnicode = toUnicode + Str(blockEnd - blockStart + 1) + " beginbfchar" + EndOfLine.UNIX
+		        For idx As Integer = blockStart To blockEnd
+		          Dim gid As Integer = sortedGIDs(idx)
+		          Dim unicode As Integer = gidToUnicode.Value(Str(gid))
+		          
+		          // Format as 4-digit hex
+		          Dim gidHex As String = Hex(gid)
+		          While gidHex.Length < 4
+		            gidHex = "0" + gidHex
+		          Wend
+		          
+		          // Destination is UTF-16BE: code points above U+FFFF (emoji, etc.) need a
+		          // surrogate pair. Writing them as 5-6 hex digits makes an odd-length,
+		          // invalid CMap string that crashes macOS Preview.
+		          Dim unicodeHex As String
+		          If unicode > &hFFFF Then
+		            Dim offset As Integer = unicode - &h10000
+		            unicodeHex = Hex(&hD800 + offset \ 1024) + Hex(&hDC00 + offset Mod 1024)
+		          Else
+		            unicodeHex = Hex(unicode)
+		            While unicodeHex.Length < 4
+		              unicodeHex = "0" + unicodeHex
+		            Wend
+		          End If
+		          
+		          toUnicode = toUnicode + "<" + gidHex + "> <" + unicodeHex + ">" + EndOfLine.UNIX
+		        Next
+		        toUnicode = toUnicode + "endbfchar" + EndOfLine.UNIX
+		        blockStart = blockEnd + 1
+		      Wend
 		    Else
 		      // No used characters - use identity mapping as fallback
 		      toUnicode = toUnicode + "1 beginbfrange" + EndOfLine.UNIX
@@ -8456,6 +8509,115 @@ Protected Class VNSPDFDocument
 		End Sub
 	#tag EndMethod
 
+	#tag Method, Flags = &h0
+		Sub AddPendingSignaturePlaceholder(name As String, xMM As Double, yMM As Double, wMM As Double, hMM As Double, opacity As Double = 1.0)
+		  ' Record a signature-field placeholder that was rendered without an
+		  ' image (e.g. document being sent out for signing). The list is
+		  ' serialized into the PDF's /Info dictionary under the custom key
+		  ' /VNSSignaturePlaceholders so VNSPDFLateSignature can later reopen
+		  ' the saved PDF, find the placeholders and stamp the actual signature
+		  ' images at the recorded mm coordinates without needing the source
+		  ' HTML.
+		  '
+		  ' Called by VNSPDFHTMLRenderer when it draws a dashed-rectangle
+		  ' placeholder PNG carrying the data-sig-pending attribute.
+		  '
+		  ' name: field name (matches the data-field-name in the editor HTML).
+		  ' xMM/yMM: top-left corner in mm from the page origin.
+		  ' wMM/hMM: rectangle size in mm.
+		  ' opacity: 0..1 — opacity to apply when stamping the actual signature.
+
+		  If name = "" Then Return
+
+		  Var entry As New Dictionary
+		  entry.Value("name") = name
+		  entry.Value("page") = mPage
+		  entry.Value("xMM") = xMM
+		  entry.Value("yMM") = yMM
+		  entry.Value("wMM") = wMM
+		  entry.Value("hMM") = hMM
+		  entry.Value("opacity") = opacity
+		  mPendingSignaturePlaceholders.Add(entry)
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function GetPendingSignaturePlaceholders() As Dictionary()
+		  ' Returns a copy of the pending-signature-placeholder list recorded so
+		  ' far via AddPendingSignaturePlaceholder. Each entry has keys:
+		  ' name, page, xMM, yMM, wMM, hMM, opacity.
+
+		  Var result() As Dictionary
+		  For Each entry As Dictionary In mPendingSignaturePlaceholders
+		    result.Add(entry)
+		  Next
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub TrimTrailingBlankPage()
+		  ' If the current (last-added) page contains only state-setup commands
+		  ' (font selection, color, line width, etc.) and no actual drawing
+		  ' operators, discard it and restore the previous page as the active
+		  ' page. Used by the HTML renderer to suppress a phantom trailing
+		  ' page when end-of-document predictive page breaks fire just past
+		  ' the bottom margin but no further content is drawn.
+		  '
+		  ' Detection: scan mBuffer for PDF text/path/XObject operators (BT,
+		  ' Do, re, m, l, c, h, S, f, F, B, b, Tj, TJ). If none are present,
+		  ' the page contains only state commands and is treated as blank.
+		  '
+		  ' Caveat: when a Footer callback is set, the previous page's saved
+		  ' buffer already contains the Footer's output (appended by AddPage
+		  ' when it ended that page), and CloseDocument will call Footer
+		  ' again for the restored "last" page — emitting a duplicate. Skip
+		  ' the trim in that case; the trailing blank page is the lesser
+		  ' evil there.
+
+		  If mPage <= 1 Then Return
+		  If mHasFooterFunc Or mHasFooterFuncLpi Then Return
+
+		  Var buf As String = mBuffer
+
+		  ' Any of these operators = real drawing → keep the page.
+		  If buf.IndexOf("BT" + Chr(10)) >= 0 Then Return  ' begin text
+		  If buf.IndexOf("BT" + Chr(13)) >= 0 Then Return
+		  If buf.IndexOf(" Do" + Chr(10)) >= 0 Then Return  ' XObject use
+		  If buf.IndexOf(" Do" + Chr(13)) >= 0 Then Return
+		  If buf.IndexOf(" re" + Chr(10)) >= 0 Then Return  ' rectangle
+		  If buf.IndexOf(" re" + Chr(13)) >= 0 Then Return
+		  If buf.IndexOf(" m" + Chr(10)) >= 0 Then Return   ' moveto
+		  If buf.IndexOf(" m" + Chr(13)) >= 0 Then Return
+		  If buf.IndexOf(" l" + Chr(10)) >= 0 Then Return   ' lineto
+		  If buf.IndexOf(" l" + Chr(13)) >= 0 Then Return
+		  If buf.IndexOf(" c" + Chr(10)) >= 0 Then Return   ' cubic Bezier
+		  If buf.IndexOf(" c" + Chr(13)) >= 0 Then Return
+		  If buf.IndexOf(" h" + Chr(10)) >= 0 Then Return   ' closepath
+		  If buf.IndexOf(" S" + Chr(10)) >= 0 Then Return   ' stroke
+		  If buf.IndexOf(" f" + Chr(10)) >= 0 Then Return   ' fill
+		  If buf.IndexOf(" F" + Chr(10)) >= 0 Then Return   ' fill (alt)
+		  If buf.IndexOf(" B" + Chr(10)) >= 0 Then Return   ' fill+stroke
+		  If buf.IndexOf(" b" + Chr(10)) >= 0 Then Return   ' close+fill+stroke
+		  If buf.IndexOf("Tj") >= 0 Then Return             ' show text
+		  If buf.IndexOf("TJ") >= 0 Then Return             ' show text w/ positioning
+
+		  ' No drawing on the current page — drop it.
+		  Var prevKey As String = Str(mPage - 1)
+		  If mPages.HasKey(prevKey) Then
+		    mBuffer = mPages.Value(prevKey)
+		    mPages.Remove(prevKey)
+		  Else
+		    mBuffer = ""
+		  End If
+
+		  Var curKey As String = Str(mPage)
+		  If mPageSizes.HasKey(curKey) Then mPageSizes.Remove(curKey)
+
+		  mPage = mPage - 1
+		End Sub
+	#tag EndMethod
+
 	#tag Method, Flags = &h0, Description = 536574732074686520646F63756D656E7420617574686F722E
 		Sub SetAuthor(author As String)
 		  // Set document author (will be UTF-16BE encoded if contains non-ASCII)
@@ -9422,7 +9584,13 @@ Protected Class VNSPDFDocument
 		  
 		  // Open the PDF file
 		  If Not mSourceReader.OpenFile(path) Then
-		    Call SetError("Failed to open PDF file: " + path)
+		    // Include the reader's reason (e.g. encrypted source PDF), not just the path
+		    Dim readerError As String = mSourceReader.GetError()
+		    If readerError <> "" Then
+		      Call SetError("Failed to open PDF file: " + path + " - " + readerError)
+		    Else
+		      Call SetError("Failed to open PDF file: " + path)
+		    End If
 		    mSourceReader = Nil
 		    Return 0
 		  End If
@@ -9697,29 +9865,20 @@ Protected Class VNSPDFDocument
 		  // This handles basic Arabic joining behavior for proper rendering
 		  // Returns: Shaped text with Arabic presentation forms + reversed RTL text
 		  
-		  // Arabic Unicode ranges
-		  Const kArabicStart = &h0600
-		  Const kArabicEnd = &h06FF
-		  Const kArabicPresentationFormsAStart = &hFB50
-		  Const kArabicPresentationFormsAEnd = &hFDFF
-		  Const kArabicPresentationFormsBStart = &hFE70
-		  Const kArabicPresentationFormsBEnd = &hFEFF
-
-		  // Check if text contains Arabic characters (base or presentation forms)
+		  // Check if text contains RTL characters (Arabic or Hebrew, base or presentation forms).
+		  // Hebrew needs no shaping but must still be reversed for LTR PDF output; skipping it
+		  // here printed Hebrew words backwards (e.g. the letters of shalom in logical order).
 		  Dim hasArabic As Boolean = False
 		  Dim codePoints() As Integer = UTF8ToCodePoints(txt)
 
 		  For i As Integer = 0 To codePoints.LastIndex
-		    Dim cp As Integer = codePoints(i)
-		    If (cp >= kArabicStart And cp <= kArabicEnd) Or _
-		      (cp >= kArabicPresentationFormsAStart And cp <= kArabicPresentationFormsAEnd) Or _
-		      (cp >= kArabicPresentationFormsBStart And cp <= kArabicPresentationFormsBEnd) Then
+		    If IsArabicCodePoint(codePoints(i)) Then
 		      hasArabic = True
 		      Exit For i
 		    End If
 		  Next
 		  
-		  // If no Arabic, return original text
+		  // If no RTL text, return original text
 		  If Not hasArabic Then
 		    Return txt
 		  End If
@@ -9812,10 +9971,33 @@ Protected Class VNSPDFDocument
 		        Wend
 		      End If
 
-		      // Reverse this entire Arabic run and mirror brackets
-		      For j As Integer = runEnd - 1 DownTo runStart
-		        reversed.Add(MirrorBracket(shaped(j)))
-		      Next
+		      // Reverse this entire Arabic run and mirror brackets. Numbers stay left-to-right
+		      // inside RTL text: a digit sequence (with . , : / between digits) is copied in
+		      // logical order, so "2026" is not displayed as "6202".
+		      Dim j As Integer = runEnd - 1
+		      While j >= runStart
+		        If IsDigitCodePoint(shaped(j)) Then
+		          Dim numStart As Integer = j
+		          While numStart > runStart
+		            Dim prevCP As Integer = shaped(numStart - 1)
+		            If IsDigitCodePoint(prevCP) Then
+		              numStart = numStart - 1
+		            ElseIf (prevCP = &h2E Or prevCP = &h2C Or prevCP = &h3A Or prevCP = &h2F) _
+		              And numStart - 2 >= runStart And IsDigitCodePoint(shaped(numStart - 2)) Then
+		              numStart = numStart - 2
+		            Else
+		              Exit While
+		            End If
+		          Wend
+		          For k As Integer = numStart To j
+		            reversed.Add(shaped(k))
+		          Next
+		          j = numStart - 1
+		        Else
+		          reversed.Add(MirrorBracket(shaped(j)))
+		          j = j - 1
+		        End If
+		      Wend
 
 		      i = runEnd  // Continue after this run
 		    Else
@@ -9832,11 +10014,20 @@ Protected Class VNSPDFDocument
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h21, Description = 5472756520666F722041534349492C204172616269632D496E64696320616E6420457874656E646564204172616269632D496E646963206469676974732E
+		Private Function IsDigitCodePoint(cp As Integer) As Boolean
+		  Return (cp >= &h30 And cp <= &h39) Or (cp >= &h0660 And cp <= &h0669) Or (cp >= &h06F0 And cp <= &h06F9)
+		End Function
+	#tag EndMethod
+
 	#tag Method, Flags = &h21
 		Private Function IsArabicCodePoint(cp As Integer) As Boolean
-		  // Check if code point is in any Arabic range (base, extended, presentation forms)
-		  Return (cp >= &h0600 And cp <= &h06FF) Or _
-		    (cp >= &hFB50 And cp <= &hFDFF) Or _
+		  // Check if code point is RTL text that must be reversed for display:
+		  // Hebrew (U+0590-05FF), Arabic (U+0600-06FF), Hebrew and Arabic presentation
+		  // forms (U+FB1D-FDFF, Hebrew FB1D-FB4F directly precedes Arabic FB50) and
+		  // Arabic presentation forms B (U+FE70-FEFF)
+		  Return (cp >= &h0590 And cp <= &h06FF) Or _
+		    (cp >= &hFB1D And cp <= &hFDFF) Or _
 		    (cp >= &hFE70 And cp <= &hFEFF)
 		End Function
 	#tag EndMethod
@@ -10017,9 +10208,9 @@ Protected Class VNSPDFDocument
 
 		  // Check if current font is UTF8
 		  Dim isUTF8 As Boolean = False
-		  Dim ttf As VNSPDFTrueTypeFont = Nil
+		  Dim ttf As VNSPDFTrueTypeFont
 		  Dim encodedText As String = ""
-		  Dim glyphMapping As Dictionary = Nil
+		  Dim glyphMapping As Dictionary
 		  
 		  If mFonts.HasKey(mCurrentFont) Then
 		    Dim fontInfo As Dictionary = mFonts.Value(mCurrentFont)
@@ -10892,8 +11083,19 @@ Protected Class VNSPDFDocument
 
 		  // Split text into words
 		  Dim words() As String = txt.Split(" ")
+		  Dim lastWordIdx As Integer = words.LastIndex
 
-		  For Each word As String In words
+		  For wordIdx As Integer = 0 To lastWordIdx
+		    Dim word As String = words(wordIdx)
+		    // Separator space goes BETWEEN words, never after the last one.
+		    // Appending a space after the final word advanced the cursor past a
+		    // trailing space; when the renderer flushes one Write per inline
+		    // <span>, a word split across a span boundary (e.g. "pa</span>
+		    // <span>r") gained a spurious space ("pa r"). Inter-word spacing
+		    // comes from the spaces already in the text, so only emit the
+		    // separator before moving to the next word.
+		    Dim sfx As String = If(wordIdx < lastWordIdx, " ", "")
+
 		    // Check for newline token (GB 12/03/26)
 		    If word.IndexOf(Chr(10)) >= 0 Then
 		      // Newline: move to next line
@@ -10906,7 +11108,7 @@ Protected Class VNSPDFDocument
 		      Continue For
 		    End If
 
-		    Dim wordWidth As Double = GetStringWidth(word + " ")
+		    Dim wordWidth As Double = GetStringWidth(word + sfx)
 
 		    If mCurrentX + wordWidth > mPageWidth - mRightMargin Then
 		      // Word doesn't fit, go to next line
@@ -10940,16 +11142,16 @@ Protected Class VNSPDFDocument
 		            chunk = testChunk
 		          End If
 		        Next
-		        // Output the remaining chunk with trailing space (end of word)
+		        // Output the remaining chunk with the word's separator (end of word)
 		        If chunk <> "" Then
-		          OutputWordInWrite(h, chunk, " ")
+		          OutputWordInWrite(h, chunk, sfx)
 		        End If
 		        Continue For
 		      End If
 		    End If
 
-		    // Output the word with trailing space
-		    OutputWordInWrite(h, word, " ")
+		    // Output the word with its separator (space between words, none after the last)
+		    OutputWordInWrite(h, word, sfx)
 		  Next
 
 		End Sub
@@ -10966,9 +11168,9 @@ Protected Class VNSPDFDocument
 
 		  // Check if current font is UTF8
 		  Dim isUTF8 As Boolean = False
-		  Dim ttf As VNSPDFTrueTypeFont = Nil
+		  Dim ttf As VNSPDFTrueTypeFont
 		  Dim encodedText As String = ""
-		  Dim glyphMapping As Dictionary = Nil
+		  Dim glyphMapping As Dictionary
 
 		  If mFonts.HasKey(mCurrentFont) Then
 		    Dim fontInfo As Dictionary = mFonts.Value(mCurrentFont)
@@ -11355,7 +11557,7 @@ Protected Class VNSPDFDocument
 		Compressed As Boolean
 	#tag EndComputedProperty
 
-	#tag ComputedProperty, Flags = &h0, Description = 586F6A6F20636F6D7061746962696C6974793A2047657473206F7220736574732074686520637572 72656E742070616765206E756D6265722E0A
+	#tag ComputedProperty, Flags = &h0, Description = 586F6A6F20636F6D7061746962696C6974793A2047657473206F722073657473207468652063757272656E742070616765206E756D6265722E
 		#tag Getter
 			Get
 			  Return mPage
@@ -11434,7 +11636,7 @@ Protected Class VNSPDFDocument
 		PageWidth As Double
 	#tag EndComputedProperty
 
-	#tag ComputedProperty, Flags = &h0, Description = 586F6A6F20636F6D7061746962696C6974793A20476574732F7365747320776865746865722074686520637572726656E74207061676520697320696E206C616E647363617065206F7269656E746174696F6E2E0A
+	#tag ComputedProperty, Flags = &h0, Description = 586F6A6F20636F6D7061746962696C6974793A20476574732F736574732077686574686572207468652063757272656E74207061676520697320696E206C616E647363617065206F7269656E746174696F6E2E
 		#tag Getter
 			Get
 			  Return mPageWidthPt > mPageHeightPt
@@ -11798,6 +12000,16 @@ Protected Class VNSPDFDocument
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
+		' Tracks signature-field placeholders rendered with no provided image so
+		' the document can be re-opened later (e.g. by VNSPDFLateSignature) and
+		' the signature stamped at the exact recorded mm coordinate without
+		' needing the source HTML. Each entry: {name, page, xMM, yMM, wMM, hMM,
+		' opacity}. Serialized as base64 JSON to the /Info dict under the key
+		' /VNSSignaturePlaceholders when the list is non-empty (PutInfo).
+		Private mPendingSignaturePlaceholders() As Dictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
 		Private mInAcceptPageBreak As Boolean = False
 	#tag EndProperty
 
@@ -11925,7 +12137,7 @@ Protected Class VNSPDFDocument
 		Private mAttachmentObjectOffset As Integer
 	#tag EndProperty
 
-	#tag Property, Flags = &h21, Description = 41727261792073746F72696E6720666F726D206669656C6420646174612028446963C74696F6E617279206F626A6563747329206578747261637465642066726F6D205044C46436F6E74726F6C20696E7374616E6365732E
+	#tag Property, Flags = &h21, Description = 41727261792073746F72696E6720666F726D206669656C642064617461202844696374696F6E617279206F626A6563747329206578747261637465642066726F6D20504446436F6E74726F6C20696E7374616E6365732E
 		Private mFormFields() As Dictionary
 	#tag EndProperty
 
@@ -11933,7 +12145,7 @@ Protected Class VNSPDFDocument
 		Private mHasAcroForm As Boolean = False
 	#tag EndProperty
 
-	#tag Property, Flags = &h21, Description = 504446206F626A656374206E756D62657220666F7220746865204163726F466F726D206469637469C6F6E6172792E
+	#tag Property, Flags = &h21, Description = 504446206F626A656374206E756D62657220666F7220746865204163726F466F726D2064696374696F6E6172792E
 		Private mAcroFormObjectNumber As Integer
 	#tag EndProperty
 
@@ -11986,11 +12198,11 @@ Protected Class VNSPDFDocument
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
-		Private mSourceReader As VNSPDFReader = Nil
+		Private mSourceReader As VNSPDFReader
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
-		Private mSourceTempFile As FolderItem = Nil
+		Private mSourceTempFile As FolderItem
 	#tag EndProperty
 
 	#tag Property, Flags = &h21

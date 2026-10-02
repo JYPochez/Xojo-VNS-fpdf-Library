@@ -163,6 +163,43 @@ See [Chapter 16: Premium Modules](16-premium-modules.md) and Example 19 for deta
 
 All encryption revisions are production-ready. AES implemented via pure Xojo Rijndael algorithm (VNSAESCore), bypassing Xojo Crypto API limitations.
 
+### Import of Encrypted PDFs (planned after 1.4)
+
+**Status**: 📋 Planned. Since 1.4, importing an encrypted PDF stops with a clear error
+("Encrypted PDF: importing encrypted PDF files is not supported yet…") instead of a zlib error.
+
+Many older PDFs are encrypted only to set permissions, with an **empty user password**
+(e.g. Acrobat Distiller 3.0, RC4 40-bit), so viewers open them silently. Import will
+decrypt them the same way: empty user password first, then an optional password.
+
+**Free / Premium split** (mirrors writing: RC4 free, AES premium):
+
+| Source encryption | Code needed | Version |
+|---|---|---|
+| RC4 40-bit (R2), RC4 128-bit (R3, R4 `/V2`) | RC4 + MD5 key derivation, already in core `VNSPDFEncryption` | **Free** |
+| AES-128 (R4 `/AESV2`) | `VNSAESCore.DecryptCBC` | **Premium** (Encryption module) |
+| AES-256 (R5, R6) | AES + `SHA256`/`SHA384`/`SHA512`, `ComputeHashR6` | **Premium** (Encryption module) |
+
+A free user opening an AES-encrypted source gets "AES-encrypted PDF: import requires the
+premium Encryption module". Public-key encryption (`/Filter /Adobe.PubSec`) stays unsupported
+(clear error).
+
+**Work items:**
+- **D1** `VNSPDFReader`: read `/Encrypt` (`/V`, `/R`, `/Length`, `/O`, `/U`, `/P`, `/CF`
+  `/StmF` `/StrF`, `/OE` `/UE` `/Perms`, `/EncryptMetadata`) and the first `/ID`.
+- **D2** New `VNSPDFDecryptor`: authenticate the user password and derive the file key
+  (R2–R4: Algorithms 2, 6, 7 of ISO 32000; R5–R6: Algorithm 2.A).
+- **D3** `VNSPDFStream.GetDecodedData`: decrypt each stream **before** its filters, with the
+  object number/generation (container stream number for objects inside object streams);
+  skip the xref stream, and metadata when `/EncryptMetadata false`.
+- **D4** `VNSPDFString` / `VNSPDFHexString`: decrypt strings (annotations, form fields,
+  metadata); never the strings of the `/Encrypt` dictionary itself.
+- **D5** API: `SetSourceFile(path, password = "")` and password overloads of the import
+  constructors; clear errors for wrong password / unsupported revision / AES without premium.
+- **D6** Tests: RC4-40 (`5525.pdf` datasheet, Acrobat Distiller 3.0), RC4-128 and AES-128
+  files produced by the library itself, AES-256 R5/R6 (premium); unencrypted import must
+  stay unchanged on Desktop, Web, iOS, Console and Android.
+
 ## Lower Priority Features
 
 ### JSON-PDF Conversion

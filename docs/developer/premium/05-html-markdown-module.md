@@ -16,6 +16,7 @@ In the Xojo IDE, create a `Premium` folder inside the `PDF_Library` folder of yo
 - `VNSPDFHTMLRenderer.xojo_code`
 - `VNSPDFHTMLTableRenderer.xojo_code`
 - `VNSPDFHTMLToken.xojo_code`
+- `VNSPDFLateSignature.xojo_code` (optional — only needed for late-signing already-rendered PDFs; see "Pending Signatures & Late Signing")
 
 ### Step 2: Enable the Module Flag
 
@@ -39,10 +40,11 @@ The HTML & Markdown Import Module adds `LoadHTML()` and `LoadMarkdown()` methods
 
 ```
 PDF_Library/Premium/HTMLMarkdownModule/
-├── VNSPDFHTMLPremium.xojo_code        # Main module: LoadHTML(), LoadMarkdown(), HTML cleaning, Markdown parser
+├── VNSPDFHTMLPremium.xojo_code        # Main module: LoadHTML(), LoadMarkdown(), HTML cleaning, Markdown parser, merge/anchor/signature field utilities
 ├── VNSPDFHTMLRenderer.xojo_code       # HTML tokenizer + rendering engine
 ├── VNSPDFHTMLTableRenderer.xojo_code  # Table/image rendering + CSS parsing helpers
-└── VNSPDFHTMLToken.xojo_code          # Token class: type, tag, attributes, content
+├── VNSPDFHTMLToken.xojo_code          # Token class: type, tag, attributes, content
+└── VNSPDFLateSignature.xojo_code      # Late-signing: stamp signatures onto an already-rendered PDF from /Info-embedded placeholder coordinates
 ```
 
 ## Architecture
@@ -95,6 +97,37 @@ Function CollectAnchors(htmlText As String) As String()
 // Extracts unique anchor names from HTML content.
 // Finds <span class="anchor-field" data-anchor-name="..."> elements.
 // Returns array of anchor names in order of appearance.
+
+Function CollectSignatureFieldNames(htmlText As String) As String()
+// Returns unique signature field names from HTML content.
+// Finds <div class="signature-field" data-field-name="..."> elements.
+// Returns array of field names in order of appearance.
+
+Function CollectSignatureFields(htmlText As String) As Dictionary()
+// Extracts signature field definitions from HTML content (full data).
+// Finds <div class="signature-field" data-field-name="..."> elements.
+// Returns array of dictionaries with keys: "name", "left", "top", "width", "height", "opacity" (0-100).
+
+Function ApplySignatureImages(htmlText As String, dictSignatures As Dictionary, emptyLabel As String = "") As String
+// Replaces signature field placeholders in HTML with actual image tags.
+// dictSignatures keys are field names, values are Picture objects.
+// Images are rendered with configured opacity and mix-blend-mode: multiply.
+//
+// emptyLabel (optional, default ""): when non-empty, any signature field NOT
+// mapped to a Picture in dictSignatures (or whose value is Nil) is rendered as
+// a dashed light-blue rectangle PNG with emptyLabel centered inside (mirrors the
+// editor's pending signature-field visual). Pass a localized string such as
+// "Votre signature" for documents being sent out for signing. dictSignatures may
+// be Nil to render ALL fields as pending placeholders.
+//
+// Each pending placeholder img carries data-sig-pending="<fieldName>". When the
+// HTML is later rendered via LoadHTML, the renderer records the placeholder's
+// resolved mm coordinates into the PDF's /Info /VNSSignaturePlaceholders entry,
+// which VNSPDFLateSignature reads back to stamp the real signature later (see
+// "Pending Signatures & Late Signing" below).
+//
+// For PDF rendering: use VNSPDFDocument.SetAlpha(opacity, "Multiply") + ImageFromPicture()
+// to overlay signatures at mapped coordinates (px to mm: multiply by 25.4/96).
 ```
 
 **HTML Cleaning Pipeline** (`SmartCleanHTML`):
@@ -232,6 +265,52 @@ Class VNSPDFHTMLToken
 End Class
 ```
 
+### VNSPDFLateSignature (Protected Module)
+
+Stamps signatures onto an **already-rendered PDF** that was exported with pending
+placeholders — no source HTML required at signing time. Works off the
+`/VNSSignaturePlaceholders` entry that `LoadHTML` writes into the PDF's `/Info`
+dictionary (see "Pending Signatures & Late Signing"). Each overload comes in a
+FolderItem (on-disk) and a String (in-memory, e.g. a base64 DB column) variant:
+
+```xojo
+// File-based: reopen srcFile, stamp signatures, save to destFile.
+Function ApplySignatures(srcFile As FolderItem, destFile As FolderItem, dictSignatures As Dictionary) As Integer
+
+// In-memory: srcPdf is raw PDF bytes; destPdf is filled with the signed bytes.
+Function ApplySignatures(srcPdf As String, ByRef destPdf As String, dictSignatures As Dictionary) As Integer
+// dictSignatures: keys are field names (editor data-field-name), values are Picture objects.
+//   Fields not in the dict are left as their dashed placeholder.
+// Returns (public kResult* constants on the module):
+//    >0                          : number of signatures placed
+//    0  / kResultOpenError       : source PDF not openable/importable (or destFile Nil)
+//   -1  / kResultNoPlaceholders  : no pending placeholders in the source PDF
+//   -2  / kResultDictNil         : dictSignatures is Nil
+//   -3  / kResultNoMatchingKey   : dictSignatures has none of the placeholder field names
+
+// Read the embedded placeholder records without modifying the PDF.
+Function ReadPendingPlaceholders(pdfFile As FolderItem) As Dictionary()
+Function ReadPendingPlaceholders(srcPdf As String) As Dictionary()
+// Each record: { name, page, xMM, yMM, wMM, hMM, opacity }.
+
+// Just the unique pending-signature field names (data-field-name), in order.
+// Handy to build a dictSignatures keyed by the exact names before signing.
+Function PendingSignatureNames(pdfFile As FolderItem) As String()
+Function PendingSignatureNames(srcPdf As String) As String()
+```
+
+Internally it imports each source page as a template (`SetSourceFile` /
+`ImportPage` / `UseTemplate`), redraws it as the page background, then overlays
+each matching signature with `SetAlpha(opacity, "Multiply")` + `ImageFromPicture`
+at the recorded mm coordinates. The String `ApplySignatures` stages the source to
+a temp file (the importer opens by path) but captures the result via `Output()`
+with no result file on disk.
+
+Note: placeholder detection scans the raw bytes for the `/VNSSignaturePlaceholders ( … )`
+marker. FPDF emits `/Info` uncompressed, so this is reliable for VNSPDFDocument
+output, but **encrypted PDFs are not supported** (the `/Info` string would be
+ciphertext).
+
 ---
 
 ## Integration with Free Library
@@ -285,8 +364,16 @@ Public Const hasPremiumVNSHTMLModule As Boolean = False  // Set to True when mod
 | `<code>`, `<pre>` | Monospace font (Courier), gray background per line with multi-page support |
 | `<a href>` | Rendered text (link styling) |
 | `<sub>`, `<sup>` | Subscript/superscript via PDF text rise (`Ts` operator) |
+| `<div class="page-break">` | Forces a new PDF page (`doc.AddPage`) |
 
-**Emoji support**: Emoji characters in text are automatically detected and rendered as inline images, interleaved with surrounding text. Emoji underlines are preserved inside links.
+**Page break support**: Three detection methods are supported:
+1. **Class-based**: `<div class="page-break">` (Summernote editor page break button output)
+2. **CSS property**: `style="page-break-before: always"` on any block element
+3. **Modern CSS**: `style="break-before: page"` (CSS3 equivalent)
+
+**Emoji support**: Emoji characters in text are automatically detected and rendered as inline images, interleaved with surrounding text. Emoji underlines are preserved inside links. Detection works on grapheme clusters (`String.Characters`), so multi-code-point emoji — skin tones (👍🏽), ZWJ sequences (👩🏽‍💻, 👨‍👩‍👧‍👦), flags (🇫🇷) and keycaps (1️⃣) — are drawn as a single image, in body text, RTL text and table cells.
+
+**Hebrew / Arabic (RTL) text**: Paragraphs containing Hebrew or Arabic are laid out with a simplified Unicode bidi algorithm for a left-to-right paragraph (the HTML default for `<p>`): Hebrew/Arabic runs are reversed for display, numbers keep their left-to-right digit order, spaces/punctuation/emoji between two RTL words join the RTL run, and brackets inside an RTL run are mirrored. RTL text word-wraps at the right margin, sits on the same baseline as surrounding text, and text after an inline RTL word continues on the same line. `dir="rtl"` paragraphs are not yet supported (they are laid out as left-to-right paragraphs).
 
 ## Supported CSS Properties
 
@@ -315,6 +402,17 @@ Public Const hasPremiumVNSHTMLModule As Boolean = False  // Set to True when mod
 | `line-height` | Unitless multiplier, px, normal |
 | `display` | `none` to hide elements |
 | `text-transform` | `uppercase`, `lowercase`, `capitalize` |
+| `page-break-before` | `always` — forces a new PDF page before the block |
+| `break-before` | `page` — modern CSS equivalent of `page-break-before: always` |
+| `margin-bottom` | `0pt` on `<p>` adds natural 0.5× line-height gap (matches browser rendering); negative values move Y up (signature overlays) |
+
+### Table Cell CSS
+| Property | Support |
+|----------|---------|
+| `border-width` | 1-4 value shorthand (top, right, bottom, left) |
+| `border-color` | 1-4 value shorthand, supports `rgb()` notation |
+| `border-style` | 1-4 value shorthand; `none` suppresses border |
+| `border-top-style`, etc. | Individual side style overrides |
 
 ### CSS Box Model Rendering
 Block-level elements with borders, backgrounds, or padding render a complete CSS box model:
@@ -519,7 +617,102 @@ Var anchors() As String = VNSPDFHTMLPremium.CollectAnchors(html)
 // Returns: ["section1", "chapter2", "appendix"]
 ```
 
-All merge field and anchor utilities are **standalone methods** — they work on any HTML string, no VNSPDFDocument needed. Use them independently for HTML processing, then optionally render to PDF.
+#### Signature Field Overlay on Contract Documents
+
+```xojo
+// 1. Collect signature field definitions from HTML
+Var sigFields() As Dictionary = VNSPDFHTMLPremium.CollectSignatureFields(html)
+// Each dictionary has: "name", "left", "top", "width", "height", "opacity"
+
+// 2. Replace placeholders with images in the HTML
+Var sigs As New Dictionary
+sigs.Value("customer_signature") = customerSignaturePicture
+sigs.Value("president_signature") = presidentSignaturePicture
+Var htmlWithSigs As String = VNSPDFHTMLPremium.ApplySignatureImages(html, sigs)
+
+// 3. Render to PDF
+Var pdf As New VNSPDFDocument
+pdf.SetFont("Helvetica", "", 10)
+pdf.LoadHTML(htmlWithSigs)
+pdf.Save(outputFile)
+```
+
+#### PDF Overlay Method (alternative, more precise positioning)
+
+```xojo
+// Render PDF without signatures first
+Var pdf As New VNSPDFDocument
+pdf.SetFont("Helvetica", "", 10)
+pdf.LoadHTML(html)
+
+// Then overlay signatures at exact positions using VNSPDFDocument API
+Var sigFields() As Dictionary = VNSPDFHTMLPremium.CollectSignatureFields(html)
+For Each field As Dictionary In sigFields
+  Var name As String = field.Value("name")
+  If signatures.HasKey(name) Then
+    Var pic As Picture = signatures.Value(name)
+    // Convert HTML px to PDF mm (96 DPI to 25.4mm/inch)
+    Var x As Double = field.Value("left") * 25.4 / 96.0
+    Var y As Double = field.Value("top") * 25.4 / 96.0
+    Var w As Double = field.Value("width") * 25.4 / 96.0
+    Var h As Double = field.Value("height") * 25.4 / 96.0
+    Var opacity As Double = field.Value("opacity") / 100.0
+    pdf.SetAlpha(opacity, "Multiply")
+    pdf.ImageFromPicture(pic, x, y, w, h)
+    pdf.SetAlpha(1.0)  // Reset
+  End If
+Next
+pdf.Save(outputFile)
+```
+
+All merge field, anchor, and signature field utilities are **standalone methods** — they work on any HTML string, no VNSPDFDocument needed. Use them independently for HTML processing, then optionally render to PDF.
+
+#### Pending Signatures & Late Signing
+
+For workflows where a document is exported first (with user data merged) and signed
+later — when only the PDF remains and the source HTML is gone (e.g. a base64 column
+in a database).
+
+**Stage 1 — export the PDF with pending placeholders.** Pass a localized label to
+`ApplySignatureImages`; unmapped fields render as dashed light-blue rectangles, and
+`LoadHTML` records their resolved mm coordinates into the PDF's `/Info`:
+
+```xojo
+// dictSignatures = Nil → ALL fields pending; or pass a partial dict to mix
+// already-known signatures with pending ones.
+Var pendingHtml As String = VNSPDFHTMLPremium.ApplySignatureImages(html, Nil, "Votre signature")
+
+Var pdf As New VNSPDFDocument(VNSPDFModule.ePageFormat.A4)
+pdf.SetFont("Helvetica", "", 10)
+pdf.LoadHTML(pendingHtml)   // writes /VNSSignaturePlaceholders into /Info
+Var pendingPdf As String = pdf.Output   // store this (e.g. base64 in DB)
+```
+
+**Stage 2 — stamp the real signature later, from the PDF alone:**
+
+```xojo
+Var pdfBytes As String = DecodeBase64(base64FromDB)
+pdfBytes = pdfBytes.DefineEncoding(Nil)   // treat as raw binary
+
+Var sigs As New Dictionary
+sigs.Value("customer_signature") = signaturePicture   // key = data-field-name
+
+Var signedPdf As String
+Var placed As Integer = VNSPDFLateSignature.ApplySignatures(pdfBytes, signedPdf, sigs)
+Select Case placed
+Case VNSPDFLateSignature.kResultNoPlaceholders   // -1: no pending placeholders (Stage 1 emptyLabel path skipped)
+Case VNSPDFLateSignature.kResultDictNil          // -2: dictSignatures was Nil
+Case VNSPDFLateSignature.kResultNoMatchingKey    // -3: none of the placeholder field names are in the dict
+Case VNSPDFLateSignature.kResultOpenError        // 0: source PDF could not be opened/imported
+Else                                             // >0: signedPdf holds the result
+  Var newBase64 As String = EncodeBase64(signedPdf, 0)
+End Select
+```
+
+`ApplySignatureImages` *writes* the coordinates (via the `data-sig-pending` attribute
+→ renderer → `/Info`); `VNSPDFLateSignature.ApplySignatures` *reads them back* and
+overlays the signature. Both files must be the current versions for the round-trip to
+work. See the VNSPDFLateSignature module section above for the full API.
 
 ---
 
@@ -536,7 +729,7 @@ The `SmartCleanHTML` pipeline handles real-world messy HTML from Microsoft Word 
 | Strip MSO Styles | Remove `mso-*` CSS properties from inline styles | Cleaner CSS |
 | Strip Word Classes | Remove `MsoNormal`, `MsoPapDefault`, etc. | Cleaner HTML |
 | Clean BR Tags | Normalize `<br>` variants | Consistent line breaks |
-| Decode Entities | Convert `&nbsp;`, `&lt;`, `&gt;`, `&amp;`, numeric entities | Proper text |
+| Decode Entities | Convert `&nbsp;` and named/numeric entities; `&lt;` `&gt;` `&quot;` `&amp;` (and their numeric forms) stay escaped until render time so they are decoded exactly once (`&amp;amp;` renders as `&amp;`, `&#60;b&#62;` never becomes a tag) | Proper text |
 | Normalize Whitespace | Collapse multiple spaces/newlines | 5 KB typical |
 
 ---
@@ -699,3 +892,13 @@ CSS `margin-bottom` values are enforced with a minimum of `1.5 * mLineHeight`:
 - Single-column borderless tables are auto-detected as layout wrappers (inner content flows normally); nested multi-column tables inside layout wrappers render correctly as grids
 - CSS `height` property parsed but not enforced (used for `position: absolute` layout hacks)
 - `<font>` tag support is legacy (prefer `<span style="...">`)
+- `dir="rtl"` / `dir="auto"` are ignored: paragraphs containing Hebrew/Arabic are laid out as left-to-right paragraphs with RTL runs (like a browser's default `<p>`)
+- Table-cell text uses a dedicated **per-paragraph** renderer in `VNSPDFHTMLTableRenderer` (each `<p>`/`<div>`/`<br>` is one styled line with its own bold/italic/color/size, top-aligned). Mixed styles *within a single line* (e.g. "normal **bold** normal") render with that line's dominant style.
+
+## Planned / Future Work
+
+- **Reuse the main render engine for table-cell text.** Today cell text is rendered by a separate simplified renderer in `VNSPDFHTMLTableRenderer` (per-paragraph styling only). The goal is to route a cell's inner HTML through `VNSPDFHTMLRenderer.ParseAndRenderHTML` so cell text matches document text *exactly* (mixed inline runs within a line, justification, lists, links, full CSS). This requires adding three capabilities to the main renderer that it currently lacks:
+  1. A configurable left origin + available width (render into a bounded box at an arbitrary `x`, not just page margins).
+  2. A "no page break, capture height" mode (cells render atomically; the table decides row-level page breaks).
+  3. A measure pass that returns consumed height so the table can size rows and position cell boxes/borders.
+  Deferred for now (touches the core renderer used everywhere → regression risk). The per-paragraph model is kept as the interim solution.

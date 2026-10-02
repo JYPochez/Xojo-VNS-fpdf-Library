@@ -245,7 +245,9 @@ Protected Class VNSPDFGraphicsPath
 		  mSegments.Add(seg)
 		  
 		  If mStartPoint <> Nil Then
-		    mCurrentPoint = New Point(mStartPoint.X, mStartPoint.Y)
+		    // Local copy: the Android transpiler drops the null check on the first mStartPoint access
+		    Var startPt As Point = mStartPoint
+		    mCurrentPoint = New Point(startPt.X, startPt.Y)
 		  End If
 		End Sub
 	#tag EndMethod

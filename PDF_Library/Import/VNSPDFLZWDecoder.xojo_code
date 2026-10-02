@@ -125,11 +125,13 @@ Protected Class VNSPDFLZWDecoder
 		      // Special case: code == nextCode
 		      // This means oldCode + firstChar(oldCode)
 		      Dim oldSeq() As UInt8 = GetSequence(oldCode)
-		      ReDim sequence(oldSeq.Count)
+		      // Count kept in a local: the Android transpiler emits "oldSeq.Count<uint8>" as an index
+		      Dim oldSeqCount As Integer = oldSeq.Count
+		      ReDim sequence(oldSeqCount)
 		      For i As Integer = 0 To oldSeq.LastIndex
 		        sequence(i) = oldSeq(i)
 		      Next
-		      sequence(oldSeq.Count) = oldSeq(0)
+		      sequence(oldSeqCount) = oldSeq(0)
 		    Else
 		      // Invalid code
 		      mError = "Invalid code: " + Str(code) + " (nextCode=" + Str(mNextCode) + ", codeSize=" + Str(mCodeSize) + ")"
@@ -313,7 +315,10 @@ Protected Class VNSPDFLZWDecoder
 		  
 		  // Remove extracted bits
 		  mBitsInBuffer = mBitsInBuffer - mCodeSize
-		  mBitBuffer = mBitBuffer And (Bitwise.ShiftLeft(1, mBitsInBuffer) - 1)
+		  // Keep the low mBitsInBuffer bits. Mod instead of And: on Android, And/Or between
+		  // integers is transpiled as a Boolean operator
+		  Dim keepRange As Integer = Bitwise.ShiftLeft(1, mBitsInBuffer)
+		  mBitBuffer = mBitBuffer Mod keepRange
 		  
 		  Return code
 		End Function

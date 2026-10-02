@@ -325,7 +325,9 @@ Protected Class VNSPDFXrefReader
 		    Dim idxArray() As VNSPDFType = VNSPDFArray(idxObj).value
 		    For Each elem As VNSPDFType In idxArray
 		      If elem IsA VNSPDFNumeric Then
-		        indexPairs.Add(CType(VNSPDFNumeric(elem).value, Integer))
+		        // Typed local: Android transpiles Add(CType(variant, Integer)) as Add<integer>(variant)
+		        Dim pairValue As Integer = VNSPDFNumeric(elem).value.IntegerValue
+		        indexPairs.Add(pairValue)
 		      End If
 		    Next
 		  End If

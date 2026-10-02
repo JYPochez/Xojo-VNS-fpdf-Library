@@ -52,8 +52,8 @@ Protected Module VNSPDFModule
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, Description = 536561726368657320706C6174666F726D2D737065636966696320666F6E74206469726563746F7269657320726563757273697665206C7920666F72206120547275655479706520666F6E742066696C65
-		Protected Function FindSystemFontPath(fontName As String, styleSuffix As String = "") As String
+	#tag Method, Flags = &h0, Description = 536561726368657320706C6174666F726D2D737065636966696320666F6E74206469726563746F7269657320726563757273697665206C7920666F72206120547275655479706520666F6E742066696C65
+		Function FindSystemFontPath(fontName As String, styleSuffix As String = "") As String
 		  // Searches platform-specific font directories recursively for a TrueType font file
 		  // fontName: the font name (e.g. "Verdana", "Georgia")
 		  // styleSuffix: "" for regular, " Bold", " Italic", " Bold Italic"
@@ -116,18 +116,65 @@ Protected Module VNSPDFModule
 		    searchDirs.Add(userHome + "/.local/share/fonts")
 		  #EndIf
 		  
-		  For Each dirPath As String In searchDirs
-		    Dim result As String = FindFontInDirectoryRecursive(dirPath, fileNames, 0)
-		    If result <> "" Then
+		  // Look the candidate filenames up in the one-time font-file index
+		  // (built by walking searchDirs once). Avoids re-walking the whole
+		  // font tree on every call — critical when probing hundreds of fonts
+		  // (e.g. a font-picker UI).
+		  EnsureSystemFontIndex(searchDirs)
+		  For Each fn As String In fileNames
+		    Dim k As String = fn.Lowercase
+		    If mSystemFontIndex.HasKey(k) Then
+		      Dim result As String = mSystemFontIndex.Value(k).StringValue
 		      mSystemFontCache.Value(cacheKey) = result
 		      Return result
 		    End If
 		  Next
-		  
+
 		  // Not found - cache the miss
 		  mSystemFontCache.Value(cacheKey) = ""
 		  Return ""
 		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub EnsureSystemFontIndex(searchDirs() As String)
+		  // Build, once, a map of every font filename (lowercased) -> full
+		  // native path across the search directories. Subsequent
+		  // FindSystemFontPath calls are O(1) lookups instead of full tree
+		  // walks. Rebuilt only when nil.
+		  If mSystemFontIndex <> Nil Then Return
+		  mSystemFontIndex = New Dictionary
+		  For Each d As String In searchDirs
+		    Try
+		      IndexFontDir(New FolderItem(d, FolderItem.PathModes.Native), 0)
+		    Catch e As RuntimeException
+		    End Try
+		  Next
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub IndexFontDir(dir As FolderItem, depth As Integer)
+		  // Recursively add every file in `dir` to mSystemFontIndex keyed by
+		  // lowercased filename. First entry for a name wins (search-dir order).
+		  Const kMaxDepth As Integer = 4
+		  If dir = Nil Or Not dir.Exists Or Not dir.IsFolder Or depth > kMaxDepth Then Return
+		  Dim childCount As Integer = dir.Count
+		  For i As Integer = 1 To childCount
+		    Try
+		      Dim child As FolderItem = dir.ChildAt(i - 1)
+		      If child = Nil Or Not child.Exists Then Continue
+		      If child.IsFolder Then
+		        IndexFontDir(child, depth + 1)
+		      Else
+		        Dim key As String = child.Name.Lowercase
+		        If Not mSystemFontIndex.HasKey(key) Then mSystemFontIndex.Value(key) = child.NativePath
+		      End If
+		    Catch innerErr As RuntimeException
+		      Continue
+		    End Try
+		  Next
+		End Sub
 	#tag EndMethod
 
 	#tag DelegateDeclaration, Flags = &h0
@@ -424,6 +471,20 @@ Protected Module VNSPDFModule
 		  If codePoint >= &h2B00 And codePoint <= &h2BFF Then Return True
 		  
 		  Return False
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1, Description = 52657475726E732054727565207768656E2061206772617068656D6520636C757374657220286F6E6520656C656D656E74206F6620537472696E672E436861726163746572732920697320616E20656D6F6A692C20696E636C7564696E6720736B696E2D746F6E652C205A574A2C20666C616720616E64206B65796361702073657175656E6365732E
+		Protected Function IsEmojiCluster(cluster As String) As Boolean
+		  // cluster is one element of String.Characters, so multi-code-point emoji such as
+		  // skin tones and ZWJ sequences (e.g. woman + skin tone + ZWJ + laptop), flags and
+		  // keycaps arrive whole and can be drawn as a single glyph by the OS emoji font.
+		  // The first code point decides for ordinary emoji; U+FE0F (emoji presentation)
+		  // or U+20E3 (combining keycap) also marks text-default symbols such as 1️⃣ or ©️.
+		  If cluster = "" Then Return False
+		  If IsEmoji(cluster.Asc) Then Return True
+		  Return cluster.IndexOf(&uFE0F, ComparisonOptions.CaseSensitive) >= 0 _
+		  Or cluster.IndexOf(&u20E3, ComparisonOptions.CaseSensitive) >= 0
 		End Function
 	#tag EndMethod
 
@@ -1742,7 +1803,10 @@ Protected Module VNSPDFModule
 		    // Use 4x size to ensure no cropping
 		    Dim scaleFactor As Integer = 4
 		    Dim basePicSize As Integer = sizeInPoints * scaleFactor
-		    Dim padding As Integer = basePicSize * 0.3  // 30% padding on all sides
+		    // 8% padding on all sides: the emoji glyph is about one em tall and barely
+		    // exceeds it, so this avoids cropping while the glyph still fills ~85% of the
+		    // image (30% padding made emoji look half the size of the surrounding text)
+		    Dim padding As Integer = basePicSize * 0.08
 		    Dim picSize As Integer = basePicSize + (padding * 2)
 		    
 		    Dim pic As New Picture(picSize, picSize)
@@ -1792,7 +1856,7 @@ Protected Module VNSPDFModule
 		    Declare Function systemFontOfSize Lib "UIKit" Selector "systemFontOfSize:" (classRef As Ptr, size As CGFloat) As Ptr
 		    Declare Sub setTextAlignment Lib "UIKit" Selector "setTextAlignment:" (obj As Ptr, alignment As Integer)
 		    Declare Sub setBackgroundColor Lib "UIKit" Selector "setBackgroundColor:" (obj As Ptr, color As Ptr)
-		    Declare Function whiteColor Lib "UIKit" Selector "whiteColor" (classRef As Ptr) As Ptr
+		    Declare Function colorWithRGBA Lib "UIKit" Selector "colorWithRed:green:blue:alpha:" (classRef As Ptr, red As CGFloat, green As CGFloat, blue As CGFloat, alpha As CGFloat) As Ptr
 		    Declare Sub UIGraphicsBeginImageContextWithOptions Lib "UIKit" (size_width As CGFloat, size_height As CGFloat, opaque As Boolean, scale As CGFloat)
 		    Declare Function layer Lib "UIKit" Selector "layer" (obj As Ptr) As Ptr
 		    Declare Sub renderInContext Lib "QuartzCore" Selector "renderInContext:" (obj As Ptr, context As Ptr)
@@ -1817,10 +1881,10 @@ Protected Module VNSPDFModule
 		    // Center text alignment (1 = NSTextAlignmentCenter)
 		    Call setTextAlignment(label, 1)
 		    
-		    // Set white background
+		    // Background = bgColor (parent block background), so the JPEG emoji blends in
 		    Dim UIColorClass As Ptr = NSClassFromString("UIColor")
-		    Dim bgColor As Ptr = whiteColor(UIColorClass)
-		    Call setBackgroundColor(label, bgColor)
+		    Dim labelBackground As Ptr = colorWithRGBA(UIColorClass, bgColor.Red / 255.0, bgColor.Green / 255.0, bgColor.Blue / 255.0, 1.0)
+		    Call setBackgroundColor(label, labelBackground)
 		    
 		    // Render to image
 		    Call UIGraphicsBeginImageContextWithOptions(picSize, picSize, False, 0.0)
@@ -1860,6 +1924,45 @@ Protected Module VNSPDFModule
 		    Else
 		      Return Nil
 		    End If
+		    
+		  #ElseIf TargetAndroid Then
+		    // Android: draw with the system font. Android's text renderer falls back to the
+		    // Noto Color Emoji font for emoji, so no font name is needed (Graphics.FontName
+		    // and FontAscent are not supported on Android: use Graphics.Font / Font.Ascent).
+		    Dim scaleFactor As Integer = 4
+		    Dim basePicSize As Integer = sizeInPoints * scaleFactor
+		    Dim padding As Integer = basePicSize * 0.08  // Same 8% padding as Desktop
+		    Dim picSize As Integer = basePicSize + (padding * 2)
+		    
+		    Dim pic As New Picture(picSize, picSize)
+		    Dim g As Graphics = pic.Graphics
+		    
+		    // Background = parent block color (JPEG has no alpha channel)
+		    g.DrawingColor = bgColor
+		    g.FillRectangle(0, 0, picSize, picSize)
+		    
+		    g.Font = Font.SystemFont(basePicSize)
+		    // Android's emoji font has a different advance width than Apple Color Emoji at the
+		    // same size: rescale from the measured advance. The visible glyph is ~87% of the
+		    // advance, so an advance of 1.12 x base gives a glyph of ~0.97 x base (~85% of the
+		    // padded image), the same proportion as the Desktop rendering (measured 2026-10-02)
+		    Dim measuredWidth As Double = g.TextWidth(emojiChar)
+		    If measuredWidth > 0 Then
+		      g.Font = Font.SystemFont(basePicSize * (basePicSize * 1.12) / measuredWidth)
+		    End If
+		    g.DrawingColor = &c000000  // Black for any non-color fallback glyph
+		    
+		    // Center the glyph from its advance width (TextWidth is in drawing units; Font.Ascent
+		    // is not, and pushed the glyph ~15% too low, clipping its bottom). The baseline sits
+		    // 0.341 x advance below the image center: measured on the emulator so the visible
+		    // glyph has equal top/bottom margins (Noto Color Emoji metrics alone gave 0.276,
+		    // which left it 14 px too high in a 231 px image).
+		    Dim advanceWidth As Double = g.TextWidth(emojiChar)
+		    Dim x As Double = (picSize - advanceWidth) / 2
+		    Dim y As Double = picSize / 2 + advanceWidth * 0.341
+		    g.DrawText(emojiChar, x, y)
+		    
+		    Return pic
 		    
 		  #ElseIf TargetWeb Then
 		    // Web: Extract PNG from emoji font file (SBIX format on macOS)
@@ -1908,7 +2011,7 @@ Protected Module VNSPDFModule
 		    Dim cp As UInt32 = Asc(emojiStr)
 
 		    // Extract emoji image using platform-appropriate method
-		    Dim pngData As MemoryBlock = Nil
+		    Dim pngData As MemoryBlock
 		    #If TargetMacOS Then
 		      // macOS: SBIX table (PNG extraction)
 		      pngData = ExtractEmojiPNG_SBIX(fontPath, cp, sizeInPoints)
@@ -2319,6 +2422,10 @@ Protected Module VNSPDFModule
 		Private mSystemFontCache As Dictionary
 	#tag EndProperty
 
+	#tag Property, Flags = &h21
+		Private mSystemFontIndex As Dictionary
+	#tag EndProperty
+
 
 	#tag Constant, Name = gkA3Height, Type = Double, Dynamic = False, Default = \"1190.55", Scope = Public, Description = 41332048656967687420696E20706F696E74732E0A
 	#tag EndConstant
@@ -2410,7 +2517,7 @@ Protected Module VNSPDFModule
 	#tag Constant, Name = gkRaiseExceptionOnOutOfBounds, Type = Boolean, Dynamic = False, Default = \"False", Scope = Public, Description = 496620747275652C20726169736573204F75744F66426F756E6473457863657074696F6E207768656E2064726177696E67206F757473696465207061676520626F756E64732E2044656661756C742069732066616C736520286F6E6C79206C6F6773207761726E696E67292E
 	#tag EndConstant
 
-	#tag Constant, Name = gkVersion, Type = String, Dynamic = False, Default = \"0.3.0", Scope = Public, Description = 564E5320504446204C6962726172792076657273696F6E20737472696E672E0A
+	#tag Constant, Name = gkVersion, Type = String, Dynamic = False, Default = \"1.4", Scope = Public, Description = 564E5320504446204C6962726172792076657273696F6E20737472696E672E0A
 	#tag EndConstant
 
 	#tag Constant, Name = kHelveticaBoldJSON, Type = String, Dynamic = False, Default = \"{\"Tp\":\"Core\"\x2C\"Name\":\"Helvetica-Bold\"\x2C\"Up\":-100\x2C\"Ut\":50\x2C\"Cw\":[278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C278\x2C333\x2C474\x2C556\x2C556\x2C889\x2C722\x2C238\x2C333\x2C333\x2C389\x2C584\x2C278\x2C333\x2C278\x2C278\x2C556\x2C556\x2C556\x2C556\x2C556\x2C556\x2C556\x2C556\x2C556\x2C556\x2C333\x2C333\x2C584\x2C584\x2C584\x2C611\x2C975\x2C722\x2C722\x2C722\x2C722\x2C667\x2C611\x2C778\x2C722\x2C278\x2C556\x2C722\x2C611\x2C833\x2C722\x2C778\x2C667\x2C778\x2C722\x2C667\x2C611\x2C722\x2C667\x2C944\x2C667\x2C667\x2C611\x2C333\x2C278\x2C333\x2C584\x2C556\x2C333\x2C556\x2C611\x2C556\x2C611\x2C556\x2C333\x2C611\x2C611\x2C278\x2C278\x2C556\x2C278\x2C889\x2C611\x2C611\x2C611\x2C611\x2C389\x2C556\x2C333\x2C611\x2C556\x2C778\x2C556\x2C556\x2C500\x2C389\x2C280\x2C389\x2C584\x2C350\x2C556\x2C350\x2C278\x2C556\x2C500\x2C1000\x2C556\x2C556\x2C333\x2C1000\x2C667\x2C333\x2C1000\x2C350\x2C611\x2C350\x2C350\x2C278\x2C278\x2C500\x2C500\x2C350\x2C556\x2C1000\x2C333\x2C1000\x2C556\x2C333\x2C944\x2C350\x2C500\x2C667\x2C278\x2C333\x2C556\x2C556\x2C556\x2C556\x2C280\x2C556\x2C333\x2C737\x2C370\x2C556\x2C584\x2C333\x2C737\x2C333\x2C400\x2C584\x2C333\x2C333\x2C333\x2C611\x2C556\x2C278\x2C333\x2C333\x2C365\x2C556\x2C834\x2C834\x2C834\x2C611\x2C722\x2C722\x2C722\x2C722\x2C722\x2C722\x2C1000\x2C722\x2C667\x2C667\x2C667\x2C667\x2C278\x2C278\x2C278\x2C278\x2C722\x2C722\x2C778\x2C778\x2C778\x2C778\x2C778\x2C584\x2C778\x2C722\x2C722\x2C722\x2C722\x2C667\x2C667\x2C611\x2C556\x2C556\x2C556\x2C556\x2C556\x2C556\x2C889\x2C556\x2C556\x2C556\x2C556\x2C556\x2C278\x2C278\x2C278\x2C278\x2C611\x2C611\x2C611\x2C611\x2C611\x2C611\x2C611\x2C584\x2C611\x2C611\x2C611\x2C611\x2C611\x2C556\x2C611\x2C556]}", Scope = Private, Description = 48656C7665746963612D426F6C64206D6574726963732066726F6D20676F2D66706466

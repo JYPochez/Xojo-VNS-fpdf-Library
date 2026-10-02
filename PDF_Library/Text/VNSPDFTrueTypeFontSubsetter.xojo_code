@@ -786,7 +786,8 @@ Protected Class VNSPDFTrueTypeFontSubsetter
 		  Dim flags As UInt16
 		  
 		  Do
-		    If pos + 4 > mSubsetGlyf.Size Then Exit Sub
+		    // Return, not Exit Sub: on Android "Exit Sub" inside Do...Loop becomes a break to a missing label
+		    If pos + 4 > mSubsetGlyf.Size Then Return
 		    
 		    flags = mSubsetGlyf.UInt16Value(pos)
 		    Dim oldComponentGID As UInt16 = mSubsetGlyf.UInt16Value(pos + 2)

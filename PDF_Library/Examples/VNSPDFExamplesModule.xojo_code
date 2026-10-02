@@ -8453,8 +8453,31 @@ Protected Module VNSPDFExamplesModule
 		      #If TargetiOS Or TargetAndroid Then
 		        // iOS: Load font from MemoryBlock (file is in bundle)
 		        Try
+		          #If TargetAndroid Then
+		            // Read the font from a regular file in Caches: reading it straight from the app
+		            // resource (inside the APK) is 2.5x slower on Android (measured 64 s vs 26 s)
+		            Dim cachedFont As FolderItem = SpecialFolder.Caches.Child(fontFile.Name)
+		            If Not cachedFont.Exists Then fontFile.CopyTo(cachedFont)
+		            fontFile = cachedFont
+		          #EndIf
 		          Dim fontStream As BinaryStream = BinaryStream.Open(fontFile)
-		          Dim fontBytes As MemoryBlock = fontStream.Read(fontStream.Length)
+		          #If TargetAndroid Then
+		            // Read in 1 MB chunks into a preallocated MemoryBlock rather than one Read()
+		            // of the whole 23 MB font
+		            Dim fontLength As Integer = fontStream.Length
+		            Dim fontBytes As New MemoryBlock(fontLength)
+		            Dim readOffset As Integer = 0
+		            While readOffset < fontLength
+		              Dim chunkSize As Integer = 1048576
+		              If fontLength - readOffset < chunkSize Then chunkSize = fontLength - readOffset
+		              Dim chunk As String = fontStream.Read(chunkSize)
+		              If chunk.Bytes = 0 Then Exit While
+		              fontBytes.StringValue(readOffset, chunk.Bytes) = chunk
+		              readOffset = readOffset + chunk.Bytes
+		            Wend
+		          #Else
+		            Dim fontBytes As MemoryBlock = fontStream.Read(fontStream.Length)
+		          #EndIf
 		          fontStream.Close
 		          
 		          pdf.AddUTF8FontFromBytes("unicode_ttf", "", fontBytes)
@@ -9306,11 +9329,14 @@ Protected Module VNSPDFExamplesModule
 		    
 		    // iOS: Check for bundled images using SpecialFolder.Resource()
 		    #If TargetiOS Or TargetAndroid Then
-		      Dim bundledPic As Picture
+		      // The Testpdf image item is compiled into the mobile apps: use it directly.
+		      // On Android, SpecialFolder.Resource() raises for a missing name, so the
+		      // file lookups below are only a fallback.
+		      Dim bundledPic As Picture = Testpdf
 		      Dim resourceFile As FolderItem
 		      
 		      // Try to load bundled image - try multiple name variations
-		      If jpegFile = Nil And pngFile = Nil Then
+		      If jpegFile = Nil And pngFile = Nil And bundledPic = Nil Then
 		        // Try "Testpdf.png" (capital T - matches iOS bundle)
 		        Try
 		          resourceFile = SpecialFolder.Resource("Testpdf.png")
@@ -9404,10 +9430,14 @@ Protected Module VNSPDFExamplesModule
 		    End If
 		    
 		    // Check if we have any images available (file-based or bundled)
+		    // Nested If instead of "imageFile <> Nil And imageFile.Exists": the Android
+		    // transpiler turns that expression into an infix call on a nullable value
+		    Dim hasImages As Boolean = False
+		    If imageFile <> Nil Then
+		      If imageFile.Exists Then hasImages = True
+		    End If
 		    #If TargetiOS Or TargetAndroid Then
-		      Dim hasImages As Boolean = (imageFile <> Nil And imageFile.Exists) Or (bundledPic <> Nil)
-		    #Else
-		      Dim hasImages As Boolean = (imageFile <> Nil And imageFile.Exists)
+		      If bundledPic <> Nil Then hasImages = True
 		    #EndIf
 		    
 		    If hasImages Then

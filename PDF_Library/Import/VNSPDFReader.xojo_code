@@ -425,6 +425,14 @@ Protected Class VNSPDFReader
 		  
 		  Dim trailerDict As Dictionary = mXref.trailer.value
 		  
+		  // Encrypted PDFs (/Encrypt in the trailer) cannot be imported yet: their strings and
+		  // streams would need decrypting first, and FlateDecode would otherwise fail with a
+		  // misleading zlib error
+		  If trailerDict.HasKey("Encrypt") Or trailerDict.HasKey("/Encrypt") Then
+		    mError = kErrEncryptedSource
+		    Return False
+		  End If
+		  
 		  // Try both "Root" and "/Root" key formats
 		  Dim rootKey As String = ""
 		  If trailerDict.HasKey("Root") Then
@@ -498,6 +506,14 @@ Protected Class VNSPDFReader
 		  End If
 		  
 		  Dim trailerDict As Dictionary = mXref.trailer.value
+		  
+		  // Encrypted PDFs (/Encrypt in the trailer) cannot be imported yet: their strings and
+		  // streams would need decrypting first, and FlateDecode would otherwise fail with a
+		  // misleading zlib error
+		  If trailerDict.HasKey("Encrypt") Or trailerDict.HasKey("/Encrypt") Then
+		    mError = kErrEncryptedSource
+		    Return False
+		  End If
 		  
 		  // Debug: List all keys in trailer dictionary
 		  Dim keys() As Variant = trailerDict.Keys
@@ -587,6 +603,10 @@ Protected Class VNSPDFReader
 	#tag Property, Flags = &h21
 		Private mXref As VNSPDFCrossReference
 	#tag EndProperty
+
+
+	#tag Constant, Name = kErrEncryptedSource, Type = String, Dynamic = False, Default = \"Encrypted PDF: importing encrypted PDF files is not supported yet. Save an unencrypted copy (for example with Print > Save as PDF in a PDF viewer) and import that copy.", Scope = Private
+	#tag EndConstant
 
 
 	#tag ViewBehavior

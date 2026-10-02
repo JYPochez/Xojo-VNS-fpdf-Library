@@ -1,6 +1,6 @@
 #tag Class
 Protected Class VNSPDFTextExtractor
-	#tag Method, Flags = &h21, Description = 4465636F6465206120504446207374072696E67206C69746572616
+	#tag Method, Flags = &h21, Description = 4465636F646520612050444620737472696E67206C69746572616C2E
 		Private Function DecodeString(pdfString As String) As String
 		  // Decode PDF string literal: (text) -> text
 		  // Also handles hex strings: <hexdigits> -> text (UTF-16BE)
@@ -157,7 +157,7 @@ Protected Class VNSPDFTextExtractor
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, Description = 436865636B206966020746F6B656E206973206120504446206F70657261746F7
+	#tag Method, Flags = &h21, Description = 436865636B20696620746F6B656E206973206120504446206F70657261746F722E
 		Private Function IsOperator(token As String) As Boolean
 		  // Check if token is a PDF operator (not a number or name)
 		  // Operators are alphabetic strings (Tf, Tm, Tj, etc.)
@@ -286,7 +286,7 @@ Protected Class VNSPDFTextExtractor
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, Description = 5061727365207465787420617272617920667206F6D20544A206F70657261746F7
+	#tag Method, Flags = &h21, Description = 506172736520746578742061727261792066726F6D20544A206F70657261746F722E
 		Private Function ParseTextArray(arrayStr As String) As String
 		  // Parse text array from TJ operator: [(string) num (string) ...] TJ
 		  // Concatenate all text strings, ignoring positioning numbers
@@ -329,7 +329,7 @@ Protected Class VNSPDFTextExtractor
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, Description = 50726F63657373206120504446206F70657261746F722077697468206974732006F706572616E647
+	#tag Method, Flags = &h21, Description = 50726F63657373206120504446206F70657261746F72207769746820697473206F706572616E64732E
 		Private Sub ProcessOperator(op As String, operands() As String)
 		  // Process PDF operator with its operands
 		  
@@ -475,7 +475,7 @@ Protected Class VNSPDFTextExtractor
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, Description = 52656164206120686578207374726906E67203C68657864696769747033E0A
+	#tag Method, Flags = &h21, Description = 5265616420612068657820737472696E67203C6865786469676974733E2E
 		Private Function ReadHexString(content As String, ByRef pos As Integer) As String
 		  // Read PDF hex string: <hexdigits>
 		  
@@ -494,7 +494,7 @@ Protected Class VNSPDFTextExtractor
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, Description = 52656164206120504446206E616D065202F6E616D650
+	#tag Method, Flags = &h21, Description = 52656164206120504446206E616D65202F6E616D652E
 		Private Function ReadName(content As String, ByRef pos As Integer) As String
 		  // Read PDF name: /name
 		  
@@ -529,7 +529,7 @@ Protected Class VNSPDFTextExtractor
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, Description = 52656164206120737472696E67206C69746572616C20287061726506E74686573697A65642074657874290
+	#tag Method, Flags = &h21, Description = 52656164206120737472696E67206C69746572616C2028706172656E74686573697A65642074657874292E
 		Private Function ReadString(content As String, ByRef pos As Integer) As String
 		  // Read PDF string literal: (text)
 		  // Handles escaped characters and nested parentheses
@@ -560,7 +560,7 @@ Protected Class VNSPDFTextExtractor
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, Description = 52656164207468652006E65787420746F6B656E2066726F6D2074686520636F6E74656E742073747265616
+	#tag Method, Flags = &h21, Description = 5265616420746865206E65787420746F6B656E2066726F6D2074686520636F6E74656E742073747265616D2E
 		Private Function ReadToken(content As String, ByRef pos As Integer) As String
 		  // Read next token from content stream
 		  // Updates pos to point after the token
@@ -619,7 +619,7 @@ Protected Class VNSPDFTextExtractor
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, Description = 436F6E7665727420556E69636F646520636F646520706F696E7420746F2055544602D3820737472696E670
+	#tag Method, Flags = &h21, Description = 436F6E7665727420556E69636F646520636F646520706F696E7420746F205554462D3820737472696E672E
 		Private Function UnicodeToString(codePoint As Integer) As String
 		  // Convert Unicode code point to UTF-8 string
 		  // Handles all Unicode characters including accented characters, emoji, etc.
@@ -636,21 +636,21 @@ Protected Class VNSPDFTextExtractor
 		  ElseIf codePoint <= &h7FF Then
 		    // 2-byte UTF-8: 110xxxxx 10xxxxxx
 		    mb = New MemoryBlock(2)
-		    mb.UInt8Value(0) = &hC0 Or (codePoint \ 64)
-		    mb.UInt8Value(1) = &h80 Or (codePoint And &h3F)
+		    mb.UInt8Value(0) = &hC0 + (codePoint \ 64)
+		    mb.UInt8Value(1) = &h80 + (codePoint Mod 64)
 		  ElseIf codePoint <= &hFFFF Then
 		    // 3-byte UTF-8: 1110xxxx 10xxxxxx 10xxxxxx
 		    mb = New MemoryBlock(3)
-		    mb.UInt8Value(0) = &hE0 Or (codePoint \ 4096)
-		    mb.UInt8Value(1) = &h80 Or ((codePoint \ 64) And &h3F)
-		    mb.UInt8Value(2) = &h80 Or (codePoint And &h3F)
+		    mb.UInt8Value(0) = &hE0 + (codePoint \ 4096)
+		    mb.UInt8Value(1) = &h80 + ((codePoint \ 64) Mod 64)
+		    mb.UInt8Value(2) = &h80 + (codePoint Mod 64)
 		  Else
 		    // 4-byte UTF-8: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
 		    mb = New MemoryBlock(4)
-		    mb.UInt8Value(0) = &hF0 Or (codePoint \ 262144)
-		    mb.UInt8Value(1) = &h80 Or ((codePoint \ 4096) And &h3F)
-		    mb.UInt8Value(2) = &h80 Or ((codePoint \ 64) And &h3F)
-		    mb.UInt8Value(3) = &h80 Or (codePoint And &h3F)
+		    mb.UInt8Value(0) = &hF0 + (codePoint \ 262144)
+		    mb.UInt8Value(1) = &h80 + ((codePoint \ 4096) Mod 64)
+		    mb.UInt8Value(2) = &h80 + ((codePoint \ 64) Mod 64)
+		    mb.UInt8Value(3) = &h80 + (codePoint Mod 64)
 		  End If
 		  
 		  // Create string from UTF-8 bytes
@@ -675,11 +675,11 @@ Protected Class VNSPDFTextExtractor
 	#tag EndNote
 
 
-	#tag Property, Flags = &h21, Description = 41727261792006F66206578747261637465642074657874200626C6F636B730A
+	#tag Property, Flags = &h21, Description = 4172726179206F6620657874726163746564207465787420626C6F636B732E
 		Private mBlocks() As VNSPDFTextBlock
 	#tag EndProperty
 
-	#tag Property, Flags = &h21, Description = 5665727469636106C207363616C652066726F6D20435044D2028636D206F70657261746F7229
+	#tag Property, Flags = &h21, Description = 566572746963616C207363616C652066726F6D2043544D2028636D206F70657261746F72292E
 		Private mCTMScale As Double = 1.0
 	#tag EndProperty
 
@@ -687,7 +687,7 @@ Protected Class VNSPDFTextExtractor
 		Private mCurrentCMap As Dictionary
 	#tag EndProperty
 
-	#tag Property, Flags = &h21, Description = 43757272656E7420666F6E74206E616D6520286502E672E202F4631290
+	#tag Property, Flags = &h21, Description = 43757272656E7420666F6E74206E616D652028652E672E202F4631292E
 		Private mCurrentFont As String
 	#tag EndProperty
 
@@ -695,7 +695,7 @@ Protected Class VNSPDFTextExtractor
 		Private mCurrentFontSize As Double
 	#tag EndProperty
 
-	#tag Property, Flags = &h21, Description = 43757272656E74200582D706F736974696F6E20696E207573657220756E6974730
+	#tag Property, Flags = &h21, Description = 43757272656E74205820706F736974696F6E20696E207573657220756E6974732E
 		Private mCurrentX As Double
 	#tag EndProperty
 
@@ -703,7 +703,7 @@ Protected Class VNSPDFTextExtractor
 		Private mCurrentY As Double
 	#tag EndProperty
 
-	#tag Property, Flags = &h21, Description = 5265616465722072656665072656E636520666F72206C6F6F6B696E67207570206F626A6563747
+	#tag Property, Flags = &h21, Description = 526561646572207265666572656E636520666F72206C6F6F6B696E67207570206F626A656374732E
 		Private mReader As VNSPDFReader
 	#tag EndProperty
 
@@ -711,7 +711,7 @@ Protected Class VNSPDFTextExtractor
 		Private mResources As VNSPDFDictionary
 	#tag EndProperty
 
-	#tag Property, Flags = &h21, Description = 5665727469636106C207363616C6520066726F6D2074657874206D617472697820028546D290
+	#tag Property, Flags = &h21, Description = 566572746963616C207363616C652066726F6D2074657874206D61747269782028546D292E
 		Private mTextMatrixScale As Double = 1.0
 	#tag EndProperty
 

@@ -34,7 +34,7 @@ Inherits VNSPDFType
 		  End If
 		  
 		  // Get decode parameters (DecodeParms) if present
-		  Dim decodeParms As Dictionary = Nil
+		  Dim decodeParms As Dictionary
 		  If dictValue.HasKey("DecodeParms") Or dictValue.HasKey("/DecodeParms") Then
 		    Dim key As String = If(dictValue.HasKey("DecodeParms"), "DecodeParms", "/DecodeParms")
 		    Dim decodeParmsObj As VNSPDFType = dictValue.Value(key)

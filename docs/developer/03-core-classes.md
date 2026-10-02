@@ -609,6 +609,8 @@ Sub LTR()
 
 **Description**: Switches text direction to Right-to-Left (for Arabic/Hebrew) or back to Left-to-Right.
 
+Independently of `RTL()`, `Cell()`, `MultiCell()` and `GetStringWidth()` prepare Hebrew and Arabic text for display automatically: Arabic letters get their contextual (joined) forms, Hebrew and Arabic runs are reversed for left-to-right PDF output, brackets inside a run are mirrored, and digit sequences such as `2026` or `15.01.24` keep their left-to-right order.
+
 ##### SplitLines
 ```xojo
 Function SplitLines(txt As String, w As Double) As String()
@@ -2053,7 +2055,7 @@ Sub Emoji(emojiChar As String, x As Double, y As Double, sizeInUserUnits As Doub
 ```
 
 **Parameters**:
-- `emojiChar` - A single emoji character (e.g., "😀", "🎨", "🚀")
+- `emojiChar` - One emoji, which may be a multi-code-point sequence: skin tone ("👍🏽"), ZWJ sequence ("👩🏽‍💻", "👨‍👩‍👧‍👦"), flag ("🇫🇷") or keycap ("1️⃣"). Pass the whole sequence in one call; the OS emoji font draws it as a single glyph
 - `x` - X coordinate of emoji position
 - `y` - Y coordinate of emoji position
 - `sizeInUserUnits` - Size of emoji in current units (mm/cm/inches/points)
@@ -2078,6 +2080,8 @@ pdf.Emoji("💡", x + 20, 40, 8)
 - Desktop/iOS/Web use OS's native emoji font (Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji)
 - Automatic temp file management with unique filenames
 - Size parameter uses document units (same as SetFont size)
+- The emoji glyph fills about 85% of `sizeInUserUnits` on Desktop (8% padding on each side of the rendered image; it was 30% before September 2026, which drew emoji at roughly half the requested size)
+- `VNSPDFModule.IsEmojiCluster(cluster)` tells whether one element of `String.Characters` is an emoji, including skin-tone, ZWJ, flag and keycap sequences
 - No manual Picture/Graphics API calls required
 - Platform emoji fonts provide full color rendering
 

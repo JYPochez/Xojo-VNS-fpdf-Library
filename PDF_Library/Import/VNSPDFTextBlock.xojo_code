@@ -1,6 +1,6 @@
 #tag Class
 Protected Class VNSPDFTextBlock
-	#tag Property, Flags = &h0, Description = 466F6E74206E616D6520286502E672E202F4631290
+	#tag Property, Flags = &h0, Description = 466F6E74206E616D652028652E672E202F4631292E
 		fontName As String
 	#tag EndProperty
 
@@ -8,7 +8,7 @@ Protected Class VNSPDFTextBlock
 		fontSize As Double
 	#tag EndProperty
 
-	#tag Property, Flags = &h0, Description = 54657874206306F6E74656E740
+	#tag Property, Flags = &h0, Description = 5465787420636F6E74656E742E
 		text As String
 	#tag EndProperty
 

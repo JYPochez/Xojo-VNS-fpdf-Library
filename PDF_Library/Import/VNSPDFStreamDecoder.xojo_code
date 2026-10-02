@@ -60,16 +60,16 @@ Protected Class VNSPDFStreamDecoder
 		        decoded = rawByte
 		        
 		      Case 1  // Sub
-		        decoded = (rawByte + leftByte) And &hFF
+		        decoded = (rawByte + leftByte) Mod 256
 		        
 		      Case 2  // Up
-		        decoded = (rawByte + upByte) And &hFF
+		        decoded = (rawByte + upByte) Mod 256
 		        
 		      Case 3  // Average
-		        decoded = (rawByte + ((leftByte + upByte) \ 2)) And &hFF
+		        decoded = (rawByte + ((leftByte + upByte) \ 2)) Mod 256
 		        
 		      Case 4  // Paeth
-		        decoded = (rawByte + PaethPredictor(leftByte, upByte, upLeftByte)) And &hFF
+		        decoded = (rawByte + PaethPredictor(leftByte, upByte, upLeftByte)) Mod 256
 		        
 		      Else
 		        decoded = rawByte
@@ -180,7 +180,7 @@ Protected Class VNSPDFStreamDecoder
 		    For i As Integer = pos To rowEnd - 1
 		      Dim rawByte As Integer = Asc(data.Middle(i, 1))
 		      Dim leftByte As Integer = If(i - pos >= bytesPerPixel, output.UInt8Value(i - bytesPerPixel), 0)
-		      output.UInt8Value(i) = (rawByte + leftByte) And &hFF
+		      output.UInt8Value(i) = (rawByte + leftByte) Mod 256
 		    Next
 		    
 		    pos = rowEnd
@@ -257,15 +257,15 @@ Protected Class VNSPDFStreamDecoder
 		        If numBytes > 0 Then
 		          Dim oldSize As Integer = result.Size
 		          result.Size = oldSize + numBytes
-		          result.UInt8Value(oldSize) = Bitwise.ShiftRight(value, 24) And &hFF
+		          result.UInt8Value(oldSize) = Bitwise.ShiftRight(value, 24) Mod 256
 		          If numBytes > 1 Then
-		            result.UInt8Value(oldSize + 1) = Bitwise.ShiftRight(value, 16) And &hFF
+		            result.UInt8Value(oldSize + 1) = Bitwise.ShiftRight(value, 16) Mod 256
 		          End If
 		          If numBytes > 2 Then
-		            result.UInt8Value(oldSize + 2) = Bitwise.ShiftRight(value, 8) And &hFF
+		            result.UInt8Value(oldSize + 2) = Bitwise.ShiftRight(value, 8) Mod 256
 		          End If
 		          If numBytes > 3 Then
-		            result.UInt8Value(oldSize + 3) = value And &hFF
+		            result.UInt8Value(oldSize + 3) = value Mod 256
 		          End If
 		        End If
 		      End If

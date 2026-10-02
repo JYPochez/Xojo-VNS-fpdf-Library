@@ -1,6 +1,6 @@
 # Xojo FPDF Library
 
-A Xojo port of the popular FPDF library for PDF generation, supporting Desktop, Web, iOS, and Console applications.
+A Xojo port of the popular FPDF library for PDF generation, supporting Desktop, Web, iOS, Console and Android applications.
 
 ## Overview
 
@@ -8,7 +8,7 @@ Xojo_fpdf is a pure Xojo implementation for creating PDF documents programmatica
 
 ## Features
 
-- **Cross-Platform**: Works with Xojo Desktop, Web, iOS, and Console applications
+- **Cross-Platform**: Works with Xojo Desktop, Web, iOS, Console and Android applications
 - **Pure Xojo**: No external dependencies or plugins required
 - **Shared Codebase**: Maximum code reuse between all platform targets
 - **Core PDF Fonts**: Built-in support for standard PDF fonts (Helvetica, Times, Courier, etc.)
@@ -26,7 +26,7 @@ Xojo_fpdf is a pure Xojo implementation for creating PDF documents programmatica
 - **Polygons**: Arbitrary polygon shapes from Point arrays (triangles, pentagons, stars, etc.)
 - **Error Accumulation**: Graceful error handling without interrupting workflow
 - **Bounds Checking**: Optional exception mode for out-of-bounds drawing detection
-- **PDF Import**: Import pages from existing PDF files as XObject Form templates with full parsing, resource copying, and nested XObject support (most real-world PDFs use FlateDecode compression and require the premium Zlib module for import)
+- **PDF Import**: Import pages from existing PDF files as XObject Form templates with full parsing, resource copying, nested XObject support, and PDF 1.5+ object stream/xref stream support (most real-world PDFs use FlateDecode compression and require the premium Zlib module for import)
 - **File Attachments**: Document-level and page annotation attachments (E-Invoice/Factur-X ready)
 - **PDFGraphics Compatible**: VNSPDFGraphics provides complete Xojo PDFGraphics API compatibility
 - **DrawObject Support**: Full Object2D rendering (RectShape, OvalShape, RoundRectShape, ArcShape, CurveShape, FigureShape, TextShape, PixmapShape, Group2D with rotation)
@@ -38,7 +38,7 @@ Xojo_fpdf is a pure Xojo implementation for creating PDF documents programmatica
 
 **Purchase Only What You Need!** Each premium module can be purchased separately:
 
-- **Encryption Module** - RC4-128, AES-128, AES-256 encryption + PAdES-B-B digital signatures (Adobe Acrobat validated)
+- **Encryption Module** - RC4-128, AES-128, AES-256, AES-GCM encryption + CBC decrypt + PAdES-B-B digital signatures (Adobe Acrobat validated)
 - **Table Module** - Professional table generation with headers, footers, pagination, per-cell styling, subtotal rows, and Manual Table Builder
 - **Zlib Module** - Pure Xojo compression for iOS support (bypasses sandboxing)
 - **E-Invoice Module** - Factur-X, ZUGFeRD, EN 16931 compliant hybrid PDF/XML invoices + Barcode Module (QR, Code128, EAN-13, EAN-8, UPC-A, Code 39, ITF, Codabar, DataMatrix, PDF417)
@@ -599,12 +599,13 @@ See `docs/developer/18-wrapper-classes.md` for complete PDFGraphics API compatib
 
 ## Current Status
 
-**Version**: 1.2 (Production Ready)
+**Version**: 1.4
 
 **Xojo Compatibility**:
-- Xojo 2025r3.1 with API2
+- Tested with Xojo 2026r2.1 (API2); should also work with earlier API2 Xojo versions
 - **✅ API2 Compliant** - Fully migrated from API1 to API2
 - Desktop, Web, iOS, Console: Full support with platform-specific optimizations
+- Android: Free core library and demo app (same examples as iOS); premium modules not yet tested on Android
 
 **Implemented Features**:
 - ✅ Document initialization
@@ -635,6 +636,7 @@ See `docs/developer/18-wrapper-classes.md` for complete PDFGraphics API compatib
 - ✅ TrueType font embedding with full UTF-8/Unicode support
 - ✅ Comprehensive Unicode rendering with proper glyph spacing (CJK, Cyrillic, RTL scripts, math symbols, currencies)
 - ✅ **Arabic text shaping** - Automatic contextual letter forms (isolated, initial, medial, final) with proper RTL rendering
+- ✅ **Hebrew RTL** - Hebrew runs reversed for display; digits keep left-to-right order inside RTL text
 - ✅ Stream compression (FlateDecode/zlib) - 27-60% file size reduction on text/vector content (Desktop/Web/Console via system libs; **iOS fully supported with Premium Zlib module**)
 - ✅ Header/Footer callbacks (SetHeaderFunc, SetFooterFunc) with automatic invocation on every page
 - ✅ Internal links (AddLink, SetLink, Link) for navigation within PDF
@@ -643,13 +645,15 @@ See `docs/developer/18-wrapper-classes.md` for complete PDFGraphics API compatib
 - ✅ PDF/A compliance support (AddOutputIntent with ICC color profile embedding)
 - ✅ Full iOS compatibility with conditional compilation for string operations, file I/O, and MobilePDFViewer display
 - ✅ **Font subsetting** for TrueType fonts (98% file size reduction with sparse glyph IDs)
-- ✅ **Color emoji support** via image-based rendering (cross-platform compatibility)
+- ✅ **Color emoji support** via image-based rendering (cross-platform compatibility), including skin-tone, ZWJ, flag and keycap sequences
 - ✅ **Document encryption** with password protection and permissions (RC4-40/128, AES-128/256)
   - RC4-40 (Revision 2) - Weak, not recommended
   - RC4-128 (Revision 3) - Legacy, deprecated (triggers warnings in Acrobat)
   - **AES-128 (Revision 4) - RECOMMENDED** for modern security
   - **AES-256 (Revisions 5-6) - BEST** for sensitive data
   - Pure Xojo AES implementation (VNSAESCore) - no Xojo Crypto limitations
+  - **AES-CBC/ECB decrypt** - Full decryption with FIPS 197 inverse cipher + PKCS7 padding
+  - **AES-GCM** - Authenticated encryption (AEAD) with 128-bit tag and AAD support
 - ✅ **Premium Table Module** (VNSPDFTablePremium) for automatic table generation
   - SimpleTable() - Equal-width columns with basic formatting
   - ImprovedTable() - Custom column widths with auto number alignment
@@ -673,7 +677,21 @@ See `docs/developer/18-wrapper-classes.md` for complete PDFGraphics API compatib
 - ✅ **GraphicsPath** - Curves, arcs, round rectangles, clipping, hit testing
 - ✅ **PDF Preview Window** (Desktop) - In-app modal preview with thumbnails, zoom/pan, save, print
 
-**New in v1.2** (Current Release):
+**New in v1.4** (Current Release):
+- ✅ **PDF Preview Window** (Desktop) - Continuous smooth scrolling, pages rendered on demand, Retina-sharp zoom, localized in English, French, German, Italian and Spanish
+- ✅ **RTL and emoji** - Hebrew in visual order, digits kept left-to-right inside Arabic/Hebrew, emoji sequences (skin tones, ZWJ, flags, keycaps) drawn as one emoji, valid ToUnicode CMap for emoji
+- ✅ **AES-CBC/ECB decryption** - Full inverse cipher (FIPS 197) with PKCS7 pad/unpad helpers
+- ✅ **AES-GCM authenticated encryption** - AEAD with 128-bit tag, AAD, constant-time tag verification (NIST SP 800-38D)
+- ✅ **PDF 1.5+ object stream support** - Import PDFs with cross-reference streams and object streams (modern PDF generators)
+- ✅ **ManualTable enhancements** - Auto row height, auto column width, header word wrap, vertical alignment, configurable colors, row/cell padding
+- ✅ **E-Invoice allowances/charges** - BG-20/BG-21/BG-27/BG-28, credit notes, extended EN 16931 (~70% BTs), multi-country validation
+- ✅ **E-Invoice 3-level validation** - EN16931 core rules, code list validation, country-specific rules (FR/DE/IT/NL)
+- ✅ **HTML import improvements** - Table colspan/widths, CSS float layout, dotted/dashed borders, single-page mode, emoji in tables/code blocks
+- ✅ **Single Page Mode** - Render all content on one long page with no breaks
+- ✅ **Automatic footer height detection** - Footer callbacks auto-measured, no manual margin adjustment needed
+- ✅ **PDF Import constructors** - `New VNSPDFDocument(folderItem)` and `New VNSPDFDocument(pdfData, True)` for cloning PDFs
+
+**New in v1.3**:
 - ✅ **PAdES-B-B & XAdES-BES digital signatures** - Adobe Acrobat validated PDF signing
 - ✅ **Barcode Module** - Free QR/Code128 + Premium 1D/2D vector barcodes (10 types)
 - ✅ **E-Invoice Module** - Factur-X/ZUGFeRD with conformity checker
@@ -683,14 +701,6 @@ See `docs/developer/18-wrapper-classes.md` for complete PDFGraphics API compatib
 - ✅ **GraphicsPath** - Full path drawing with clipping and hit testing
 - ✅ **PDF Preview Window** - Desktop in-app PDF preview with thumbnails
 - ✅ **33 working examples** across all 4 platforms
-
-**New in v1.1.1** (Bug fixes from community feedback):
-- ✅ **MultiCell single-line bottom border** - Fixed missing bottom border when border=1 on single-line cells
-- ✅ **SplitTextToLines first character** - Fixed off-by-one error dropping first character of wrapped words
-- ✅ **MultiCell newline handling** - Fixed Chr(10) and CRLF being ignored (all text on one line)
-- ✅ **MultiCell positioning** - Fixed cursor not returning to left margin after MultiCell
-- ✅ **ImageFromPicture RGBA corruption** - Fixed on all platforms by using JPEG format
-- ✅ **Example 26** - Cross-platform bug test suite verifying all fixes on macOS, Windows 11, and Ubuntu 22.04 ARM64
 
 **Premium Modules Available Separately**: Each premium module can be purchased individually. You only pay for the features you need!
 ## License
@@ -737,5 +747,4 @@ For bugs, feature requests, or questions, please contact jypochez@verynicesw.fr
 
 ---
 
-**Note**: This library is production-ready (v1.2).
-
+**Note**: This library is production-ready (v1.4).

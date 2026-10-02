@@ -1,8 +1,8 @@
 # Xojo FPDF - Version History
 
-## Version 1.4 (March 2026) - Current Release
+## Version 1.4 (October 2026) - Current Release
 
-**Xojo 2025r3.1 API2**
+**Tested with Xojo 2026r2.1 API2** (earlier API2 versions should work)
 
 - Table border customization: `mBorderColor` (default black), `mBorderWidth` (default 0.2mm), per-column `mBorderStyle`, per-row `SetRowBorder()`, per-cell `SetCellBorder()` with cascade priority: cell > row > column > table
 - Cell vertical alignment (v1.3 Geoff Bridges): `eVerticalAlignment.Top/Middle/Bottom/Baseline` in Cell() method
@@ -10,6 +10,10 @@
 - Empty MultiCell borders (v1.3): Single empty-text MultiCell now draws correct borders
 - Write() linebreaks (v1.3): Explicit chr(10) linebreaks now work inside Write() calls
 - Preview save folder (v1.3 Geoff Bridges): `ShowPreview(doc, initialFolder)` parameter for default save location
+- ToUnicode CMap fix: code points above U+FFFF (emoji) written as UTF-16BE surrogate pairs instead of invalid odd-length hex (which crashed macOS Preview), `.notdef` no longer mapped, `bfchar` blocks limited to 100 entries
+- Hebrew is now reversed for display like Arabic, and digit sequences keep left-to-right order inside Hebrew/Arabic text (`2026` no longer shown as `6202`)
+- Emoji: multi-code-point sequences (skin tones, ZWJ, flags, keycaps) render as one image; Desktop emoji images use 8% padding instead of 30% so emoji match the text size
+- HTML/Markdown Import: entities decoded exactly once (`&amp;amp;` renders as `&amp;`), Hebrew/Arabic paragraphs laid out in browser (bidi) order with emoji, word-wrap and baseline alignment
 
 ## Version 1.3 (March 2026)
 
